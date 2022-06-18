@@ -9,7 +9,7 @@ public class PageHeaderAttribute : System.Attribute
     public int Ordinal { get; set; }
     
     /// <summary>
-    /// Maximum length for variable length fields.
+    /// Maximum length for variable length fields. Headers with variable length data types are stored as fixed length (MaxLength).
     /// </summary>
     public int MaxLength { get; set; }
     

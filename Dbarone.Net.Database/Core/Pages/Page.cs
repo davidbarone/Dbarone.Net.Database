@@ -7,7 +7,7 @@ using Dbarone.Net.Extensions.Reflection;
 public class Page
 {
     private PageBuffer _buffer;
-    
+
     [PageHeaderAttribute(1)]
     public PageType PageType { get; set; }
 
@@ -67,6 +67,10 @@ public class Page
             field.Ordinal = attr.Ordinal;
             field.Property = item;
             field.Size = Types.GetByType(item.PropertyType).Size;
+            if (field.Size == -1)
+            {
+                field.Size = attr.MaxLength;
+            }
         }
         int start = 0;
         foreach (var item in fields.OrderBy(f => f.Ordinal))
@@ -88,23 +92,71 @@ public class Page
         if (property == null)
         {
             throw new Exception($"Error writing header field: {fieldName}.");
-        } else {
+        }
+        else
+        {
             property.Property.SetValue(this, value);
-            WriteHeader("IsDirty", true);
+            if (!fieldName.Equals("IsDirty", StringComparison.OrdinalIgnoreCase))
+            {
+                WriteHeader("IsDirty", true);
+            }
+
             // Write buffer
-            //this._buffer.Write(value);
+            if (property.Property.PropertyType == typeof(bool)) { _buffer.Write((bool)value, property.Start); }
+            else if (property.Property.PropertyType == typeof(byte)) { _buffer.Write((byte)value, property.Start); }
+            else if (property.Property.PropertyType == typeof(sbyte)) { _buffer.Write((sbyte)value, property.Start); }
+            else if (property.Property.PropertyType == typeof(char)) { _buffer.Write((char)value, property.Start); }
+            else if (property.Property.PropertyType == typeof(decimal)) { _buffer.Write((decimal)value, property.Start); }
+            else if (property.Property.PropertyType == typeof(double)) { _buffer.Write((double)value, property.Start); }
+            else if (property.Property.PropertyType == typeof(Single)) { _buffer.Write((Single)value, property.Start); }
+            else if (property.Property.PropertyType == typeof(Int16)) { _buffer.Write((Int16)value, property.Start); }
+            else if (property.Property.PropertyType == typeof(UInt16)) { _buffer.Write((UInt16)value, property.Start); }
+            else if (property.Property.PropertyType == typeof(Int32)) { _buffer.Write((Int32)value, property.Start); }
+            else if (property.Property.PropertyType == typeof(UInt32)) { _buffer.Write((UInt32)value, property.Start); }
+            else if (property.Property.PropertyType == typeof(Int64)) { _buffer.Write((Int64)value, property.Start); }
+            else if (property.Property.PropertyType == typeof(UInt64)) { _buffer.Write((UInt64)value, property.Start); }
+            else if (property.Property.PropertyType == typeof(DateTime)) { _buffer.Write((DateTime)value, property.Start); }
+            else if (property.Property.PropertyType == typeof(string)) { _buffer.Write((string)value, property.Start); }
+            else if (property.Property.PropertyType == typeof(Guid)) { _buffer.Write((Guid)value, property.Start); }
+            else if (property.Property.PropertyType == typeof(byte[])) { _buffer.Write((byte[])value, property.Start); }
+            else { throw new Exception("Invalid property type."); }
         }
     }
 
     /// <summary>
-    /// Reads header from buffer.
+    /// Reads header from buffer and updates a header property.
     /// </summary>
     /// <param name="fieldName"></param>
     /// <returns></returns>
-    public object ReadHeader(string fieldName)
+    public void ReadHeader(string fieldName)
     {
-        return null;
-
+        var property = Headers!.FirstOrDefault(f => f.Key.Equals(fieldName, StringComparison.OrdinalIgnoreCase)).Value;
+        if (property == null)
+        {
+            throw new Exception($"Error reading header field: {fieldName}.");
+        }
+        else
+        {
+            // Write buffer
+            if (property.Property.PropertyType == typeof(bool)) { property.Property.SetValue(this, _buffer.ReadBool(property.Start)); }
+            else if (property.Property.PropertyType == typeof(byte)) { property.Property.SetValue(this, _buffer.ReadByte(property.Start)); }
+            else if (property.Property.PropertyType == typeof(sbyte)) { property.Property.SetValue(this, _buffer.ReadSByte(property.Start)); }
+            else if (property.Property.PropertyType == typeof(char)) { property.Property.SetValue(this, _buffer.ReadChar(property.Start)); }
+            else if (property.Property.PropertyType == typeof(decimal)) { property.Property.SetValue(this, _buffer.ReadDecimal(property.Start)); }
+            else if (property.Property.PropertyType == typeof(double)) { property.Property.SetValue(this, _buffer.ReadDouble(property.Start)); }
+            else if (property.Property.PropertyType == typeof(Single)) { property.Property.SetValue(this, _buffer.ReadSingle(property.Start)); }
+            else if (property.Property.PropertyType == typeof(Int16)) { property.Property.SetValue(this, _buffer.ReadInt16(property.Start)); }
+            else if (property.Property.PropertyType == typeof(UInt16)) { property.Property.SetValue(this, _buffer.ReadUInt16(property.Start)); }
+            else if (property.Property.PropertyType == typeof(Int32)) { property.Property.SetValue(this, _buffer.ReadInt32(property.Start)); }
+            else if (property.Property.PropertyType == typeof(UInt32)) { property.Property.SetValue(this, _buffer.ReadUInt32(property.Start)); }
+            else if (property.Property.PropertyType == typeof(Int64)) { property.Property.SetValue(this, _buffer.ReadInt64(property.Start)); }
+            else if (property.Property.PropertyType == typeof(UInt64)) { property.Property.SetValue(this, _buffer.ReadUInt64(property.Start)); }
+            else if (property.Property.PropertyType == typeof(DateTime)) { property.Property.SetValue(this, _buffer.ReadDateTime(property.Start)); }
+            else if (property.Property.PropertyType == typeof(string)) { property.Property.SetValue(this, _buffer.ReadString(property.Start, property.Size)); }
+            else if (property.Property.PropertyType == typeof(Guid)) { property.Property.SetValue(this, _buffer.ReadGuid(property.Start)); }
+            else if (property.Property.PropertyType == typeof(byte[])) { property.Property.SetValue(this, _buffer.ReadBytes(property.Start, property.Size)); }
+            else { throw new Exception("Invalid property type."); }
+        }
     }
 
     /// <summary>
@@ -114,7 +166,7 @@ public class Page
     /// <param name="buffer"></param>
     public static void Create(int pageId, PageBuffer buffer)
     {
-        
+
     }
 
     /// <summary>
