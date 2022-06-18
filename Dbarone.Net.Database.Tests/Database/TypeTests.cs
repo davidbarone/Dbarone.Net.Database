@@ -20,6 +20,7 @@ public class TypeTests{
     [InlineData(typeof(ulong),8)]
     [InlineData(typeof(short),2)]
     [InlineData(typeof(ushort),2)]
+    [InlineData(typeof(string),-1)]
     public void TestTypes_HaveCorrectSize(Type type, int expectedSize) {
         
         // Arrange
