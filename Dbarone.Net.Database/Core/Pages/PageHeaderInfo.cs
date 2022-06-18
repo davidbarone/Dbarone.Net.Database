@@ -2,9 +2,9 @@ namespace Dbarone.Net.Database;
 using System.Reflection;
 
 /// <summary>
-/// Information about a page header field
+/// Information about a page header.
 /// </summary>
-public class PageHeaderFieldInfo
+public class PageHeaderInfo
 {
     public PropertyInfo Property { get; set; } = default!;
     public int Ordinal { get; set; }

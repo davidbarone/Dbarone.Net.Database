@@ -7,64 +7,37 @@ using System.Collections.Generic;
 /// </summary>
 public class Types
 {
-    private static List<Type> fixedLengthTypes;
-    private static List<Type> variableLengthTypes;
-    private static Dictionary<Type, TypeInfo> typesDict { get; set; } = new Dictionary<Type, TypeInfo>();
+    private static Dictionary<Type, TypeInfo> _dict { get; set; } = new Dictionary<Type, TypeInfo>();
 
     public static TypeInfo GetByType(Type type)
     {
-        return typesDict[type];
+        return _dict[type];
     }
 
     public static TypeInfo GetByDatabaseType(DatabaseType databaseType)
     {
-        return typesDict.Values.First(t => t.DatabaseType == databaseType);
+        return _dict.Values.First(t => t.DatabaseType == databaseType);
     }
 
     static Types()
     {
-        fixedLengthTypes = new List<Type>() {
-
-            // Value Types
-            typeof(bool),
-            typeof(byte),
-            typeof(sbyte),
-            typeof(char),
-            typeof(decimal),
-            typeof(double),
-            typeof(float),
-            typeof(int),
-            typeof(uint),
-            typeof(long),
-            typeof(ulong),
-            typeof(short),
-            typeof(ushort),
-
-            // Reference Types
-            typeof(DateTime)
+        _dict = new Dictionary<Type, TypeInfo> {
+            {typeof(bool), new TypeInfo(DatabaseType.Boolean, typeof(bool), 1)},
+            {typeof(byte), new TypeInfo(DatabaseType.Byte, typeof(byte), 1)},
+            {typeof(sbyte), new TypeInfo(DatabaseType.SByte, typeof(sbyte), 1)},
+            {typeof(char), new TypeInfo(DatabaseType.Char, typeof(char), 1)},
+            {typeof(decimal), new TypeInfo(DatabaseType.Decimal, typeof(decimal), 16)},
+            {typeof(double), new TypeInfo(DatabaseType.Double, typeof(double), 8)},
+            {typeof(float), new TypeInfo(DatabaseType.Single, typeof(float), 4)},
+            {typeof(Int16), new TypeInfo(DatabaseType.Int16, typeof(Int16), 2)},
+            {typeof(UInt16), new TypeInfo(DatabaseType.UInt16, typeof(UInt16), 2)},
+            {typeof(Int32), new TypeInfo(DatabaseType.Int32, typeof(Int32), 4)},
+            {typeof(UInt32), new TypeInfo(DatabaseType.UInt32, typeof(UInt32), 4)},
+            {typeof(Int64), new TypeInfo(DatabaseType.Int64, typeof(Int64), 8)},
+            {typeof(UInt64), new TypeInfo(DatabaseType.UInt64, typeof(UInt64), 8)},
+            {typeof(Guid), new TypeInfo(DatabaseType.Guid, typeof(Guid), 16)},
+            {typeof(DateTime), new TypeInfo(DatabaseType.DateTime, typeof(DateTime), 8)},
+            {typeof(string), new TypeInfo(DatabaseType.String, typeof(string), -1)}
         };
-
-        variableLengthTypes = new List<Type>{
-            // Reference Types
-            typeof(string)
-        };
-
-        foreach (var item in fixedLengthTypes)
-        {
-            var databaseType = Enum.Parse<DatabaseType>(item.Name, true);
-            var size = 0;
-            if (item==typeof(DateTime)){
-                size = System.Runtime.InteropServices.Marshal.SizeOf(DateTime.Now.ToBinary());
-            } else {
-                size = System.Runtime.InteropServices.Marshal.SizeOf(item);
-            }
-            typesDict[item] = new TypeInfo(databaseType, item, size);
-        }
-
-        foreach (var item in variableLengthTypes)
-        {
-            var databaseType = Enum.Parse<DatabaseType>(item.Name);
-            typesDict[item] = new TypeInfo(databaseType, item, -1);
-        }
     }
 }

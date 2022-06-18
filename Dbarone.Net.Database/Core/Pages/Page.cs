@@ -6,32 +6,34 @@ using Dbarone.Net.Extensions.Reflection;
 /// </summary>
 public class Page
 {
-    [PageHeaderFieldAttribute(1)]
+    private PageBuffer _buffer;
+    
+    [PageHeaderAttribute(1)]
     public PageType PageType { get; set; }
 
-    [PageHeaderFieldAttribute(2)]
+    [PageHeaderAttribute(2)]
     public int PageId { get; set; }
 
-    [PageHeaderFieldAttribute(3)]
+    [PageHeaderAttribute(3)]
     public int PrevPageId { get; set; }
 
-    [PageHeaderFieldAttribute(4)]
+    [PageHeaderAttribute(4)]
     public int NextPageId { get; set; }
 
-    [PageHeaderFieldAttribute(5)]
+    [PageHeaderAttribute(5)]
     public int SlotsUsed { get; set; }
 
-    [PageHeaderFieldAttribute(6)]
+    [PageHeaderAttribute(6)]
     public int TransactionId { get; set; }
 
-    [PageHeaderFieldAttribute(7)]
+    [PageHeaderAttribute(7)]
     public bool IsDirty { get; set; }
 
 
     /// <summary>
     /// Information about the fields.
     /// </summary>
-    public Dictionary<string, PageHeaderFieldInfo> Fields { get; set; }
+    public Dictionary<string, PageHeaderInfo> Headers { get; set; }
 
     /// <summary>
     /// Create
@@ -53,13 +55,15 @@ public class Page
     /// <param name="buffer"></param>
     public Page(int pageId, PageBuffer buffer)
     {
+        this._buffer = buffer;
+
         // Get header fields
-        var headerProps = this.GetType().GetPropertiesDecoratedBy<PageHeaderFieldAttribute>();
-        List<PageHeaderFieldInfo> fields = new List<PageHeaderFieldInfo>();
+        var headerProps = this.GetType().GetPropertiesDecoratedBy<PageHeaderAttribute>();
+        List<PageHeaderInfo> fields = new List<PageHeaderInfo>();
         foreach (var item in headerProps)
         {
-            var attr = (PageHeaderFieldAttribute)item.GetCustomAttributes(typeof(PageHeaderFieldAttribute), false).First();
-            var field = new PageHeaderFieldInfo();
+            var attr = (PageHeaderAttribute)item.GetCustomAttributes(typeof(PageHeaderAttribute), false).First();
+            var field = new PageHeaderInfo();
             field.Ordinal = attr.Ordinal;
             field.Property = item;
             field.Size = Types.GetByType(item.PropertyType).Size;
@@ -70,7 +74,7 @@ public class Page
             item.Start = start;
             start = start + item.Size;
         }
-        this.Fields = fields.ToDictionary(key => key.Property.Name, value => value);
+        this.Headers = fields.ToDictionary(key => key.Property.Name, value => value);
     }
 
     /// <summary>
@@ -78,12 +82,17 @@ public class Page
     /// </summary>
     /// <param name="fieldName"></param>
     /// <exception cref="Exception"></exception>
-    public void WriteHeader(string fieldName)
+    public void WriteHeader(string fieldName, object value)
     {
-        var property = Fields!.FirstOrDefault(f => f.Key.Equals(fieldName, StringComparison.OrdinalIgnoreCase)).Value;
+        var property = Headers!.FirstOrDefault(f => f.Key.Equals(fieldName, StringComparison.OrdinalIgnoreCase)).Value;
         if (property == null)
         {
             throw new Exception($"Error writing header field: {fieldName}.");
+        } else {
+            property.Property.SetValue(this, value);
+            WriteHeader("IsDirty", true);
+            // Write buffer
+            //this._buffer.Write(value);
         }
     }
 

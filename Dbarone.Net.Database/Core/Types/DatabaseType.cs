@@ -16,5 +16,6 @@ public enum DatabaseType
     Int16,
     UInt16,
     DateTime,
-    String
+    String,
+    Guid
 }
