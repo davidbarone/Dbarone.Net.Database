@@ -3,12 +3,12 @@ A NoSQL database written in .NET.
 
 ## Architecture
 
-https://www.guru99.com/sql-server-architecture.html
-https://sqlity.net/en/2414/dbcc-fileheader/#:~:text=Every%20database%20file%20contains%20a%20single%20page%20that,good%20way%20to%20dive%20into%20the%20page%27s%20content%3A
-https://www.c-sharpcorner.com/UploadFile/ff0d0f/how-sql-server-stores-data-in-data-pages-part-1/
-https://social.technet.microsoft.com/wiki/contents/articles/53223.sql-server-understanding-and-fixing-boot-page-corruption.aspx
-https://www.sqlskills.com/blogs/paul/inside-the-storage-engine-anatomy-of-a-page/
-
+- https://www.guru99.com/sql-server-architecture.html
+- https://sqlity.net/en/2414/dbcc-fileheader/#:~:text=Every%20database%20file%20contains%20a%20single%20page%20that,good%20way%20to%20dive%20into%20the%20page%27s%20content%3A
+- https://www.c-sharpcorner.com/UploadFile/ff0d0f/how-sql-server-stores-data-in-data-pages-part-1/
+- https://social.technet.microsoft.com/wiki/contents/articles/53223.sql-server-understanding-and-fixing-boot-page-corruption.aspx
+- https://www.sqlskills.com/blogs/paul/inside-the-storage-engine-anatomy-of-a-page/
+- https://etutorials.org/SQL/microsoft+sql+server+2000/Part+V+SQL+Server+Internals+and+Performance+Tuning/Chapter+33.+SQL+Server+Internals/Database+Pages/
 
 ## Data Page
 
