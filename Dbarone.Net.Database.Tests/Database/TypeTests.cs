@@ -22,6 +22,7 @@ public class TypeTests
     [InlineData(typeof(short), 2)]
     [InlineData(typeof(ushort), 2)]
     [InlineData(typeof(Guid), 16)]
+    [InlineData(typeof(DateTime), 8)]
     [InlineData(typeof(string), -1)]
     public void TestTypes_HaveCorrectSize(Type type, int expectedSize)
     {
@@ -48,6 +49,8 @@ public class TypeTests
     [InlineData(typeof(ulong), true)]
     [InlineData(typeof(short), true)]
     [InlineData(typeof(ushort), true)]
+    [InlineData(typeof(Guid), true)]
+    [InlineData(typeof(DateTime), true)]
     [InlineData(typeof(string), false)]
     public void TestTypes_IsFixedLength(Type type, bool expected)
     {
