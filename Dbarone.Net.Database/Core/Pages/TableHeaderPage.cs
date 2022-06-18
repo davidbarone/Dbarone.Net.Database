@@ -5,5 +5,5 @@ namespace Dbarone.Net.Database;
 /// </summary>
 public class TableHeaderPage : Page
 {
-
+    public TableHeaderPage(int pageId, PageBuffer buffer):base(pageId, buffer){}
 }

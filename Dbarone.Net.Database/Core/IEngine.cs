@@ -3,7 +3,7 @@ namespace Dbarone.Net.Database;
 /// <summary>
 /// Represents the internal functioning of the database. Not accessible to end-users.
 /// </summary>
-public interface IEngine
+public interface IEngine : IDisposable
 {
     /// <summary>
     /// Gets a page.

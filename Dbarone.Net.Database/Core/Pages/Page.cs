@@ -62,7 +62,7 @@ public class Page
             var field = new PageHeaderFieldInfo();
             field.Ordinal = attr.Ordinal;
             field.Property = item;
-            field.Size = Types.Get()[item.PropertyType].Size;
+            field.Size = Types.GetByType(item.PropertyType).Size;
         }
         int start = 0;
         foreach (var item in fields.OrderBy(f => f.Ordinal))
@@ -94,6 +94,7 @@ public class Page
     /// <returns></returns>
     public object ReadHeader(string fieldName)
     {
+        return null;
 
     }
 
@@ -102,9 +103,9 @@ public class Page
     /// </summary>
     /// <param name="pageId"></param>
     /// <param name="buffer"></param>
-    public static Create(int pageId, PageBuffer buffer)
+    public static void Create(int pageId, PageBuffer buffer)
     {
-        new BootPage()
+        
     }
 
     /// <summary>

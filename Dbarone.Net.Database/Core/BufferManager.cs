@@ -33,10 +33,6 @@ public class BufferManager
         }
     }
 
-    public void Add(int pageId, PageBuffer buffer){
-        _pages.Add(pageId, buffer);
-    }
-
     public int CreatePage(PageType pageType) {
         var pageId = _diskService.CreatePage(pageType);
         return pageId;

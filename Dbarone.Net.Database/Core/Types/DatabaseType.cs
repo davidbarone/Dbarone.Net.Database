@@ -2,19 +2,19 @@ namespace Dbarone.Net.Database;
 
 public enum DatabaseType
 {
-    Bool = 1,
+    Boolean = 1,
     Byte,
     SByte,
     Char,
     Decimal,
     Double,
-    Float,
-    Int,
-    UInt,
-    Long,
-    ULong,
-    Short,
-    UShort,
+    Single,
+    Int32,
+    UInt32,
+    Int64,
+    UInt64,
+    Int16,
+    UInt16,
     DateTime,
     String
 }

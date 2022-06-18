@@ -9,14 +9,19 @@ public class Types
 {
     private static List<Type> fixedLengthTypes;
     private static List<Type> variableLengthTypes;
-    private static Dictionary<Type, TypeInfo> typesDict { get; set; } = default!;
+    private static Dictionary<Type, TypeInfo> typesDict { get; set; } = new Dictionary<Type, TypeInfo>();
 
-    public static Dictionary<Type, TypeInfo> Get()
+    public static TypeInfo GetByType(Type type)
     {
-        return typesDict;
+        return typesDict[type];
     }
 
-    public static Types()
+    public static TypeInfo GetByDatabaseType(DatabaseType databaseType)
+    {
+        return typesDict.Values.First(t => t.DatabaseType == databaseType);
+    }
+
+    static Types()
     {
         fixedLengthTypes = new List<Type>() {
 
@@ -39,15 +44,21 @@ public class Types
             typeof(DateTime)
         };
 
-        variableLengthTypes = new List<TypeInfo>{
+        variableLengthTypes = new List<Type>{
             // Reference Types
             typeof(string)
         };
 
         foreach (var item in fixedLengthTypes)
         {
-            var databaseType = Enum.Parse<DatabaseType>(item.Name);
-            typesDict[item] = new TypeInfo(databaseType, item, System.Runtime.InteropServices.Marshal.SizeOf(item));
+            var databaseType = Enum.Parse<DatabaseType>(item.Name, true);
+            var size = 0;
+            if (item==typeof(DateTime)){
+                size = System.Runtime.InteropServices.Marshal.SizeOf(DateTime.Now.ToBinary());
+            } else {
+                size = System.Runtime.InteropServices.Marshal.SizeOf(item);
+            }
+            typesDict[item] = new TypeInfo(databaseType, item, size);
         }
 
         foreach (var item in variableLengthTypes)

@@ -2,7 +2,6 @@
 public class Database : IDatabase
 {
     private string _filename;
-    private Stream _stream;
     private int _bufferSize = 8192;
     private IEngine _engine;
 
@@ -10,7 +9,8 @@ public class Database : IDatabase
     /// Gets publicly available metadata about the database.
     /// </summary>
     /// <returns></returns>
-    public DatabaseInfo GetDatabaseInfo(){
+    public DatabaseInfo GetDatabaseInfo()
+    {
         var page0 = this._engine.GetPage<BootPage>(0);
         return new DatabaseInfo
         {
@@ -36,25 +36,47 @@ public class Database : IDatabase
         return new Database(new Engine(filename, canWrite: true));
     }
 
-    public static void Delete(string filename){
-        
+    public static void Delete(string filename)
+    {
+
         // open file and check valid database file.
         var database = Database.Open(filename, false);
         var info = database.GetDatabaseInfo();
-        if (info.Magic != "Dbarone.Net.Database"){
+        if (info.Magic != "Dbarone.Net.Database")
+        {
             throw new Exception("File is not valid format.");
         }
-        
+
         // If got here, good to delete
         File.Delete(filename);
     }
 
     public void Dispose()
     {
-        if (this._stream != null)
+        if (this._engine != null)
         {
-            //this._stream.Close();
-            this._stream.Dispose();
+            this._engine.Dispose();
         }
     }
+
+    #region IDatabase
+
+    public TableInfo GetTableInfo(string tableName) { throw new NotSupportedException("Not supported."); }
+    public IEnumerable<ColumnInfo> GetColumnInfo(string tableName) { throw new NotSupportedException("Not supported."); }
+    public IEnumerable<T> Read<T>(string tableName) { throw new NotSupportedException("Not supported."); }
+
+    public bool BeginTransaction() { throw new NotSupportedException("Not supported."); }
+    public bool CommitTransaction() { throw new NotSupportedException("Not supported."); }
+    public bool RollbackTransaction() { throw new NotSupportedException("Not supported."); }
+
+    public int insert<T>(string table, T data) { throw new NotSupportedException("Not supported."); }
+    public int insert<T>(string table, IEnumerable<T> data) { throw new NotSupportedException("Not supported."); }
+    public int update<T>(string table, T data) { throw new NotSupportedException("Not supported."); }
+    public int update<T>(string table, IEnumerable<T> data) { throw new NotSupportedException("Not supported."); }
+    public int upsert<T>(string table, T data) { throw new NotSupportedException("Not supported."); }
+    public int upsert<T>(string table, IEnumerable<T> data) { throw new NotSupportedException("Not supported."); }
+    public int delete<T>(string table, T data) { throw new NotSupportedException("Not supported."); }
+    public int delete<T>(string table, IEnumerable<T> data) { throw new NotSupportedException("Not supported."); }
+
+    #endregion
 }
