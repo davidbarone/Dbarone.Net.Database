@@ -1,6 +1,5 @@
 namespace Dbarone.Net.Database;
 using Dbarone.Net.Extensions.Reflection;
-using System.Reflection;
 
 /// <summary>
 /// Base class for all pages.
@@ -111,5 +110,5 @@ public class Page
     /// <summary>
     /// The page size for all pages
     /// </summary>
-    public const int PageSize = 2 ^ 13; //8K (8192 bytes)
+    public static int PageSize = 2 ^ 13; //8K (8192 bytes)
 }

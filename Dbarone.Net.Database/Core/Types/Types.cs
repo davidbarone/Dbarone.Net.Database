@@ -1,6 +1,14 @@
+namespace Dbarone.Net.Database;
+using System;
+using System.Collections.Generic;
+
+/// <summary>
+/// Defines the types allowed in Dbarone.Net.Database.
+/// </summary>
 public class Types
 {
-    private List<Type> types;
+    private static List<Type> fixedLengthTypes;
+    private static List<Type> variableLengthTypes;
     private static Dictionary<Type, TypeInfo> typesDict { get; set; } = default!;
 
     public static Dictionary<Type, TypeInfo> Get()
@@ -8,9 +16,9 @@ public class Types
         return typesDict;
     }
 
-    public Types()
+    public static Types()
     {
-        types = new List<Type>() {
+        fixedLengthTypes = new List<Type>() {
 
             // Value Types
             typeof(bool),
@@ -26,16 +34,26 @@ public class Types
             typeof(ulong),
             typeof(short),
             typeof(ushort),
-            
 
             // Reference Types
-            typeof(DateTime),
+            typeof(DateTime)
+        };
+
+        variableLengthTypes = new List<TypeInfo>{
+            // Reference Types
             typeof(string)
         };
 
-        foreach (var item in types)
+        foreach (var item in fixedLengthTypes)
         {
-            typesDict[item] = new TypeInfo(DatabaseType.TYPE_BOOL, item, System.Runtime.InteropServices.Marshal.SizeOf(item));
+            var databaseType = Enum.Parse<DatabaseType>(item.Name);
+            typesDict[item] = new TypeInfo(databaseType, item, System.Runtime.InteropServices.Marshal.SizeOf(item));
+        }
+
+        foreach (var item in variableLengthTypes)
+        {
+            var databaseType = Enum.Parse<DatabaseType>(item.Name);
+            typesDict[item] = new TypeInfo(databaseType, item, -1);
         }
     }
 }

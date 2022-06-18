@@ -1,3 +1,5 @@
+namespace Dbarone.Net.Database;
+
 /// <summary>
 /// Services for reading / writing to disk
 /// </summary>
@@ -17,13 +19,14 @@ public class DiskService
     /// </summary>
     /// <param name="pageType"></param>
     /// <returns></returns>
-    public PageBuffer CreatePage(PageType pageType){
+    public int CreatePage(PageType pageType)
+    {
         byte[] buffer = new byte[8192];
         int start = (_pageCount * 8192);
-        int length = 8192;
+        int length = Page.PageSize;
         this._stream.Write(buffer, start, length);
-        return null;
-
+        _pageCount++;
+        return this._pageCount;
     }
 
     public PageBuffer ReadPage(int pageId)
@@ -32,7 +35,7 @@ public class DiskService
         int start = (pageId * 8192);
         int length = 8192;
         int read = this._stream.Read(buffer, start, length);
-        return null;
+        return new PageBuffer(buffer, pageId);
     }
 
     public void WritePage(PageBuffer page)

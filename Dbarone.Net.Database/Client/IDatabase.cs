@@ -41,4 +41,6 @@ public interface IDatabase : IDisposable {
     int upsert<T>(string table, IEnumerable<T> data);
     int delete<T>(string table, T data);
     int delete<T>(string table, IEnumerable<T> data);
+
+    #endregion
 }

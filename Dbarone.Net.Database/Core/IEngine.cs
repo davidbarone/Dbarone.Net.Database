@@ -5,7 +5,6 @@ namespace Dbarone.Net.Database;
 /// </summary>
 public interface IEngine
 {
-
     /// <summary>
     /// Gets a page.
     /// </summary>

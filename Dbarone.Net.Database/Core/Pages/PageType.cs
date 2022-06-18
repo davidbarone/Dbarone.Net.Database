@@ -1,7 +1,7 @@
 /// <summary>
 /// The page type.
 /// </summary>
-public enum PageType
+public enum PageType : int
 {
     /// <summary>
     /// A page type that stores raw leaf level data.
@@ -20,5 +20,5 @@ public enum PageType
     /// <summary>
     /// A page type that stores table metadata.
     /// </summary>
-    Table = 4
+    TableHeader = 4
 }
