@@ -17,5 +17,6 @@ public enum DatabaseType
     UInt16,
     DateTime,
     String,
-    Guid
+    Guid,
+    Blob
 }

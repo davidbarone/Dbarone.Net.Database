@@ -37,7 +37,8 @@ public class Types
             {typeof(UInt64), new TypeInfo(DatabaseType.UInt64, typeof(UInt64), 8)},
             {typeof(Guid), new TypeInfo(DatabaseType.Guid, typeof(Guid), 16)},
             {typeof(DateTime), new TypeInfo(DatabaseType.DateTime, typeof(DateTime), 8)},
-            {typeof(string), new TypeInfo(DatabaseType.String, typeof(string), -1)}
+            {typeof(string), new TypeInfo(DatabaseType.String, typeof(string), -1)},
+            {typeof(byte[]), new TypeInfo(DatabaseType.Blob, typeof(byte[]), -1)}
         };
     }
 }
