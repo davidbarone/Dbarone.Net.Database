@@ -57,6 +57,11 @@ public class PageBuffer : IPageBuffer
         return _buffer[index];
     }
 
+    public sbyte ReadSByte(int index)
+    {
+        return (sbyte)_buffer[index];
+    }
+
     public char ReadChar(int index)
     {
         return (char)_buffer[index];
@@ -95,6 +100,11 @@ public class PageBuffer : IPageBuffer
     public Double ReadDouble(int index)
     {
         return BitConverter.ToDouble(_buffer, index);
+    }
+
+   public Single ReadSingle(int index)
+    {
+        return BitConverter.ToSingle(_buffer, index);
     }
 
     public Decimal ReadDecimal(int index)
@@ -144,6 +154,12 @@ public class PageBuffer : IPageBuffer
         this._stream.Write(bytes, index, bytes.Length);
     }
 
+   public void Write(sbyte value, int index)
+    {
+        var bytes = BitConverter.GetBytes(value);
+        this._stream.Write(bytes, index, bytes.Length);
+    }
+
     public void Write(char value, int index)
     {
         var bytes = BitConverter.GetBytes(value);
@@ -187,6 +203,12 @@ public class PageBuffer : IPageBuffer
     }
 
     public void Write(Double value, int index)
+    {
+        var bytes = BitConverter.GetBytes(value);
+        this._stream.Write(bytes, index, bytes.Length);
+    }
+
+    public void Write(Single value, int index)
     {
         var bytes = BitConverter.GetBytes(value);
         this._stream.Write(bytes, index, bytes.Length);
