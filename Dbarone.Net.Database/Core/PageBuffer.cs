@@ -57,6 +57,11 @@ public class PageBuffer : IPageBuffer
         return _buffer[index];
     }
 
+    public char ReadChar(int index)
+    {
+        return (char)_buffer[index];
+    }
+
     public Int16 ReadInt16(int index)
     {
         return BitConverter.ToInt16(_buffer, index);
@@ -134,6 +139,12 @@ public class PageBuffer : IPageBuffer
     }
 
     public void Write(byte value, int index)
+    {
+        var bytes = BitConverter.GetBytes(value);
+        this._stream.Write(bytes, index, bytes.Length);
+    }
+
+    public void Write(char value, int index)
     {
         var bytes = BitConverter.GetBytes(value);
         this._stream.Write(bytes, index, bytes.Length);
