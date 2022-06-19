@@ -145,73 +145,85 @@ public class PageBuffer : IPageBuffer
     public void Write(bool value, int index)
     {
         var bytes = BitConverter.GetBytes(value);
-        this._stream.Write(bytes, index, bytes.Length);
+        this._stream.Position = index;
+        this._stream.Write(bytes, 0, bytes.Length);
     }
 
     public void Write(byte value, int index)
     {
         var bytes = BitConverter.GetBytes(value);
-        this._stream.Write(bytes, index, bytes.Length);
+        this._stream.Position = index;
+        this._stream.Write(bytes, 0, bytes.Length);
     }
 
    public void Write(sbyte value, int index)
     {
         var bytes = BitConverter.GetBytes(value);
-        this._stream.Write(bytes, index, bytes.Length);
+        this._stream.Position = index;
+        this._stream.Write(bytes, 0, bytes.Length);
     }
 
     public void Write(char value, int index)
     {
         var bytes = BitConverter.GetBytes(value);
-        this._stream.Write(bytes, index, bytes.Length);
+        this._stream.Position = index;
+        this._stream.Write(bytes, 0, bytes.Length);
     }
 
     public void Write(Int16 value, int index)
     {
         var bytes = BitConverter.GetBytes(value);
-        this._stream.Write(bytes, index, bytes.Length);
+        this._stream.Position = index;
+        this._stream.Write(bytes, 0, bytes.Length);
     }
 
     public void Write(UInt16 value, int index)
     {
         var bytes = BitConverter.GetBytes(value);
-        this._stream.Write(bytes, index, bytes.Length);
+        this._stream.Position = index;
+        this._stream.Write(bytes, 0, bytes.Length);
     }
 
     public void Write(Int32 value, int index)
     {
         var bytes = BitConverter.GetBytes(value);
-        this._stream.Write(bytes, index, bytes.Length);
+        this._stream.Position = index;
+        this._stream.Write(bytes, 0, bytes.Length);
     }
 
     public void Write(UInt32 value, int index)
     {
         var bytes = BitConverter.GetBytes(value);
-        this._stream.Write(bytes, index, bytes.Length);
+        this._stream.Position = index;
+        this._stream.Write(bytes, 0, bytes.Length);
     }
 
     public void Write(Int64 value, int index)
     {
         var bytes = BitConverter.GetBytes(value);
-        this._stream.Write(bytes, index, bytes.Length);
+        this._stream.Position = index;
+        this._stream.Write(bytes, 0, bytes.Length);
     }
 
     public void Write(UInt64 value, int index)
     {
         var bytes = BitConverter.GetBytes(value);
-        this._stream.Write(bytes, index, bytes.Length);
+        this._stream.Position = index;
+        this._stream.Write(bytes, 0, bytes.Length);
     }
 
     public void Write(Double value, int index)
     {
         var bytes = BitConverter.GetBytes(value);
-        this._stream.Write(bytes, index, bytes.Length);
+        this._stream.Position = index;
+        this._stream.Write(bytes, 0, bytes.Length);
     }
 
     public void Write(Single value, int index)
     {
         var bytes = BitConverter.GetBytes(value);
-        this._stream.Write(bytes, index, bytes.Length);
+        this._stream.Position = index;
+        this._stream.Write(bytes, 0, bytes.Length);
     }
 
     public void Write(Decimal value, int index)

@@ -172,5 +172,5 @@ public class Page
     /// <summary>
     /// The page size for all pages
     /// </summary>
-    public static int PageSize = 2 ^ 13; //8K (8192 bytes)
+    public static int PageSize = (int)Math.Pow(2, 13);   //8K (8192 bytes)
 }
