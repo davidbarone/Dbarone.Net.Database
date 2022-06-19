@@ -65,4 +65,227 @@ public class PageBufferTests
         Assert.Equal(value, actual);
     }
 
+    [Fact]
+    public void TestBuffer_WriteChar()
+    {
+        // Arrange
+        var value = (char)55;
+        byte[] buffer = new byte[Page.PageSize];
+        IPageBuffer pb = new PageBuffer(buffer, 0);
+        pb.Write(value, testIndex);
+
+        // Act
+        var actual = pb.ReadChar(testIndex);
+
+        // Assert
+        Assert.Equal(value, actual);
+    }
+
+    [Fact]
+    public void TestBuffer_WriteDecimal()
+    {
+        // Arrange
+        var value = (decimal)123.45;
+        byte[] buffer = new byte[Page.PageSize];
+        IPageBuffer pb = new PageBuffer(buffer, 0);
+        pb.Write(value, testIndex);
+
+        // Act
+        var actual = pb.ReadDecimal(testIndex);
+
+        // Assert
+        Assert.Equal(value, actual);
+    }
+
+    [Fact]
+    public void TestBuffer_WriteDouble()
+    {
+        // Arrange
+        var value = (double)123.45;
+        byte[] buffer = new byte[Page.PageSize];
+        IPageBuffer pb = new PageBuffer(buffer, 0);
+        pb.Write(value, testIndex);
+
+        // Act
+        var actual = pb.ReadDouble(testIndex);
+
+        // Assert
+        Assert.Equal(value, actual);
+    }
+
+    [Fact]
+    public void TestBuffer_WriteSingle()
+    {
+        // Arrange
+        var value = (Single)123.45;
+        byte[] buffer = new byte[Page.PageSize];
+        IPageBuffer pb = new PageBuffer(buffer, 0);
+        pb.Write(value, testIndex);
+
+        // Act
+        var actual = pb.ReadSingle(testIndex);
+
+        // Assert
+        Assert.Equal(value, actual);
+    }
+
+    [Fact]
+    public void TestBuffer_WriteInt16()
+    {
+        // Arrange
+        var value = (Int16)12345;
+        byte[] buffer = new byte[Page.PageSize];
+        IPageBuffer pb = new PageBuffer(buffer, 0);
+        pb.Write(value, testIndex);
+
+        // Act
+        var actual = pb.ReadInt16(testIndex);
+
+        // Assert
+        Assert.Equal(value, actual);
+    }
+
+    [Fact]
+    public void TestBuffer_WriteUInt16()
+    {
+        // Arrange
+        var value = (UInt16)12345;
+        byte[] buffer = new byte[Page.PageSize];
+        IPageBuffer pb = new PageBuffer(buffer, 0);
+        pb.Write(value, testIndex);
+
+        // Act
+        var actual = pb.ReadUInt16(testIndex);
+
+        // Assert
+        Assert.Equal(value, actual);
+    }
+
+    [Fact]
+    public void TestBuffer_WriteInt32()
+    {
+        // Arrange
+        var value = (Int32)12345;
+        byte[] buffer = new byte[Page.PageSize];
+        IPageBuffer pb = new PageBuffer(buffer, 0);
+        pb.Write(value, testIndex);
+
+        // Act
+        var actual = pb.ReadInt32(testIndex);
+
+        // Assert
+        Assert.Equal(value, actual);
+    }
+
+    [Fact]
+    public void TestBuffer_WriteUInt32()
+    {
+        // Arrange
+        var value = (UInt32)12345;
+        byte[] buffer = new byte[Page.PageSize];
+        IPageBuffer pb = new PageBuffer(buffer, 0);
+        pb.Write(value, testIndex);
+
+        // Act
+        var actual = pb.ReadUInt32(testIndex);
+
+        // Assert
+        Assert.Equal(value, actual);
+    }
+
+    [Fact]
+    public void TestBuffer_WriteInt64()
+    {
+        // Arrange
+        var value = (Int64)12345;
+        byte[] buffer = new byte[Page.PageSize];
+        IPageBuffer pb = new PageBuffer(buffer, 0);
+        pb.Write(value, testIndex);
+
+        // Act
+        var actual = pb.ReadInt64(testIndex);
+
+        // Assert
+        Assert.Equal(value, actual);
+    }
+
+    [Fact]
+    public void TestBuffer_WriteUInt64()
+    {
+        // Arrange
+        var value = (UInt64)12345;
+        byte[] buffer = new byte[Page.PageSize];
+        IPageBuffer pb = new PageBuffer(buffer, 0);
+        pb.Write(value, testIndex);
+
+        // Act
+        var actual = pb.ReadUInt64(testIndex);
+
+        // Assert
+        Assert.Equal(value, actual);
+    }
+
+    [Fact]
+    public void TestBuffer_WriteDateTime()
+    {
+        // Arrange
+        var value = DateTime.Now.Date;
+        byte[] buffer = new byte[Page.PageSize];
+        IPageBuffer pb = new PageBuffer(buffer, 0);
+        pb.Write(value, testIndex);
+
+        // Act
+        var actual = pb.ReadDateTime(testIndex);
+
+        // Assert
+        Assert.Equal(value, actual);
+    }
+
+    [Fact]
+    public void TestBuffer_WriteGuid()
+    {
+        // Arrange
+        var value = Guid.NewGuid();;
+        byte[] buffer = new byte[Page.PageSize];
+        IPageBuffer pb = new PageBuffer(buffer, 0);
+        pb.Write(value, testIndex);
+
+        // Act
+        var actual = pb.ReadGuid(testIndex);
+
+        // Assert
+        Assert.Equal(value, actual);
+    }
+
+    [Fact]
+    public void TestBuffer_WriteString()
+    {
+        // Arrange
+        var value = "foo bar";
+        byte[] buffer = new byte[Page.PageSize];
+        IPageBuffer pb = new PageBuffer(buffer, 0);
+        pb.Write(value, testIndex);
+
+        // Act
+        var actual = pb.ReadString(testIndex, value.Length);
+
+        // Assert
+        Assert.Equal(value, actual);
+    }
+
+    [Fact]
+    public void TestBuffer_WriteBlob()
+    {
+        // Arrange
+        var value = new byte[8] {55,55,55,55,55,55,55,55};
+        byte[] buffer = new byte[Page.PageSize];
+        IPageBuffer pb = new PageBuffer(buffer, 0);
+        pb.Write(value, testIndex);
+
+        // Act
+        var actual = pb.ReadBytes(testIndex, value.Length);
+
+        // Assert
+        Assert.Equal(value, actual);
+    }
 }
