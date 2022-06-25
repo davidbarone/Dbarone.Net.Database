@@ -61,6 +61,6 @@ public class TypeTests
         // Act
 
         // Assert
-        Assert.Equal(expected, Types.GetByType(type).IsFixedLength());
+        Assert.Equal(expected, Types.GetByType(type).IsFixedLength);
     }
 }

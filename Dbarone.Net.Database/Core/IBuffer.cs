@@ -1,9 +1,9 @@
 namespace Dbarone.Net.Database;
 
 /// <summary>
-/// Describes an in-memory page buffer.
+/// Describes operations that can be performed on a buffer.
 /// </summary>
-public interface IPageBuffer
+public interface IBuffer
 {
     /// <summary>
     /// Clears bytes in the buffer
@@ -21,10 +21,18 @@ public interface IPageBuffer
     public void Fill(int index, int length, byte value);
 
     /// <summary>
-    /// Returns a byte array representation of the PageBuffer.
+    /// Returns a byte array representation of the buffer.
     /// </summary>
     /// <returns></returns>
     public byte[] ToArray();
+
+    /// <summary>
+    /// Returns a slice of the byte array.
+    /// </summary>
+    /// <param name="index">The start of the byte array to return.</param>
+    /// <param name="length">The length of the byte array to return.</param>
+    /// <returns></returns>
+    public byte[] Slice(int index, int length);
 
     #region Read methods
 
@@ -67,6 +75,7 @@ public interface IPageBuffer
     public void Write(byte[] value, int index);
     public void Write(DateTime  value, int index);
     public void Write(string value, int index);
+    public void Write(object value, int index);
 
     #endregion
 

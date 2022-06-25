@@ -24,7 +24,7 @@ public class PageBufferTests
     {
         // Arrange
         byte[] buffer = new byte[Page.PageSize];
-        IPageBuffer pb = new PageBuffer(buffer, 0);
+        IBuffer pb = new PageBuffer(buffer, 0);
         pb.Write(true, testIndex);
 
         // Act
@@ -39,7 +39,7 @@ public class PageBufferTests
     {
         // Arrange
         byte[] buffer = new byte[Page.PageSize];
-        IPageBuffer pb = new PageBuffer(buffer, 0);
+        IBuffer pb = new PageBuffer(buffer, 0);
         pb.Write((byte)testValue, testIndex);
 
         // Act
@@ -55,7 +55,7 @@ public class PageBufferTests
         // Arrange
         var value = (SByte)55;
         byte[] buffer = new byte[Page.PageSize];
-        IPageBuffer pb = new PageBuffer(buffer, 0);
+        IBuffer pb = new PageBuffer(buffer, 0);
         pb.Write(value, testIndex);
 
         // Act
@@ -71,7 +71,7 @@ public class PageBufferTests
         // Arrange
         var value = (char)55;
         byte[] buffer = new byte[Page.PageSize];
-        IPageBuffer pb = new PageBuffer(buffer, 0);
+        IBuffer pb = new PageBuffer(buffer, 0);
         pb.Write(value, testIndex);
 
         // Act
@@ -87,7 +87,7 @@ public class PageBufferTests
         // Arrange
         var value = (decimal)123.45;
         byte[] buffer = new byte[Page.PageSize];
-        IPageBuffer pb = new PageBuffer(buffer, 0);
+        IBuffer pb = new PageBuffer(buffer, 0);
         pb.Write(value, testIndex);
 
         // Act
@@ -103,7 +103,7 @@ public class PageBufferTests
         // Arrange
         var value = (double)123.45;
         byte[] buffer = new byte[Page.PageSize];
-        IPageBuffer pb = new PageBuffer(buffer, 0);
+        IBuffer pb = new PageBuffer(buffer, 0);
         pb.Write(value, testIndex);
 
         // Act
@@ -119,7 +119,7 @@ public class PageBufferTests
         // Arrange
         var value = (Single)123.45;
         byte[] buffer = new byte[Page.PageSize];
-        IPageBuffer pb = new PageBuffer(buffer, 0);
+        IBuffer pb = new PageBuffer(buffer, 0);
         pb.Write(value, testIndex);
 
         // Act
@@ -135,7 +135,7 @@ public class PageBufferTests
         // Arrange
         var value = (Int16)12345;
         byte[] buffer = new byte[Page.PageSize];
-        IPageBuffer pb = new PageBuffer(buffer, 0);
+        IBuffer pb = new PageBuffer(buffer, 0);
         pb.Write(value, testIndex);
 
         // Act
@@ -151,7 +151,7 @@ public class PageBufferTests
         // Arrange
         var value = (UInt16)12345;
         byte[] buffer = new byte[Page.PageSize];
-        IPageBuffer pb = new PageBuffer(buffer, 0);
+        IBuffer pb = new PageBuffer(buffer, 0);
         pb.Write(value, testIndex);
 
         // Act
@@ -167,7 +167,7 @@ public class PageBufferTests
         // Arrange
         var value = (Int32)12345;
         byte[] buffer = new byte[Page.PageSize];
-        IPageBuffer pb = new PageBuffer(buffer, 0);
+        IBuffer pb = new PageBuffer(buffer, 0);
         pb.Write(value, testIndex);
 
         // Act
@@ -183,7 +183,7 @@ public class PageBufferTests
         // Arrange
         var value = (UInt32)12345;
         byte[] buffer = new byte[Page.PageSize];
-        IPageBuffer pb = new PageBuffer(buffer, 0);
+        IBuffer pb = new PageBuffer(buffer, 0);
         pb.Write(value, testIndex);
 
         // Act
@@ -199,7 +199,7 @@ public class PageBufferTests
         // Arrange
         var value = (Int64)12345;
         byte[] buffer = new byte[Page.PageSize];
-        IPageBuffer pb = new PageBuffer(buffer, 0);
+        IBuffer pb = new PageBuffer(buffer, 0);
         pb.Write(value, testIndex);
 
         // Act
@@ -215,7 +215,7 @@ public class PageBufferTests
         // Arrange
         var value = (UInt64)12345;
         byte[] buffer = new byte[Page.PageSize];
-        IPageBuffer pb = new PageBuffer(buffer, 0);
+        IBuffer pb = new PageBuffer(buffer, 0);
         pb.Write(value, testIndex);
 
         // Act
@@ -231,7 +231,7 @@ public class PageBufferTests
         // Arrange
         var value = DateTime.Now.Date;
         byte[] buffer = new byte[Page.PageSize];
-        IPageBuffer pb = new PageBuffer(buffer, 0);
+        IBuffer pb = new PageBuffer(buffer, 0);
         pb.Write(value, testIndex);
 
         // Act
@@ -247,7 +247,7 @@ public class PageBufferTests
         // Arrange
         var value = Guid.NewGuid();;
         byte[] buffer = new byte[Page.PageSize];
-        IPageBuffer pb = new PageBuffer(buffer, 0);
+        IBuffer pb = new PageBuffer(buffer, 0);
         pb.Write(value, testIndex);
 
         // Act
@@ -263,7 +263,7 @@ public class PageBufferTests
         // Arrange
         var value = "foo bar";
         byte[] buffer = new byte[Page.PageSize];
-        IPageBuffer pb = new PageBuffer(buffer, 0);
+        IBuffer pb = new PageBuffer(buffer, 0);
         pb.Write(value, testIndex);
 
         // Act
@@ -279,7 +279,7 @@ public class PageBufferTests
         // Arrange
         var value = new byte[8] {55,55,55,55,55,55,55,55};
         byte[] buffer = new byte[Page.PageSize];
-        IPageBuffer pb = new PageBuffer(buffer, 0);
+        IBuffer pb = new PageBuffer(buffer, 0);
         pb.Write(value, testIndex);
 
         // Act

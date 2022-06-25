@@ -1,6 +1,6 @@
 namespace Dbarone.Net.Database;
 
-public enum DatabaseType
+public enum DataType
 {
     Boolean = 1,
     Byte,
@@ -9,12 +9,12 @@ public enum DatabaseType
     Decimal,
     Double,
     Single,
+    Int16,
+    UInt16,
     Int32,
     UInt32,
     Int64,
     UInt64,
-    Int16,
-    UInt16,
     DateTime,
     String,
     Guid,
