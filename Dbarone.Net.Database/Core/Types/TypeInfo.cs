@@ -5,10 +5,10 @@ public class TypeInfo
 
     public DataType DataType { get; set; }
     public Type Type { get; set; }
-    public int Size { get; set; }
+    public short Size { get; set; }
     public bool IsFixedLength => Size > 0;
 
-    public TypeInfo(DataType dataType, Type type, int size)
+    public TypeInfo(DataType dataType, Type type, short size)
     {
         this.Size = size;
         this.Type = type;

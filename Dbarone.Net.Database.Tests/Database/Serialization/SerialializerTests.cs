@@ -7,9 +7,12 @@ public class SerializerTests
     public void Serializer_Serialize()
     {
         var entity = TestEntity.Create();
-        for (int i = 0; i < 100000; i++)
+        for (int i = 0; i < 1; i++)
         {
-            var bytes = new EntitySerializer().Serialize(entity);
+            var serializer = new EntitySerializer();
+            var columns = serializer.GetColumnInfo(typeof(TestEntity));
+            var bytes = serializer.Serialize(entity);
+            var entity2 = serializer.Deserialize<TestEntity>(columns, bytes);
         }
     }
 }

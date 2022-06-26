@@ -7,6 +7,7 @@ using System.Text;
 public class BufferBase : IBuffer
 {
     protected MemoryStream Stream;
+    byte[]? _buffer;
 
     public BufferBase()
     {
@@ -14,10 +15,17 @@ public class BufferBase : IBuffer
         this.Stream = new MemoryStream();    // for writing to the byte array without using pointers / unsafe code.
     }
 
+    public BufferBase(byte[] buffer)
+    {
+        // MemoryStream with fixed capacity buffer
+        this._buffer = buffer;
+        this.Stream = new MemoryStream(buffer);
+    }
+
     /// <summary>
     /// The internal byte array used for read and write operations.
     /// </summary>
-    protected virtual byte[] InternalBuffer { get { return Stream.GetBuffer(); } }
+    protected virtual byte[] InternalBuffer { get { return this._buffer!=null ? this._buffer : Stream.GetBuffer(); } }
 
     public virtual byte this[int index]
     {
@@ -147,6 +155,50 @@ public class BufferBase : IBuffer
     public string ReadString(int index, int length)
     {
         return Encoding.UTF8.GetString(InternalBuffer, index, length);
+    }
+
+    public object Read(DataType dataType, int index, int? length = null)
+    {
+        switch (dataType)
+        {
+            case DataType.Boolean:
+                return ReadBool(index);
+            case DataType.Byte:
+                return ReadByte(index);
+            case DataType.SByte:
+                return ReadSByte(index);
+            case DataType.Char:
+                return ReadChar(index);
+            case DataType.Decimal:
+                return ReadDecimal(index);
+            case DataType.Double:
+                return ReadDouble(index);
+            case DataType.Single:
+                return ReadSingle(index);
+            case DataType.Int16:
+                return ReadInt16(index);
+            case DataType.UInt16:
+                return ReadUInt16(index);
+            case DataType.Int32:
+                return ReadInt32(index);
+            case DataType.UInt32:
+                return ReadUInt32(index);
+            case DataType.Int64:
+                return ReadInt64(index);
+            case DataType.UInt64:
+                return ReadUInt64(index);
+            case DataType.DateTime:
+                return ReadDateTime(index);
+            case DataType.String:
+                if (length == null) { throw new Exception("Length required (1)."); }
+                return ReadString(index, length.Value);
+            case DataType.Guid:
+                return ReadGuid(index);
+            case DataType.Blob:
+                if (length == null) { throw new Exception("Length required (2)."); }
+                return ReadBytes(index, length.Value);
+        }
+        throw new Exception($"Invalid data type.");
     }
 
     #endregion

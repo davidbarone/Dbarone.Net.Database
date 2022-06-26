@@ -53,6 +53,7 @@ public interface IBuffer
     public byte[] ReadBytes(int index, int length);
     public DateTime ReadDateTime(int index);
     public string ReadString(int index, int length);
+    public object Read(DataType dataType, int index, int? length = null);
 
     #endregion
 
