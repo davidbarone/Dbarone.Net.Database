@@ -45,8 +45,6 @@ public class EntitySerializer
 
     public T Deserialize<T>(IEnumerable<ColumnInfo> columns, byte[] buffer)
     {
-        IBuffer _buffer = new BufferBase(buffer);
-
         T obj = Activator.CreateInstance<T>();
         if (obj == null)
         {
@@ -59,20 +57,20 @@ public class EntitySerializer
         IBuffer bb = new BufferBase(buffer);
         var totalColumns = bb.ReadInt16(0);
         var fixedLengthColumns = bb.ReadInt16(2);
-        var fixedLength = bb.ReadInt16(4);
+        short fixedLength = bb.ReadInt16(4);
         short startFixedLength = 6;
         short index = startFixedLength;
 
         foreach (var col in fixedColumns)
         {
             var prop = props.First(p => p.Name.Equals(col.ColumnName));
-            var value = _buffer.Read(col.DataType, index);
+            var value = bb.Read(col.DataType, index);
             prop.SetValue(obj, value);
             index += Types.GetByDataType(col.DataType).Size;
         }
 
         // Check fixed data length is correct
-        Assert.Equals(index - startFixedLength, fixedLength);
+        Assert.Equals((short)(index - startFixedLength), fixedLength);
 
         // number of variable length columns
         var variableLengthCount = bb.ReadInt16(index);
@@ -93,7 +91,7 @@ public class EntitySerializer
             index += variableLengthLengths[i];
         }
 
-        Assert.Equals(totalColumns, fixedLengthColumns + variableLengthCount);
+        Assert.Equals(totalColumns, (short)(fixedLengthColumns + variableLengthCount));
 
         return (T)obj;
     }
@@ -106,25 +104,25 @@ public class EntitySerializer
     /// <returns></returns>
     public byte[] Serialize(IEnumerable<ColumnInfo> columns, object obj)
     {
-        var _buffer = new BufferBase();
+        var buffer = new BufferBase();
 
         var fixedColumns = columns.Where(c => Types.GetByDataType(c.DataType).IsFixedLength).OrderBy(c => c.Order);
         var variableColumns = columns.Where(c => !Types.GetByDataType(c.DataType).IsFixedLength).OrderBy(c => c.Order);
-        int index = 0;
+        short index = 0;
         var props = obj.GetType().GetProperties();
 
         // Total columns
-        int totalColumns = (short)columns.Count();
-        _buffer.Write(totalColumns, index);
-        index = index + (Types.GetByDataType(DataType.Int16).Size);
+        short totalColumns = (short)columns.Count();
+        buffer.Write(totalColumns, index);
+        index += (Types.GetByDataType(DataType.Int16).Size);
 
         // Fixed length columns
         int fixedLengthColumns = (short)fixedColumns.Count();
-        _buffer.Write(fixedLengthColumns, index);
-        index = index + (Types.GetByDataType(DataType.Int16).Size);
+        buffer.Write(fixedLengthColumns, index);
+        index += (Types.GetByDataType(DataType.Int16).Size);
 
         // Fixed data length
-        index = index + (Types.GetByDataType(DataType.Int16).Size);
+        index += Types.GetByDataType(DataType.Int16).Size;
         var fixedDataLengthOffset = index;
 
         // Write all the fixed length columns
@@ -132,21 +130,21 @@ public class EntitySerializer
         {
             var prop = props.First(p => p.Name.Equals(col.ColumnName));
             var value = prop.GetValue(obj);
-            _buffer.Write(value, index);
-            index = index + (Types.GetByType(prop.PropertyType).Size);
+            buffer.Write(value, index);
+            index += (Types.GetByType(prop.PropertyType).Size);
         }
 
         // write the fixed data length
-        _buffer.Write((short)(index - fixedDataLengthOffset), 4);
+        buffer.Write((short)(index - fixedDataLengthOffset), 4);
 
         // Number of variable length columns
-        int variableLengthColumns = (short)fixedColumns.Count();
-        _buffer.Write(variableLengthColumns, index);
-        index = index + (Types.GetByDataType(DataType.Int16).Size);
+        short variableLengthColumns = (short)variableColumns.Count();
+        buffer.Write(variableLengthColumns, index);
+        index += (Types.GetByDataType(DataType.Int16).Size);
 
         // variable length offsets
         var variableLengthOffsetTable = index;
-        index = index + (variableLengthColumns * (Types.GetByDataType(DataType.Int16)).Size);
+        index += (short)(variableLengthColumns * (Types.GetByDataType(DataType.Int16)).Size);
 
         List<int> variableSizes = new List<int>();
         List<object> variableValues = new List<object>();
@@ -157,8 +155,8 @@ public class EntitySerializer
             var size = Types.SizeOf(value);
             variableSizes.Add(size);
             variableValues.Add(value);
-            _buffer.Write(value, index);
-            index = index + size;
+            buffer.Write(value, index);
+            index += size;
         }
         // Final size
         var finalSize = index;
@@ -171,9 +169,9 @@ public class EntitySerializer
             {
                 offset += variableSizes[j];
             }
-            _buffer.Write(offset, variableLengthColumns + (i * (Types.GetByDataType(DataType.Int32)).Size));
+            buffer.Write(offset, variableLengthOffsetTable + (i * (Types.GetByDataType(DataType.Int32)).Size));
         }
 
-        return _buffer.Slice(0, finalSize);
+        return buffer.Slice(0, finalSize);
     }
 }

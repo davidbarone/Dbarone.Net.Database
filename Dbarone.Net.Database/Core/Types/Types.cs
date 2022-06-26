@@ -24,15 +24,15 @@ public class Types
     /// </summary>
     /// <param name="obj">The object to determine the size of.</param>
     /// <returns></returns>
-    public static int SizeOf(object obj)
+    public static short SizeOf(object obj)
     {
         var typeInfo = GetByType(obj.GetType());
         if (typeInfo.IsFixedLength){
             return typeInfo.Size;
         } else if (typeInfo.DataType==DataType.String){
-            return ((string)obj).Length;
+            return (short)((string)obj).Length;
         } else if (typeInfo.DataType==DataType.Blob){
-            return ((byte[])obj).Length;
+            return (short)((byte[])obj).Length;
         } else {
             throw new Exception($"Invalid object type: {obj.GetType().Name}");
         }
@@ -44,7 +44,7 @@ public class Types
             {typeof(bool), new TypeInfo(DataType.Boolean, typeof(bool), 1)},
             {typeof(byte), new TypeInfo(DataType.Byte, typeof(byte), 1)},
             {typeof(sbyte), new TypeInfo(DataType.SByte, typeof(sbyte), 1)},
-            {typeof(char), new TypeInfo(DataType.Char, typeof(char), 1)},
+            {typeof(char), new TypeInfo(DataType.Char, typeof(char), 2)},
             {typeof(decimal), new TypeInfo(DataType.Decimal, typeof(decimal), 16)},
             {typeof(double), new TypeInfo(DataType.Double, typeof(double), 8)},
             {typeof(float), new TypeInfo(DataType.Single, typeof(float), 4)},
