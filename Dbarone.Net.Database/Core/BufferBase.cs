@@ -83,7 +83,7 @@ public class BufferBase : IBuffer
 
     public char ReadChar(int index)
     {
-        return (char)InternalBuffer[index];
+        return BitConverter.ToChar(InternalBuffer, index);
     }
 
     public Int16 ReadInt16(int index)
