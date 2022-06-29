@@ -6,7 +6,6 @@ using System.Text;
 /// </summary>
 public class PageBuffer : BufferBase, IBuffer
 {
-    private byte[] _buffer;
     private int _pageId;
     private uint _pageSize = 8192;
 
@@ -18,10 +17,8 @@ public class PageBuffer : BufferBase, IBuffer
         }
     }
 
-    public PageBuffer(byte[] buffer, int pageId) : base()
+    public PageBuffer(byte[] buffer, int pageId) : base(buffer)
     {
-        this._buffer = buffer;
-        this.Stream = new MemoryStream(buffer);    // for writing to the byte array without using pointers / unsafe code.
         this._pageId = pageId;
     }
 

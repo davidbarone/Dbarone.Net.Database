@@ -99,6 +99,7 @@ public class EntitySerializer
     public SerializationParams GetParams(IEnumerable<ColumnInfo> columns, object obj)
     {
         SerializationParams parms = new SerializationParams();
+        var props = obj.GetType().GetProperties();
 
         var fixedColumns = columns.Where(c => Types.GetByDataType(c.DataType).IsFixedLength).OrderBy(c => c.Order);
         var variableColumns = columns.Where(c => !Types.GetByDataType(c.DataType).IsFixedLength).OrderBy(c => c.Order);
@@ -107,42 +108,30 @@ public class EntitySerializer
         parms.FixedCount = (short)fixedColumns.Count();
         parms.VariableCount = (short)variableColumns.Count();
         parms.FixedSize = (short)fixedColumns.Sum(f => Types.GetByDataType(f.DataType).Size);
-        parms.VariableSizes = new Dictionary<string, short>();
-        foreach (var item in variableColumns){
-            parms.VariableSizes.Add(item.ColumnName, )
-        }
-
-
-        List<short> variableSizes = new List<short>();
-        List<object> variableValues = new List<object>();
-        foreach (var col in variableColumns)
+        parms.FixedColumns = new List<ColumnSerializationInfo>();
+        foreach (var item in fixedColumns)
         {
-            var prop = props.First(p => p.Name.Equals(col.ColumnName));
-            var value = prop.GetValue(obj);
-            var size = Types.SizeOf(value);
-            variableSizes.Add(size);
-            variableValues.Add(value);
-            buffer.Write(value, index);
-            index += size;
+            ColumnSerializationInfo csi = new ColumnSerializationInfo();
+            var prop = props.First(p => p.Name.Equals(item.ColumnName));
+            csi.ColumnName = item.ColumnName;
+            csi.Value = prop.GetValue(obj);
+            csi.Size = Types.GetByType(prop.PropertyType).Size;
+            parms.FixedColumns.Add(csi);
         }
-        // Final size
-        var finalSize = index;
-
-        // Go back and write the variable offsets table
-        for (int i = 0; i < variableSizes.Count(); i++)
+        parms.VariableColumns = new List<ColumnSerializationInfo>();
+        foreach (var item in variableColumns)
         {
-            var offset = 0;
-            for (int j = 0; j < i; j++)
-            {
-                offset += variableSizes[j];
-            }
-            //buffer.Write(offset, variableLengthOffsetTable + (i * (Types.GetByDataType(DataType.Int32)).Size));
-            buffer.Write(variableSizes[i], variableLengthOffsetTable + (i * (Types.GetByDataType(DataType.Int16)).Size));
+            ColumnSerializationInfo csi = new ColumnSerializationInfo();
+            var prop = props.First(p => p.Name.Equals(item.ColumnName));
+            csi.ColumnName = item.ColumnName;
+            csi.Value = prop.GetValue(obj);
+            csi.Size = Types.SizeOf(csi.Value);
+            parms.VariableColumns.Add(csi);
         }
+        parms.VariableSize = (short)parms.VariableColumns.Sum(c => c.Size);
+        parms.TotalSize = (short)(parms.FixedSize + parms.VariableSize);
 
-        return buffer.Slice(0, finalSize);
-
-
+        return parms;
     }
 
     /// <summary>
@@ -153,75 +142,59 @@ public class EntitySerializer
     /// <returns></returns>
     public byte[] Serialize(IEnumerable<ColumnInfo> columns, object obj)
     {
-        var buffer = new BufferBase();
+        // Get serialization parameters
+        var parms = GetParams(columns, obj);
 
-        var fixedColumns = columns.Where(c => Types.GetByDataType(c.DataType).IsFixedLength).OrderBy(c => c.Order);
-        var variableColumns = columns.Where(c => !Types.GetByDataType(c.DataType).IsFixedLength).OrderBy(c => c.Order);
+        // Additional info stored
+        // Total Columns (2 bytes)
+        // Fixed Length Columns (2 bytes)
+        // Fixed Length size (2 bytes)
+        // Variable Length Columns (2 bytes)
+        // Variable Length Table (2 bytes * variable columns)
+        var shortSize = Types.GetByDataType(DataType.UInt16).Size;
+        var bufferSize = parms.TotalSize + (4 * shortSize) + (shortSize * parms.VariableCount);
+        var buffer = new BufferBase(new byte[bufferSize]);
+
         short index = 0;
-        var props = obj.GetType().GetProperties();
 
         // Total columns
-        short totalColumns = (short)columns.Count();
-        buffer.Write(totalColumns, index);
+        buffer.Write(parms.TotalCount, index);
         index += (Types.GetByDataType(DataType.Int16).Size);
 
         // Fixed length columns
-        int fixedLengthColumns = (short)fixedColumns.Count();
-        buffer.Write(fixedLengthColumns, index);
+        buffer.Write(parms.FixedCount, index);
         index += (Types.GetByDataType(DataType.Int16).Size);
 
         // Fixed data length
+        buffer.Write(parms.FixedSize, index);
         index += Types.GetByDataType(DataType.Int16).Size;
-        var fixedDataLengthOffset = index;
 
         // Write all the fixed length columns
-        foreach (var col in fixedColumns)
+        var fixedDataLengthOffset = index;
+        foreach (var item in parms.FixedColumns)
         {
-            var prop = props.First(p => p.Name.Equals(col.ColumnName));
-            var value = prop.GetValue(obj);
-            buffer.Write(value, index);
-            index += (Types.GetByType(prop.PropertyType).Size);
+            buffer.Write(item.Value, index);
+            index += item.Size;
         }
 
-        // write the fixed data length
-        buffer.Write((short)(index - fixedDataLengthOffset), 4);
-
         // Number of variable length columns
-        short variableLengthColumns = (short)variableColumns.Count();
-        buffer.Write(variableLengthColumns, index);
+        buffer.Write(parms.VariableCount, index);
         index += (Types.GetByDataType(DataType.Int16).Size);
 
         // variable length offsets
-        var variableLengthOffsetTable = index;
-        index += (short)(variableLengthColumns * (Types.GetByDataType(DataType.Int16)).Size);
-
-        List<short> variableSizes = new List<short>();
-        List<object> variableValues = new List<object>();
-        foreach (var col in variableColumns)
+        for (var i = 0; i < parms.VariableCount; i++)
         {
-            var prop = props.First(p => p.Name.Equals(col.ColumnName));
-            var value = prop.GetValue(obj);
-            var size = Types.SizeOf(value);
-            variableSizes.Add(size);
-            variableValues.Add(value);
-            buffer.Write(value, index);
-            index += size;
-        }
-        // Final size
-        var finalSize = index;
-
-        // Go back and write the variable offsets table
-        for (int i = 0; i < variableSizes.Count(); i++)
-        {
-            var offset = 0;
-            for (int j = 0; j < i; j++)
-            {
-                offset += variableSizes[j];
-            }
-            //buffer.Write(offset, variableLengthOffsetTable + (i * (Types.GetByDataType(DataType.Int32)).Size));
-            buffer.Write(variableSizes[i], variableLengthOffsetTable + (i * (Types.GetByDataType(DataType.Int16)).Size));
+            buffer.Write(parms.VariableColumns[i].Size, index);
+            index += (Types.GetByDataType(DataType.Int16).Size);
         }
 
-        return buffer.Slice(0, finalSize);
+        // variable values
+        foreach (var item in parms.VariableColumns)
+        {
+            buffer.Write(item.Value, index);
+            index += item.Size;
+        }
+
+        return buffer.ToArray();
     }
 }

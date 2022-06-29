@@ -2,18 +2,12 @@ namespace Dbarone.Net.Database;
 using System.Text;
 
 /// <summary>
-/// Represents a generic memory buffer. The buffer auto grows as data is written past EOF.
+/// Represents a generic memory buffer.
 /// </summary>
 public class BufferBase : IBuffer
 {
     protected MemoryStream Stream;
-    byte[]? _buffer;
-
-    public BufferBase()
-    {
-        // MemoryStream with autogrowth
-        this.Stream = new MemoryStream();    // for writing to the byte array without using pointers / unsafe code.
-    }
+    protected byte[] _buffer;
 
     public BufferBase(byte[] buffer)
     {
@@ -25,7 +19,7 @@ public class BufferBase : IBuffer
     /// <summary>
     /// The internal byte array used for read and write operations.
     /// </summary>
-    protected virtual byte[] InternalBuffer { get { return this._buffer!=null ? this._buffer : Stream.GetBuffer(); } }
+    protected virtual byte[] InternalBuffer { get { return this._buffer; } }
 
     public virtual byte this[int index]
     {
