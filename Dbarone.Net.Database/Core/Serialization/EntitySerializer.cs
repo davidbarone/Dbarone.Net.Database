@@ -96,6 +96,55 @@ public class EntitySerializer
         return (T)obj;
     }
 
+    public SerializationParams GetParams(IEnumerable<ColumnInfo> columns, object obj)
+    {
+        SerializationParams parms = new SerializationParams();
+
+        var fixedColumns = columns.Where(c => Types.GetByDataType(c.DataType).IsFixedLength).OrderBy(c => c.Order);
+        var variableColumns = columns.Where(c => !Types.GetByDataType(c.DataType).IsFixedLength).OrderBy(c => c.Order);
+
+        parms.TotalCount = (short)columns.Count();
+        parms.FixedCount = (short)fixedColumns.Count();
+        parms.VariableCount = (short)variableColumns.Count();
+        parms.FixedSize = (short)fixedColumns.Sum(f => Types.GetByDataType(f.DataType).Size);
+        parms.VariableSizes = new Dictionary<string, short>();
+        foreach (var item in variableColumns){
+            parms.VariableSizes.Add(item.ColumnName, )
+        }
+
+
+        List<short> variableSizes = new List<short>();
+        List<object> variableValues = new List<object>();
+        foreach (var col in variableColumns)
+        {
+            var prop = props.First(p => p.Name.Equals(col.ColumnName));
+            var value = prop.GetValue(obj);
+            var size = Types.SizeOf(value);
+            variableSizes.Add(size);
+            variableValues.Add(value);
+            buffer.Write(value, index);
+            index += size;
+        }
+        // Final size
+        var finalSize = index;
+
+        // Go back and write the variable offsets table
+        for (int i = 0; i < variableSizes.Count(); i++)
+        {
+            var offset = 0;
+            for (int j = 0; j < i; j++)
+            {
+                offset += variableSizes[j];
+            }
+            //buffer.Write(offset, variableLengthOffsetTable + (i * (Types.GetByDataType(DataType.Int32)).Size));
+            buffer.Write(variableSizes[i], variableLengthOffsetTable + (i * (Types.GetByDataType(DataType.Int16)).Size));
+        }
+
+        return buffer.Slice(0, finalSize);
+
+
+    }
+
     /// <summary>
     /// Serialises an object to a byte array which can be stored on disk
     /// </summary>
@@ -146,7 +195,7 @@ public class EntitySerializer
         var variableLengthOffsetTable = index;
         index += (short)(variableLengthColumns * (Types.GetByDataType(DataType.Int16)).Size);
 
-        List<int> variableSizes = new List<int>();
+        List<short> variableSizes = new List<short>();
         List<object> variableValues = new List<object>();
         foreach (var col in variableColumns)
         {
@@ -169,7 +218,8 @@ public class EntitySerializer
             {
                 offset += variableSizes[j];
             }
-            buffer.Write(offset, variableLengthOffsetTable + (i * (Types.GetByDataType(DataType.Int32)).Size));
+            //buffer.Write(offset, variableLengthOffsetTable + (i * (Types.GetByDataType(DataType.Int32)).Size));
+            buffer.Write(variableSizes[i], variableLengthOffsetTable + (i * (Types.GetByDataType(DataType.Int16)).Size));
         }
 
         return buffer.Slice(0, finalSize);
