@@ -11,7 +11,7 @@ public class TypeTests
     [InlineData(typeof(bool), 1)]
     [InlineData(typeof(byte), 1)]
     [InlineData(typeof(sbyte), 1)]
-    [InlineData(typeof(char), 1)]
+    [InlineData(typeof(char), 2)]
     [InlineData(typeof(decimal), 16)]
     [InlineData(typeof(double), 8)]
     [InlineData(typeof(float), 4)]
@@ -23,8 +23,8 @@ public class TypeTests
     [InlineData(typeof(ushort), 2)]
     [InlineData(typeof(Guid), 16)]
     [InlineData(typeof(DateTime), 8)]
-    [InlineData(typeof(string), -1)]
-    [InlineData(typeof(byte[]), -1)]
+    [InlineData(typeof(string), 0)]
+    [InlineData(typeof(byte[]), 0)]
     public void TestTypes_HaveCorrectSize(Type type, int expectedSize)
     {
 

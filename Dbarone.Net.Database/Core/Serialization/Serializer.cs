@@ -52,13 +52,14 @@ public class Serializer
 
         IBuffer bb = new BufferBase(buffer);
         var totalColumns = bb.ReadUInt16(0);
-        var totalLength = bb.ReadUInt16(2);
+        var bufferLength = bb.ReadUInt16(2);
+        var totalLength = bb.ReadUInt16(4);
 
-        Assert.Equals(buffer.Length, totalLength);  // Buffer should be the exact length of the value being deserialized.
+        Assert.Equals((ushort)buffer.Length, bufferLength);
 
-        var fixedLengthColumns = bb.ReadUInt16(4);
-        ushort fixedLength = bb.ReadUInt16(6);
-        ushort startFixedLength = 8;
+        var fixedLengthColumns = bb.ReadUInt16(6);
+        ushort fixedLength = bb.ReadUInt16(8);
+        ushort startFixedLength = 10;
         ushort index = startFixedLength;
 
         foreach (var col in fixedColumns)
@@ -70,7 +71,7 @@ public class Serializer
         }
 
         // Check fixed data length is correct
-        Assert.Equals((short)(index - startFixedLength), fixedLength);
+        Assert.Equals((ushort)(index - startFixedLength), fixedLength);
 
         // number of variable length columns
         var variableLengthCount = bb.ReadUInt16(index);
@@ -158,18 +159,24 @@ public class Serializer
 
         // Additional info stored
         // Total Columns (2 bytes)
+        // BufferLength (2 bytes)     // includes metadata fields
+        // Total Length (2 bytes)   // Just size of data
         // Fixed Length Columns (2 bytes)
         // Fixed Length size (2 bytes)
         // Variable Length Columns (2 bytes)
         // Variable Length Table (2 bytes * variable columns)
-        var shortSize = Types.GetByDataType(DataType.UInt16).Size;
-        var bufferSize = parms.TotalSize + (4 * shortSize) + (shortSize * parms.VariableCount);
+        var ushortSize = Types.GetByDataType(DataType.UInt16).Size;
+        var bufferSize = parms.TotalSize + (6 * ushortSize) + (ushortSize * parms.VariableCount);
         var buffer = new BufferBase(new byte[bufferSize]);
 
         ushort index = 0;
 
         // Total columns
         buffer.Write(parms.TotalCount, index);
+        index += (Types.GetByDataType(DataType.UInt16).Size);
+
+        // Buffer size
+        buffer.Write(bufferSize, index);
         index += (Types.GetByDataType(DataType.UInt16).Size);
 
         // Total size
