@@ -3,7 +3,7 @@ namespace Dbarone.Net.Database;
 /// <summary>
 /// The item data for the SystemColumnPage type.
 /// </summary>
-public class SystemColumnData : PageData  {
+public class SystemColumnPageData : PageData  {
     public string TableName { get; set; } = default!;
     public string ColumnName { get; set; } = default!;
     public int Order { get; set; }

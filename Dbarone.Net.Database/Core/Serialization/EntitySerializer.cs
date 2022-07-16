@@ -37,22 +37,16 @@ public class EntitySerializer
         return columns;
     }
 
-    public T Deserialize<T>(byte[] buffer) {
-        var columns = GetColumnInfo(typeof(T));
-        return Deserialize<T>(columns, buffer);
+    public T Deserialize<T>(byte[] buffer)
+    {
+        return (T)Deserialize(typeof(T), buffer);
     }
 
-    /// <summary>
-    /// Deserializes a byte array to an object.
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="columns"></param>
-    /// <param name="buffer"></param>
-    /// <returns></returns>
-    /// <exception cref="Exception"></exception>
-    public T Deserialize<T>(IEnumerable<ColumnInfo> columns, byte[] buffer)
+    public object Deserialize(Type type, byte[] buffer)
     {
-        T obj = Activator.CreateInstance<T>();
+        var columns = GetColumnInfo(type);
+
+        object? obj = Activator.CreateInstance(type);
         if (obj == null)
         {
             throw new Exception("Error creating object");
@@ -64,9 +58,9 @@ public class EntitySerializer
         IBuffer bb = new BufferBase(buffer);
         var totalColumns = bb.ReadUInt16(0);
         var totalLength = bb.ReadUInt16(2);
-        
+
         Assert.Equals(buffer.Length, totalLength);  // Buffer should be the exact length of the value being deserialized.
-        
+
         var fixedLengthColumns = bb.ReadUInt16(4);
         ushort fixedLength = bb.ReadUInt16(6);
         ushort startFixedLength = 8;
@@ -104,7 +98,7 @@ public class EntitySerializer
 
         Assert.Equals(totalColumns, (ushort)(fixedLengthColumns + variableLengthCount));
 
-        return (T)obj;
+        return obj;
     }
 
     private SerializationParams GetParams(IEnumerable<ColumnInfo> columns, object obj)

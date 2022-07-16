@@ -14,9 +14,9 @@ public class Database : IDatabase
         var page0 = this._engine.GetPage<BootPage>(0);
         return new DatabaseInfo
         {
-            Magic = page0.Magic,
-            Version = page0.Version,
-            CreationTime = page0.CreationTime
+            Magic = page0.Headers().Magic,
+            Version = page0.Headers().Version,
+            CreationTime = page0.Headers().CreationTime
         };
     }
 

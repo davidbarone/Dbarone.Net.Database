@@ -11,7 +11,7 @@ public class Engine : IEngine
     private DiskService _diskService;
     private BufferManager _bufferManager;
 
-    public T GetPage<T>(int pageId) where T : Page<PageHeader, PageData>
+    public T GetPage<T>(int pageId) where T : Page
     {
         return this._bufferManager.GetPage<T>(pageId);
     }

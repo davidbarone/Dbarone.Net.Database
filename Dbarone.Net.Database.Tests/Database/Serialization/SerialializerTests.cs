@@ -12,7 +12,7 @@ public class SerializerTests
             var serializer = new EntitySerializer();
             var columns = serializer.GetColumnInfo(typeof(TestEntity));
             var bytes = serializer.Serialize(entity);
-            var entity2 = serializer.Deserialize<TestEntity>(columns, bytes);
+            var entity2 = serializer.Deserialize<TestEntity>(bytes);
         }
     }
 }

@@ -1,3 +1,5 @@
+namespace Dbarone.Net.Database;
+
 /// <summary>
 /// Base header information for all pages.
 /// </summary>
