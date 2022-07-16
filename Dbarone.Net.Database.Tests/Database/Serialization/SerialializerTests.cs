@@ -9,10 +9,9 @@ public class SerializerTests
         var entity = TestEntity.Create();
         for (int i = 0; i < 1; i++)
         {
-            var serializer = new EntitySerializer();
-            var columns = serializer.GetColumnInfo(typeof(TestEntity));
-            var bytes = serializer.Serialize(entity);
-            var entity2 = serializer.Deserialize<TestEntity>(bytes);
+            var columns = Serializer.GetColumnInfo(typeof(TestEntity));
+            var bytes = Serializer.Serialize(entity);
+            var entity2 = Serializer.Deserialize<TestEntity>(bytes);
         }
     }
 }

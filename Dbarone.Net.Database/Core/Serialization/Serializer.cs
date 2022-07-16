@@ -4,19 +4,14 @@ using Dbarone.Net.Assertions;
 /// <summary>
 /// Serializes and deserializes .NET objects to and from byte[] arrays.
 /// </summary>
-public class EntitySerializer
+public class Serializer
 {
-    public EntitySerializer()
-    {
-
-    }
-
     /// <summary>
     /// Gets the column information for an entity type.
     /// </summary>
     /// <param name="type"></param>
     /// <returns></returns>
-    public IEnumerable<ColumnInfo> GetColumnInfo(Type type)
+    public static IEnumerable<ColumnInfo> GetColumnInfo(Type type)
     {
         List<ColumnInfo> columns = new List<ColumnInfo>();
         var properties = type.GetProperties();
@@ -37,12 +32,12 @@ public class EntitySerializer
         return columns;
     }
 
-    public T Deserialize<T>(byte[] buffer)
+    public static T Deserialize<T>(byte[] buffer)
     {
         return (T)Deserialize(typeof(T), buffer);
     }
 
-    public object Deserialize(Type type, byte[] buffer)
+    public static object Deserialize(Type type, byte[] buffer)
     {
         var columns = GetColumnInfo(type);
 
@@ -101,7 +96,7 @@ public class EntitySerializer
         return obj;
     }
 
-    private SerializationParams GetParams(IEnumerable<ColumnInfo> columns, object obj)
+    private static SerializationParams GetParams(IEnumerable<ColumnInfo> columns, object obj)
     {
         SerializationParams parms = new SerializationParams();
         var props = obj.GetType().GetProperties();
@@ -144,7 +139,7 @@ public class EntitySerializer
     /// </summary>
     /// <param name="obj">The object to serialize.</param>
     /// <returns>A byte array representing the object.</returns>
-    public byte[] Serialize(object obj)
+    public static byte[] Serialize(object obj)
     {
         var columnInfo = GetColumnInfo(obj.GetType());
         return Serialize(columnInfo, obj);
@@ -156,7 +151,7 @@ public class EntitySerializer
     /// <param name="columns">The column metadata for the object to serialize.</param>
     /// <param name="obj">The object to serialize.</param>
     /// <returns>A byte array representing the object.</returns>
-    public byte[] Serialize(IEnumerable<ColumnInfo> columns, object obj)
+    public static byte[] Serialize(IEnumerable<ColumnInfo> columns, object obj)
     {
         // Get serialization parameters
         var parms = GetParams(columns, obj);

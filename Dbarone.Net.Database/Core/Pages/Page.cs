@@ -38,7 +38,7 @@ public class Page
     private void Hydrate(PageBuffer buffer)
     {
         // Hydrate Headers
-        this._headers = (PageHeader)new EntitySerializer().Deserialize(this.PageHeaderType, buffer.ToArray());
+        this._headers = (PageHeader)Serializer.Deserialize(this.PageHeaderType, buffer.ToArray());
 
         // Hydrate slots
         var slotIndex = Page.PageSize - 2;
@@ -51,7 +51,7 @@ public class Page
             // totalLength is the second UInt from start.
             var totalLength = buffer.ReadUInt16(dataIndex + Types.GetByDataType(DataType.UInt16).Size);
             var b = buffer.Slice(dataIndex, totalLength);
-            var item = (PageData)new EntitySerializer().Deserialize(this.PageDataType, b);
+            var item = (PageData)Serializer.Deserialize(this.PageDataType, b);
             this._data.Add(item);
 
             slotIndex = slotIndex - 2;
@@ -83,7 +83,7 @@ public class Page
         PageBuffer buffer = new PageBuffer(b, this._headers.PageId);
 
         // Headers
-        var headerBytes = new EntitySerializer().Serialize(this.Headers());
+        var headerBytes = Serializer.Serialize(this.Headers());
         Assert.NotGreaterThan(96, headerBytes.Length);
         buffer.Write(headerBytes, 0);
 
@@ -97,7 +97,7 @@ public class Page
 
             // Serialize data
             // totalLength is the second UInt from start.
-            var dataBytes = new EntitySerializer().Serialize(data[slot]);
+            var dataBytes = Serializer.Serialize(data[slot]);
             buffer.Write(dataBytes, dataIndex);
 
             slotIndex = slotIndex - 2;
