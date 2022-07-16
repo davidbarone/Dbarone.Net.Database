@@ -20,5 +20,10 @@ public enum PageType : int
     /// <summary>
     /// A page type that stores table metadata.
     /// </summary>
-    TableHeader = 4
+    SystemTable = 4,
+
+    /// <summary>
+    /// A page type that stores table metadata.
+    /// </summary>
+    SystemColumn = 5,
 }

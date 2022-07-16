@@ -11,7 +11,7 @@ public class BufferManager
     }
 
     private DiskService _diskService;
-    private Dictionary<int, Page> _pages = new Dictionary<int, Page>();
+    private Dictionary<int, Page<PageHeader,object>> _pages = new Dictionary<int, Page<PageHeader,object>>();
 
     /// <summary>
     /// Gets a page from the buffer cache. If page not present, reads from disk
