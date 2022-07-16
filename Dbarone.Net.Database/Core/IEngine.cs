@@ -10,5 +10,5 @@ public interface IEngine : IDisposable
     /// </summary>
     /// <param name="pageId"></param>
     /// <returns></returns>
-    T GetPage<T>(int pageId) where T : Page;
+    T GetPage<T>(int pageId) where T : Page<PageHeader, PageData>;
 }

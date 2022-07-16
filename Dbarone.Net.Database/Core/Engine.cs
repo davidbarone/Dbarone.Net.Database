@@ -11,7 +11,8 @@ public class Engine : IEngine
     private DiskService _diskService;
     private BufferManager _bufferManager;
 
-    public T GetPage<T>(int pageId) where T:Page {
+    public T GetPage<T>(int pageId) where T : Page<PageHeader, PageData>
+    {
         return this._bufferManager.GetPage<T>(pageId);
     }
 
@@ -52,7 +53,8 @@ public class Engine : IEngine
 
     public void Dispose()
     {
-        if (this._stream !=null){
+        if (this._stream != null)
+        {
             //this._stream.Close();
             this._stream.Dispose();
         }

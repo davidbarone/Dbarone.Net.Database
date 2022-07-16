@@ -29,21 +29,6 @@ public class Page<THeader, TData> where THeader: PageHeader where TData: PageDat
     /// </summary>
     //protected virtual IEnumerable<ColumnInfo>? DataRowStucture { get { return null; } }
 
-    /// <summary>
-    /// Create
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="pageId"></param>
-    /// <param name="buffer"></param>
-    /// <returns></returns>
-    public static T Create<T>(int pageId, PageBuffer buffer) where T : class
-    {
-        if (typeof(T) == typeof(BootPage)) return (T)(object)new BootPage(pageId, buffer);
-        if (typeof(T) == typeof(SystemTablePage)) return (T)(object)new SystemTablePage(pageId, buffer);
-        if (typeof(T) == typeof(SystemColumnPage)) return (T)(object)new SystemColumnPage(pageId, buffer);
-        throw new Exception("Unable to create a new page.");
-    }
-
     private void Hydrate(PageBuffer buffer){
         // Hydrate Headers
         this.Headers = new EntitySerializer().Deserialize<THeader>(buffer.ToArray());

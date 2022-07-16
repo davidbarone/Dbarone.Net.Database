@@ -21,9 +21,10 @@ public class DiskService
     /// <returns></returns>
     public int CreatePage(PageType pageType)
     {
-        byte[] buffer = new byte[8192];
-        int start = (_pageCount * 8192);
-        int length = Page.PageSize;
+        int pageSize = 8192;
+        byte[] buffer = new byte[pageSize];
+        int start = (_pageCount * pageSize);
+        int length = pageSize;
         this._stream.Write(buffer, start, length);
         _pageCount++;
         return this._pageCount;
