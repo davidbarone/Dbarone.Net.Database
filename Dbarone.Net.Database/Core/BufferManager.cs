@@ -11,6 +11,16 @@ public class BufferManager
         this._diskService = diskService;
     }
 
+    public void SavePages(){
+        foreach (var key in _pages.Keys) {
+            var page = _pages[key];
+            if (page.Headers().IsDirty) {
+                var pageBuffer = page.ToPageBuffer();
+                _diskService.WritePage(pageBuffer);
+            }
+        }
+    }
+
     private DiskService _diskService;
     private Dictionary<int, Page> _pages = new Dictionary<int, Page>();
 

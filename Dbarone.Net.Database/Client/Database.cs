@@ -5,6 +5,10 @@ public class Database : IDatabase
     private int _bufferSize = 8192;
     private IEngine _engine;
 
+    public void CheckPoint() {
+        _engine.CheckPoint();
+    }
+
     /// <summary>
     /// Gets publicly available metadata about the database.
     /// </summary>

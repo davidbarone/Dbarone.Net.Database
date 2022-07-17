@@ -28,6 +28,7 @@ public interface IDatabase : IDisposable {
     bool BeginTransaction();
     bool CommitTransaction();
     bool RollbackTransaction();
+    void CheckPoint();
 
     #endregion
 

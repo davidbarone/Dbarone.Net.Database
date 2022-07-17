@@ -1,6 +1,7 @@
 namespace Dbarone.Net.Database;
 using Dbarone.Net.Extensions.Reflection;
 using Dbarone.Net.Assertions;
+using Dbarone.Net.Proxy;
 
 /// <summary>
 /// Base class for all pages.
@@ -8,7 +9,7 @@ using Dbarone.Net.Assertions;
 public class Page
 {
     private PageBuffer _buffer;
-    protected PageHeader _headers;
+    protected IPageHeader _headers;
     protected IList<PageData> _data;
 
     protected virtual Type PageHeaderType { get { throw new NotImplementedException("Not implemented."); } }
@@ -18,7 +19,7 @@ public class Page
     /// <summary>
     /// Header information.
     /// </summary>
-    public virtual PageHeader Headers() { throw new NotImplementedException("Not implemented."); }
+    public virtual IPageHeader Headers() { throw new NotImplementedException("Not implemented."); }
 
     /// <summary>
     /// Data within the page. The data is indexed using the slots array
@@ -71,6 +72,31 @@ public class Page
         Hydrate(buffer);
         Assert.Equals(pageId, this._headers.PageId);
 
+        // Decorate the header with IsDirtyInterceptor
+        var generator = new ProxyGenerator<IPageHeader>();
+        generator.Interceptor = IsDirtyInterceptor;
+        this._headers = generator.Decorate(this._headers);
+    }
+
+    /// <summary>
+    /// Adds data row to the page.
+    /// </summary>
+    /// <param name="row"></param>
+    public void AddDataRow(object row) {
+        this.Headers().SlotsUsed++;
+
+    }
+
+    /// <summary>
+    /// Sets the IsDirty to true if any setter is called.
+    /// </summary>
+    /// <param name="interceptorArgs"></param>
+    public void IsDirtyInterceptor(InterceptorArgs<IPageHeader> interceptorArgs)
+    {
+        // Change MakeSound behaviour on all animals
+        if (interceptorArgs.BoundaryType==BoundaryType.After && interceptorArgs.TargetMethod.Name.Substring(0,4)=="set_" ) {
+            interceptorArgs.Target.IsDirty = true;
+        }
     }
 
     /// <summary>

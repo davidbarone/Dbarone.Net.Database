@@ -27,7 +27,7 @@ public class DiskService
         int length = pageSize;
         this._stream.Write(buffer, start, length);
         _pageCount++;
-        return this._pageCount;
+        return this._pageCount - 1; // zero-based
     }
 
     public PageBuffer ReadPage(int pageId)

@@ -11,6 +11,10 @@ public class Engine : IEngine
     private DiskService _diskService;
     private BufferManager _bufferManager;
 
+    public void CheckPoint() {
+
+    }
+
     public T GetPage<T>(int pageId) where T : Page
     {
         return this._bufferManager.GetPage<T>(pageId);
@@ -28,7 +32,7 @@ public class Engine : IEngine
         this._stream = new FileStream(
             filename,
             exists ? FileMode.Open : FileMode.OpenOrCreate,
-            canWrite ? FileAccess.Write : FileAccess.Read,
+            canWrite ? FileAccess.Write | FileAccess.Read : FileAccess.Read,
             FileShare.None,
             _bufferSize);
 
@@ -38,7 +42,13 @@ public class Engine : IEngine
 
     public static Engine Create(string filename)
     {
-        return new Engine(filename, canWrite: true);
+        var engine = new Engine(filename, canWrite: true);
+
+        // Create boot page
+        var pageId = engine._bufferManager.CreatePage(PageType.Boot);
+        var bootPage = engine._bufferManager.GetPage<BootPage>(pageId);
+        bootPage.Headers().CreationTime = DateTime.Now;
+        return engine;
     }
 
     public static Engine Open(string filename, bool canWrite)
