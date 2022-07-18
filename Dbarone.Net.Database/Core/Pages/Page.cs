@@ -69,7 +69,10 @@ public class Page
         this._buffer = buffer;
         this._data = new List<PageData>();
         this.Slots = new List<ushort>();
-        Hydrate(buffer);
+        if (!buffer.IsEmpty())
+        {
+            Hydrate(buffer);
+        }
         Assert.Equals(pageId, this._headers.PageId);
 
         // Decorate the header with IsDirtyInterceptor
@@ -82,7 +85,8 @@ public class Page
     /// Adds data row to the page.
     /// </summary>
     /// <param name="row"></param>
-    public void AddDataRow(object row) {
+    public void AddDataRow(object row)
+    {
         this.Headers().SlotsUsed++;
 
     }
@@ -94,7 +98,8 @@ public class Page
     public void IsDirtyInterceptor(InterceptorArgs<IPageHeader> interceptorArgs)
     {
         // Change MakeSound behaviour on all animals
-        if (interceptorArgs.BoundaryType==BoundaryType.After && interceptorArgs.TargetMethod.Name.Substring(0,4)=="set_" ) {
+        if (interceptorArgs.BoundaryType == BoundaryType.After && interceptorArgs.TargetMethod.Name.Substring(0, 4) == "set_")
+        {
             interceptorArgs.Target.IsDirty = true;
         }
     }

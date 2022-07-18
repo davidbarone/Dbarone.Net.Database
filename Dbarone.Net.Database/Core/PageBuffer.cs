@@ -29,4 +29,19 @@ public class PageBuffer : BufferBase, IBuffer
         Buffer.BlockCopy(_buffer, 0, buffer, 0, _buffer.Length);
         return buffer;
     }
+
+    /// <summary>
+    /// Returns whether the page buffer actually contains real data.
+    /// The first 6 bytes contain 3 UInt16 values:
+    /// - Column Count
+    /// - Buffer Length
+    /// - Data Length
+    /// 
+    /// If these are all zero, then safe to assume the page buffer is empty.
+    /// </summary>
+    /// <returns></returns>
+    public bool IsEmpty()
+    {
+        return this[0] == 0 && this[1] == 0 && this[2] == 0 && this[3] == 0 && this[4] == 0 && this[5] == 0;
+    }
 }

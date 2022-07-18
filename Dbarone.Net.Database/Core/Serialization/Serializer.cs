@@ -18,7 +18,12 @@ public class Serializer
         int i = 0;
         foreach (var property in properties)
         {
-            var t = Types.GetByType(property.PropertyType);
+            TypeInfo t = default!;
+            if (property.PropertyType.IsEnum) {
+                t = Types.GetByType(Enum.GetUnderlyingType(property.PropertyType));
+            } else {
+                t = Types.GetByType(property.PropertyType);
+            }
             columns.Add(new ColumnInfo()
             {
                 ColumnName = property.Name,
