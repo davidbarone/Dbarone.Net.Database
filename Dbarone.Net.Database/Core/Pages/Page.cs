@@ -64,21 +64,33 @@ public class Page
     /// </summary>
     /// <param name="pageId">The page id.</param>
     /// <param name="buffer"></param>
-    public Page(int pageId, PageBuffer buffer)
+    public Page(int pageId, PageBuffer buffer, PageType pageType)
     {
         this._buffer = buffer;
         this._data = new List<PageData>();
         this.Slots = new List<ushort>();
+
         if (!buffer.IsEmpty())
         {
             Hydrate(buffer);
+        } else {
+            this._headers = (IPageHeader)Activator.CreateInstance(this.PageHeaderType)!;
         }
-        Assert.Equals(pageId, this._headers.PageId);
 
         // Decorate the header with IsDirtyInterceptor
+        // This interceptor will set the IsDirty flag whenever any header property changes.
         var generator = new ProxyGenerator<IPageHeader>();
         generator.Interceptor = IsDirtyInterceptor;
-        this._headers = generator.Decorate(this._headers);
+        this._headers = generator.Decorate(this._headers!);
+
+        if (buffer.IsEmpty()){
+            // If new page, set defaults. These will automatically set the IsDirty flag as interceptor created above.
+            this._headers.PageId = pageId;
+            this._headers.PageType = pageType;
+            this._headers.SlotsUsed = 0;
+        }
+
+        Assert.Equals(pageId, this._headers.PageId);
     }
 
     /// <summary>

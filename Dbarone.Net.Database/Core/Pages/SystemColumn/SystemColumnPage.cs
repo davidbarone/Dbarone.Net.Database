@@ -10,5 +10,5 @@ public class SystemColumnPage : Page
     public override PageHeader Headers() { return (PageHeader)this._headers; }
     public override IEnumerable<SystemColumnPageData> Data() { return (IEnumerable<SystemColumnPageData>)this._data; }
 
-    public SystemColumnPage(int pageId, PageBuffer buffer) : base(pageId, buffer) { }
+    public SystemColumnPage(int pageId, PageBuffer buffer) : base(pageId, buffer, PageType.SystemColumn) { }
 }

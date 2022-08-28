@@ -1,9 +1,16 @@
 namespace Dbarone.Net.Database;
 
+public interface IBootPageHeader : IPageHeader {
+    string Magic { get; set; }
+    byte Version { get; set; }
+    uint LastPageId { get; set; }
+    DateTime CreationTime { get; set; }
+}
+
 /// <summary>
 /// Headers for boot page type
 /// </summary>
-public class BootPageHeader : PageHeader
+public class BootPageHeader : PageHeader , IBootPageHeader
 {
     /// <summary>
     /// Magic / file header.

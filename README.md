@@ -95,3 +95,17 @@ ObjectID UINT
 PageType tinyInt
 NextPageId
 PrevPageId
+
+
+Data Pages
+----------
+All data and metadata is stored in Data Pages. Each page is 8K, and comprises of 2 parts:
+- Page Header - Contains information about the page itself, and related pages (e.g. next page id)
+- Page Data - Contain the actual data
+
+Page Header
+-----------
+
+Page Data
+---------
+The Page Data section contains the actual data in the page. At the end of the page data section is a special area known as the offset or slot table. This is a table of 2-byte integers that point to the start offset of each record in the page data. This allows for variable length data to be stored in the page data area.

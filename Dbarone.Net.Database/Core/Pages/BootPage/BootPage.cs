@@ -11,7 +11,7 @@ public class BootPage : Page
     public override BootPageHeader Headers() { return (BootPageHeader)this._headers; }
     public override IEnumerable<BootPageData> Data() { return (IEnumerable<BootPageData>)this._data; }
 
-    public BootPage(int pageId, PageBuffer buffer) : base(pageId, buffer)
+    public BootPage(int pageId, PageBuffer buffer) : base(pageId, buffer, PageType.Boot)
     {
         Assert.Equals(this._headers.PageType, PageType.Boot);
     }

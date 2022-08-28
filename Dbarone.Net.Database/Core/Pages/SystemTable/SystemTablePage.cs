@@ -9,6 +9,6 @@ public class SystemTablePage : Page
     protected override Type PageHeaderType { get { return typeof(PageHeader); } }
     public override PageHeader Headers() { return (PageHeader)this._headers; }
     public override IEnumerable<SystemTablePageData> Data() { return (IEnumerable<SystemTablePageData>)this._data; }    
-    public SystemTablePage(int pageId, PageBuffer buffer):base(pageId, buffer){}
+    public SystemTablePage(int pageId, PageBuffer buffer):base(pageId, buffer, PageType.SystemTable){}
 
 }
