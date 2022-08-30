@@ -77,11 +77,10 @@ public class Page
             this._headers = (IPageHeader)Activator.CreateInstance(this.PageHeaderType)!;
         }
 
+
         // Decorate the header with IsDirtyInterceptor
         // This interceptor will set the IsDirty flag whenever any header property changes.
-        var generator = new ProxyGenerator<IPageHeader>();
-        generator.Interceptor = IsDirtyInterceptor;
-        this._headers = generator.Decorate(this._headers!);
+        CreateHeaderProxy();
 
         if (buffer.IsEmpty()){
             // If new page, set defaults. These will automatically set the IsDirty flag as interceptor created above.
@@ -92,6 +91,13 @@ public class Page
 
         Assert.Equals(pageId, this._headers.PageId);
     }
+
+    /// <summary>
+    /// Implement in a subclass to create header proxy.
+    /// </summary>
+    /// <param name="headers"></param>
+    /// <returns></returns>
+    public virtual void CreateHeaderProxy() { throw new NotImplementedException(); }
 
     /// <summary>
     /// Adds data row to the page.
@@ -107,7 +113,7 @@ public class Page
     /// Sets the IsDirty to true if any setter is called.
     /// </summary>
     /// <param name="interceptorArgs"></param>
-    public void IsDirtyInterceptor(InterceptorArgs<IPageHeader> interceptorArgs)
+    public static void IsDirtyInterceptor<TPageHeaderInterface>(InterceptorArgs<TPageHeaderInterface> interceptorArgs) where TPageHeaderInterface : IPageHeader
     {
         // Change MakeSound behaviour on all animals
         if (interceptorArgs.BoundaryType == BoundaryType.After && interceptorArgs.TargetMethod.Name.Substring(0, 4) == "set_")
