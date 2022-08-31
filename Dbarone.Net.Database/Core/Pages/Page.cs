@@ -77,9 +77,7 @@ public class Page
             this._headers = (IPageHeader)Activator.CreateInstance(this.PageHeaderType)!;
         }
 
-
-        // Decorate the header with IsDirtyInterceptor
-        // This interceptor will set the IsDirty flag whenever any header property changes.
+        // Create proxy for header to set the IsDirty flag whenever any header property changes.
         CreateHeaderProxy();
 
         if (buffer.IsEmpty()){
@@ -131,9 +129,15 @@ public class Page
         byte[] b = new byte[8192];
         PageBuffer buffer = new PageBuffer(b, this._headers.PageId);
 
-        // Headers
-        var headerBytes = Serializer.Serialize(this.Headers());
-        Assert.NotGreaterThan(96, headerBytes.Length);
+        // Headers - we need to serialise the original header, not the proxy
+        var headerType = this.Headers().GetType();
+        var pi = headerType.GetProperty("Target");
+        var h = this.Headers();
+        if (pi!=null) {
+            h = (IPageHeader)pi.GetValue(this.Headers())!;
+        }
+        var headerBytes = Serializer.Serialize(h);
+        Assert.NotGreaterThan(headerBytes.Length, 96);
         buffer.Write(headerBytes, 0);
 
         // Serialize slots

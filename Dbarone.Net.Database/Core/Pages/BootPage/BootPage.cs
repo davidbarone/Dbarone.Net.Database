@@ -10,7 +10,7 @@ public class BootPage : Page
     protected override Type PageDataType { get { return typeof(BootPageData); } }
     protected override Type PageHeaderType { get { return typeof(BootPageHeader); } }
     public override IBootPageHeader Headers() { return (IBootPageHeader)this._headers; }
-    public override IEnumerable<BootPageData> Data() { return (IEnumerable<BootPageData>)this._data; }
+    public override IEnumerable<BootPageData> Data() { return (this._data.Select(d => (BootPageData)d)); }
 
     public BootPage(int pageId, PageBuffer buffer) : base(pageId, buffer, PageType.Boot)
     {
@@ -23,6 +23,6 @@ public class BootPage : Page
         // This interceptor will set the IsDirty flag whenever any header property changes.
         var generator = new ProxyGenerator<IBootPageHeader>();
         generator.Interceptor = Page.IsDirtyInterceptor;
-        this._headers = generator.Decorate((IBootPageHeader)this._headers!);        
+        this._headers = generator.Decorate((IBootPageHeader)this._headers!);
     }
 }

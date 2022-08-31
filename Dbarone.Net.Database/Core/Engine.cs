@@ -11,8 +11,11 @@ public class Engine : IEngine
     private DiskService _diskService;
     private BufferManager _bufferManager;
 
+    /// <summary>
+    /// Writes all dirty pages to disk.
+    /// </summary>
     public void CheckPoint() {
-
+        this._bufferManager.SavePages();
     }
 
     public T GetPage<T>(int pageId) where T : Page

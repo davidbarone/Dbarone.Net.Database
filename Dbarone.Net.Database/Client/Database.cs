@@ -20,7 +20,8 @@ public class Database : IDatabase
         {
             Magic = page0.Headers().Magic,
             Version = page0.Headers().Version,
-            CreationTime = page0.Headers().CreationTime
+            CreationTime = page0.Headers().CreationTime,
+            LastPageId = page0.Headers().LastPageId
         };
     }
 

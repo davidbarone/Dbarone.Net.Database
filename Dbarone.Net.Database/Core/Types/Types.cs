@@ -9,9 +9,19 @@ public class Types
 {
     private static Dictionary<Type, TypeInfo> _dict { get; set; } = new Dictionary<Type, TypeInfo>();
 
+    /// <summary>
+    /// Gets the TypeInfo for a given .NET type.
+    /// </summary>
+    /// <param name="type">The .NET type</param>
+    /// <returns>The corresponding TypeInfo value.</returns>
     public static TypeInfo GetByType(Type type)
     {
-        return _dict[type];
+        var t = type;
+        if (type.IsEnum)
+        {
+            t = Enum.GetUnderlyingType(type);
+        }
+        return _dict[t];
     }
 
     public static TypeInfo GetByDataType(DataType dataType)
@@ -27,13 +37,20 @@ public class Types
     public static ushort SizeOf(object obj)
     {
         var typeInfo = GetByType(obj.GetType());
-        if (typeInfo.IsFixedLength){
+        if (typeInfo.IsFixedLength)
+        {
             return typeInfo.Size;
-        } else if (typeInfo.DataType==DataType.String){
+        }
+        else if (typeInfo.DataType == DataType.String)
+        {
             return (ushort)((string)obj).Length;
-        } else if (typeInfo.DataType==DataType.Blob){
+        }
+        else if (typeInfo.DataType == DataType.Blob)
+        {
             return (ushort)((byte[])obj).Length;
-        } else {
+        }
+        else
+        {
             throw new Exception($"Invalid object type: {obj.GetType().Name}");
         }
     }

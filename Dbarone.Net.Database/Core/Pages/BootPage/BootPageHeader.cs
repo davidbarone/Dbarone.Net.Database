@@ -30,5 +30,5 @@ public class BootPageHeader : PageHeader , IBootPageHeader
     /// <summary>
     /// Database creation date/time
     /// </summary>
-    public DateTime CreationTime { get; set; }
+    public DateTime CreationTime { get; set; } = DateTime.Now;
 }

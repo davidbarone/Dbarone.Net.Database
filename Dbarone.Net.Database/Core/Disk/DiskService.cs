@@ -15,6 +15,11 @@ public class DiskService
     }
 
     /// <summary>
+    /// Returns the number of pages in the database.
+    /// </summary>
+    public int PageCount {get { return this._pageCount; } }
+
+    /// <summary>
     /// Creates and persists a new page to disk.
     /// </summary>
     /// <param name="pageType"></param>
