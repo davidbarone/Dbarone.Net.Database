@@ -50,4 +50,32 @@ public class Connection
         }
 
     }
+
+    [Fact]
+    public void WhenCreateDatabaseCheckPagesCreated()
+    {
+        // Arrange
+        var dbName = "mydb3.db";
+        if (File.Exists(dbName))
+        {
+            File.Delete(dbName);
+        }
+
+        // Act
+        using (var db = Database.Create(dbName))
+        {
+            db.CheckPoint();    // Save pages to disk
+        }
+
+        // Assert
+        using (var db = Database.Open(dbName, false))
+        {
+            // Assert
+            var dbInfo = db.GetDatabaseInfo();
+            Assert.Equal(System.DateTime.Now.Date, dbInfo.CreationTime.Date);
+            Assert.Equal(1, dbInfo.Version);
+            Assert.Equal("Dbarone.Net.Database", dbInfo.Magic);
+            Assert.Equal(3, dbInfo.PageCount);  // (0) Boot, (1) SystemTable, (2) SystemColumn
+        }
+    }
 }
