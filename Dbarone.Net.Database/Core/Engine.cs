@@ -8,23 +8,23 @@ public class Engine : IEngine
     private string _filename;
     private Stream _stream;
     private int _bufferSize = 8192;
-    private DiskService _diskService;
     private BufferManager _bufferManager;
 
     /// <summary>
     /// Writes all dirty pages to disk.
     /// </summary>
-    public void CheckPoint() {
+    public void CheckPoint()
+    {
         this._bufferManager.SavePages();
     }
 
-    public T GetPage<T>(int pageId) where T : Page
+    public T GetPage<T>(uint pageId) where T : Page
     {
         return this._bufferManager.GetPage<T>(pageId);
     }
 
     /// <summary>
-    /// Instantiates a new Engine object
+    /// Instantiates a new Engine object.
     /// </summary>
     /// <param name="filename">The filename (database).</param>
     /// <param name="canWrite">Set to true to allow writes.</param>
@@ -39,28 +39,61 @@ public class Engine : IEngine
             FileShare.None,
             _bufferSize);
 
-        this._diskService = new DiskService(this._stream);
-        this._bufferManager = new BufferManager(this._diskService);
+        this._bufferManager = new BufferManager(new DiskService(this._stream));
     }
 
+    /// <summary>
+    /// Creates a new database, and writes the core system pages required for functioning.
+    /// </summary>
+    /// <param name="filename">The filename.</param>
+    /// <returns></returns>
     public static Engine Create(string filename)
     {
         var engine = new Engine(filename, canWrite: true);
 
         // Create boot page (page #0)
-        var pageId = engine._bufferManager.CreatePage(PageType.Boot);
-        var bootPage = engine._bufferManager.GetPage<BootPage>(pageId);
+        var bootPage = engine.CreatePage<BootPage>();
         bootPage.Headers().CreationTime = DateTime.Now;
 
         // Create System table page (page #1)
-        pageId = engine._bufferManager.CreatePage(PageType.SystemTable);
-        var systemTablePage = engine._bufferManager.GetPage<SystemTablePage>(pageId);
+        var systemTablePage = engine.CreatePage<SystemTablePage>();        
 
         // Create System column page (page #2)
-        pageId = engine._bufferManager.CreatePage(PageType.SystemColumn);
-        var systemColumnPage = engine._bufferManager.GetPage<SystemColumnPage>(pageId);
+        var systemColumnPage = engine.CreatePage<SystemColumnPage>();        
 
-        return engine;        
+        return engine;
+    }
+
+    /// <summary>
+    /// Creates a new page. Also updates the PageCount header on the boot page.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
+    private T CreatePage<T>() where T : Page
+    {
+        uint pageId = 0;
+        if (typeof(T) == typeof(BootPage))
+        {
+            pageId = this._bufferManager.CreatePage(PageType.Boot);
+        }
+        else if (typeof(T) == typeof(SystemTablePage))
+        {
+            pageId = this._bufferManager.CreatePage(PageType.SystemTable);
+        }
+        else if (typeof(T) == typeof(SystemColumnPage))
+        {
+            pageId = this._bufferManager.CreatePage(PageType.SystemColumn);
+        }
+
+        // Update boot page PageCount
+        var bootPage = this.GetPage<BootPage>(0);
+        bootPage.Headers().PageCount++;
+
+        // Update the pageId
+        var page = this._bufferManager.GetPage<T>(pageId);
+        page.Headers().PageId = pageId;
+
+        return page;
     }
 
     public static Engine Open(string filename, bool canWrite)

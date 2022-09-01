@@ -6,21 +6,21 @@ namespace Dbarone.Net.Database;
 public class PageHeader : IPageHeader
 {
     public PageType PageType { get; set; }
-    public int PageId { get; set; }
-    public int PrevPageId { get; set; }
-    public int NextPageId { get; set; }
-    public int SlotsUsed { get; set; }
-    public int TransactionId { get; set; }
+    public uint PageId { get; set; }
+    public uint PrevPageId { get; set; }
+    public uint NextPageId { get; set; }
+    public uint SlotsUsed { get; set; }
+    public uint TransactionId { get; set; }
     public bool IsDirty { get; set; }
 }
 
 public interface IPageHeader
 {
     PageType PageType { get; set; }
-    int PageId { get; set; }
-    int PrevPageId { get; set; }
-    int NextPageId { get; set; }
-    int SlotsUsed { get; set; }
-    int TransactionId { get; set; }
+    uint PageId { get; set; }
+    uint PrevPageId { get; set; }
+    uint NextPageId { get; set; }
+    uint SlotsUsed { get; set; }
+    uint TransactionId { get; set; }
     bool IsDirty { get; set; }
 }

@@ -6,7 +6,7 @@ using System.Text;
 /// </summary>
 public class PageBuffer : BufferBase, IBuffer
 {
-    private int _pageId;
+    private uint _pageId;
     private uint _pageSize = 8192;
 
     protected override byte[] InternalBuffer
@@ -17,7 +17,7 @@ public class PageBuffer : BufferBase, IBuffer
         }
     }
 
-    public PageBuffer(byte[] buffer, int pageId) : base(buffer)
+    public PageBuffer(byte[] buffer, uint pageId) : base(buffer)
     {
         this._pageId = pageId;
     }

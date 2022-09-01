@@ -64,7 +64,7 @@ public class Page
     /// </summary>
     /// <param name="pageId">The page id.</param>
     /// <param name="buffer"></param>
-    public Page(int pageId, PageBuffer buffer, PageType pageType)
+    public Page(uint pageId, PageBuffer buffer, PageType pageType)
     {
         this._buffer = buffer;
         this._data = new List<PageData>();

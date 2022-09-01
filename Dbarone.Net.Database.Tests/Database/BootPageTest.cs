@@ -32,7 +32,7 @@ public class BootPageTest
             Assert.Equal(System.DateTime.Now.Date, dbInfo.CreationTime.Date);
             Assert.Equal(1, dbInfo.Version);
             Assert.Equal("Dbarone.Net.Database", dbInfo.Magic);
-            Assert.Equal<uint>(0, dbInfo.LastPageId);
+            Assert.Equal<uint>(3, dbInfo.PageCount);
         }
     }
 }

@@ -12,7 +12,7 @@ public class SystemColumnPage : Page
     public override IPageHeader Headers() { return (IPageHeader)this._headers; }
     public override IEnumerable<SystemColumnPageData> Data() { return (this._data.Select(d => (SystemColumnPageData)d)); }
 
-    public SystemColumnPage(int pageId, PageBuffer buffer) : base(pageId, buffer, PageType.SystemColumn)
+    public SystemColumnPage(uint pageId, PageBuffer buffer) : base(pageId, buffer, PageType.SystemColumn)
     {
         Assert.Equals(this._headers.PageType, PageType.SystemColumn);
     }

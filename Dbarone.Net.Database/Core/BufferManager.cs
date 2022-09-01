@@ -23,14 +23,14 @@ public class BufferManager
     }
 
     private DiskService _diskService;
-    private Dictionary<int, Page> _pages = new Dictionary<int, Page>();
+    private Dictionary<uint, Page> _pages = new Dictionary<uint, Page>();
 
     /// <summary>
     /// Gets a page from the buffer cache. If page not present, reads from disk
     /// </summary>
     /// <param name="pageId"></param>
     /// <returns></returns>
-    public T GetPage<T>(int pageId) where T : Page
+    public T GetPage<T>(uint pageId) where T : Page
     {
         if (_pages.ContainsKey(pageId))
         {
@@ -53,7 +53,7 @@ public class BufferManager
         }
     }
 
-    public int CreatePage(PageType pageType)
+    public uint CreatePage(PageType pageType)
     {
         var pageId = _diskService.CreatePage(pageType);
         return pageId;
