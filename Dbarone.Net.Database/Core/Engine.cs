@@ -47,11 +47,20 @@ public class Engine : IEngine
     {
         var engine = new Engine(filename, canWrite: true);
 
-        // Create boot page
+        // Create boot page (page #0)
         var pageId = engine._bufferManager.CreatePage(PageType.Boot);
         var bootPage = engine._bufferManager.GetPage<BootPage>(pageId);
         bootPage.Headers().CreationTime = DateTime.Now;
-        return engine;
+
+        // Create System table page (page #1)
+        pageId = engine._bufferManager.CreatePage(PageType.SystemTable);
+        var systemTablePage = engine._bufferManager.GetPage<SystemTablePage>(pageId);
+
+        // Create System column page (page #2)
+        pageId = engine._bufferManager.CreatePage(PageType.SystemColumn);
+        var systemColumnPage = engine._bufferManager.GetPage<SystemColumnPage>(pageId);
+
+        return engine;        
     }
 
     public static Engine Open(string filename, bool canWrite)

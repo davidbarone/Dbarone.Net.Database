@@ -17,6 +17,12 @@ public interface IDatabase : IDisposable {
 
     #endregion
 
+    #region DDL
+
+    TableInfo CreateTable<T>(string tableName);
+
+    #endregion
+
     #region Queries
 
     IEnumerable<T> Read<T>(string tableName);

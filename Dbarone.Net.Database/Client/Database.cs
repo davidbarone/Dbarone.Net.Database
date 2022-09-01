@@ -56,6 +56,14 @@ public class Database : IDatabase
         File.Delete(filename);
     }
 
+    #region DDL
+
+    public TableInfo CreateTable<T>(string tableName){
+        return null;
+    }
+
+    #endregion
+
     public void Dispose()
     {
         if (this._engine != null)

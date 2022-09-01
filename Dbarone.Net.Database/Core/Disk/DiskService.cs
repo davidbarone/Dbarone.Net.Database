@@ -30,7 +30,8 @@ public class DiskService
         byte[] buffer = new byte[pageSize];
         int start = (_pageCount * pageSize);
         int length = pageSize;
-        this._stream.Write(buffer, start, length);
+        this._stream.Position = start;
+        this._stream.Write(buffer, 0, length);
         _pageCount++;
         return this._pageCount - 1; // zero-based
     }
@@ -40,7 +41,8 @@ public class DiskService
         byte[] buffer = new byte[8192];
         int start = (pageId * 8192);
         int length = 8192;
-        int read = this._stream.Read(buffer, start, length);
+        this._stream.Position = start;
+        int read = this._stream.Read(buffer, 0, length);
         return new PageBuffer(buffer, pageId);
     }
 
