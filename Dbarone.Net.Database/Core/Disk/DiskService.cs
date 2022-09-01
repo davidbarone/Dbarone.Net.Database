@@ -1,4 +1,5 @@
 namespace Dbarone.Net.Database;
+using Dbarone.Net.Assertions;
 
 /// <summary>
 /// Services for reading / writing to disk
@@ -46,8 +47,12 @@ public class DiskService
         return new PageBuffer(buffer, pageId);
     }
 
-    public void WritePage(PageBuffer page)
+    public void WritePage(uint pageId, PageBuffer page)
     {
-
+        var buffer = page.ToArray();
+        Assert.Equals(buffer.Length, 8192);
+        var start = (pageId * 8192);
+        this._stream.Position = start;
+        this._stream.Write(buffer);
     }
 }

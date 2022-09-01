@@ -16,7 +16,7 @@ public class BufferManager
             var page = _pages[key];
             if (page.Headers().IsDirty) {
                 var pageBuffer = page.ToPageBuffer();
-                _diskService.WritePage(pageBuffer);
+                _diskService.WritePage(key, pageBuffer);
                 page.Headers().IsDirty = false;
             }
         }
