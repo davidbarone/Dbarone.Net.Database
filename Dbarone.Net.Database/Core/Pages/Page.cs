@@ -84,12 +84,12 @@ public class Page
 
         if (buffer.IsEmpty()){
             // If new page, set defaults. These will automatically set the IsDirty flag as interceptor created above.
-            this._headers.PageId = pageId;
-            this._headers.PageType = pageType;
-            this._headers.SlotsUsed = 0;
+            this.Headers().PageId = pageId;
+            this.Headers().PageType = pageType;
+            this.Headers().SlotsUsed = 0;
         }
 
-        Assert.Equals(pageId, this._headers.PageId);
+        Assert.Equals(pageId, this.Headers().PageId);
     }
 
     /// <summary>

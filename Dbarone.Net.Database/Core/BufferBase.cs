@@ -317,6 +317,9 @@ public class BufferBase : IBuffer
     public void Write(object value, int index)
     {
         var type = value.GetType();
+        if (type.IsEnum){
+            type = Enum.GetUnderlyingType(type);
+        }
         if (type == typeof(bool))
         {
             Write((bool)value, index);
