@@ -2,7 +2,6 @@
 public class Database : IDatabase
 {
     private string _filename;
-    private int _bufferSize = 8192;
     private IEngine _engine;
 
     public void CheckPoint() {

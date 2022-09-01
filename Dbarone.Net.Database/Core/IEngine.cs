@@ -10,6 +10,6 @@ public interface IEngine : IDisposable
     /// </summary>
     /// <param name="pageId"></param>
     /// <returns></returns>
-    T GetPage<T>(uint pageId) where T : Page;
+    T GetPage<T>(int pageId) where T : Page;
     void CheckPoint();
 }

@@ -7,7 +7,6 @@ public class Engine : IEngine
 {
     private string _filename;
     private Stream _stream;
-    private int _bufferSize = 8192;
     private BufferManager _bufferManager;
 
     /// <summary>
@@ -18,7 +17,7 @@ public class Engine : IEngine
         this._bufferManager.SavePages();
     }
 
-    public T GetPage<T>(uint pageId) where T : Page
+    public T GetPage<T>(int pageId) where T : Page
     {
         return this._bufferManager.GetPage<T>(pageId);
     }
@@ -37,7 +36,7 @@ public class Engine : IEngine
             exists ? FileMode.Open : FileMode.OpenOrCreate,
             canWrite ? FileAccess.Write | FileAccess.Read : FileAccess.Read,
             FileShare.None,
-            _bufferSize);
+            (int)Global.PageSize);
 
         this._bufferManager = new BufferManager(new DiskService(this._stream));
     }
@@ -71,7 +70,7 @@ public class Engine : IEngine
     /// <returns></returns>
     private T CreatePage<T>() where T : Page
     {
-        uint pageId = 0;
+        int pageId = 0;
         if (typeof(T) == typeof(BootPage))
         {
             pageId = this._bufferManager.CreatePage(PageType.Boot);

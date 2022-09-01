@@ -3,7 +3,7 @@ namespace Dbarone.Net.Database;
 public interface IBootPageHeader : IPageHeader {
     string Magic { get; set; }
     byte Version { get; set; }
-    uint PageCount { get; set; }
+    int PageCount { get; set; }
     DateTime CreationTime { get; set; }
 }
 
@@ -25,7 +25,7 @@ public class BootPageHeader : PageHeader , IBootPageHeader
     /// <summary>
     /// The number of pages in the database.
     /// </summary>
-    public uint PageCount { get; set; }
+    public int PageCount { get; set; }
 
     /// <summary>
     /// Database creation date/time

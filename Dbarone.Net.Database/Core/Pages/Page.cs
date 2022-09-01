@@ -44,7 +44,7 @@ public class Page
         this._headers = (PageHeader)Serializer.Deserialize(this.PageHeaderType, headerBuf);
 
         // Hydrate slots
-        var slotIndex = Page.PageSize - 2;
+        var slotIndex = Global.PageSize - 2;
         for (int slot = 0; slot < this._headers.SlotsUsed; slot++)
         {
             var dataIndex = buffer.ReadUInt16(slotIndex);
@@ -66,7 +66,7 @@ public class Page
     /// </summary>
     /// <param name="pageId">The page id.</param>
     /// <param name="buffer"></param>
-    public Page(uint pageId, PageBuffer buffer, PageType pageType)
+    public Page(int pageId, PageBuffer buffer, PageType pageType)
     {
         this._buffer = buffer;
         this._data = new List<PageData>();
@@ -144,7 +144,7 @@ public class Page
 
         // Serialize slots
         var data = this.Data().ToList();
-        var slotIndex = Page.PageSize - 2;
+        var slotIndex = Global.PageSize - 2;
         for (int slot = 0; slot < this._headers.SlotsUsed; slot++)
         {
             var dataIndex = this.Slots[slot];
@@ -160,7 +160,6 @@ public class Page
         return buffer;
     }
 
-
     /// <summary>
     /// Create a new page
     /// </summary>
@@ -171,9 +170,4 @@ public class Page
 
 
     }
-
-    /// <summary>
-    /// The page size for all pages
-    /// </summary>
-    public static int PageSize = (int)Math.Pow(2, 13);   //8K (8192 bytes)
 }
