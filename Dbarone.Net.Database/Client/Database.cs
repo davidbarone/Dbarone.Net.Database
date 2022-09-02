@@ -42,7 +42,6 @@ public class Database : IDatabase
 
     public static void Delete(string filename)
     {
-
         // open file and check valid database file.
         var database = Database.Open(filename, false);
         var info = database.GetDatabaseInfo();
@@ -58,7 +57,7 @@ public class Database : IDatabase
     #region DDL
 
     public TableInfo CreateTable<T>(string tableName){
-        return null;
+        return this._engine.CreateTable<T>(tableName);
     }
 
     #endregion

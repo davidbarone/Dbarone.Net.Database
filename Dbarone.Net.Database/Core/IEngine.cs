@@ -12,4 +12,5 @@ public interface IEngine : IDisposable
     /// <returns></returns>
     T GetPage<T>(int pageId) where T : Page;
     void CheckPoint();
+    TableInfo CreateTable<T>(string tableName);
 }

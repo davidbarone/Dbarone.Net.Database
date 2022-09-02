@@ -75,14 +75,17 @@ public class Page
         if (!buffer.IsEmpty())
         {
             Hydrate(buffer);
-        } else {
+        }
+        else
+        {
             this._headers = (IPageHeader)Activator.CreateInstance(this.PageHeaderType)!;
         }
 
         // Create proxy for header to set the IsDirty flag whenever any header property changes.
         CreateHeaderProxy();
 
-        if (buffer.IsEmpty()){
+        if (buffer.IsEmpty())
+        {
             // If new page, set defaults. These will automatically set the IsDirty flag as interceptor created above.
             this.Headers().PageId = pageId;
             this.Headers().PageType = pageType;
@@ -105,8 +108,17 @@ public class Page
     /// <param name="row"></param>
     public void AddDataRow(object row)
     {
-        this.Headers().SlotsUsed++;
+        Assert.IsType(row, this.PageDataType);
 
+        // Serialise row object
+        var buffer = Serializer.Serialize(row);
+        if (!this.CanAddRowToPage(buffer.Length)) {
+            throw new Exception("Insufficient room on page.");
+        }
+
+        // Update page
+        this.Headers().SlotsUsed++;
+        this._data.Add((row as PageData)!);
     }
 
     /// <summary>
@@ -135,11 +147,12 @@ public class Page
         var headerType = this.Headers().GetType();
         var pi = headerType.GetProperty("Target");
         var h = this.Headers();
-        if (pi!=null) {
+        if (pi != null)
+        {
             h = (IPageHeader)pi.GetValue(this.Headers())!;
         }
         var headerBytes = Serializer.Serialize(h);
-        Assert.NotGreaterThan(headerBytes.Length, 96);
+        Assert.NotGreaterThan(headerBytes.Length, Global.PageHeaderSize);
         buffer.Write(headerBytes, 0);
 
         // Serialize slots
@@ -158,6 +171,21 @@ public class Page
             slotIndex = slotIndex - 2;
         }
         return buffer;
+    }
+
+    /// <summary>
+    /// Check whether row will fit on current page
+    /// </summary>
+    /// <param name="row"></param>
+    /// <returns></returns>
+    public bool CanAddRowToPage(int rowBuferSize)
+    {
+        return (Global.PageSize                                                             // Page size
+            - Global.PageHeaderSize                                                         // Ignore page header
+            - this.Headers().FreeOffset                                                     // Space already used by data rows
+            - ((this.Headers().SlotsUsed + 1) * Types.GetByDataType(DataType.UInt16).Size)  // Slot table (including extra slot for new row)
+            - rowBuferSize)                                                                 // Data to be written
+        >= 0;
     }
 
     /// <summary>

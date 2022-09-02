@@ -17,6 +17,18 @@ public class Engine : IEngine
         this._bufferManager.SavePages();
     }
 
+    public TableInfo CreateTable<T>(string tableName){
+        var systemTablePage = this.GetPage<SystemTablePage>(1);
+        SystemTablePageData row = new SystemTablePageData()
+        {
+            TableName = tableName,
+            PageId = 0,
+            IsSystemTable = false
+        };
+        systemTablePage.AddDataRow(row);
+        return null;
+    }
+
     public T GetPage<T>(int pageId) where T : Page
     {
         return this._bufferManager.GetPage<T>(pageId);
