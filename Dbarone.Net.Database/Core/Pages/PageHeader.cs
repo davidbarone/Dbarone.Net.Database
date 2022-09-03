@@ -12,7 +12,7 @@ public class PageHeader : IPageHeader
     public int SlotsUsed { get; set; }
     public int TransactionId { get; set; }
     public bool IsDirty { get; set; }
-    public int FreeOffset { get; set; } = 0!;
+    public ushort FreeOffset { get; set; } = 0!;
 }
 
 public interface IPageHeader
@@ -28,5 +28,5 @@ public interface IPageHeader
     /// <summary>
     /// Offset of the next free area on the data part of the page (excluding header)
     /// </summary>
-    int FreeOffset { get; set; }
+    ushort FreeOffset { get; set; }
 }

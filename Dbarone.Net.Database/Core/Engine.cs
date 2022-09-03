@@ -1,4 +1,5 @@
 namespace Dbarone.Net.Database;
+using Dbarone.Net.Mapper;
 
 /// <summary>
 /// The internal (private) database implementation.
@@ -27,6 +28,14 @@ public class Engine : IEngine
         };
         systemTablePage.AddDataRow(row);
         return null;
+    }
+
+    public IEnumerable<TableInfo> Tables() {
+        var systemTablePage = this.GetPage<SystemTablePage>(1);
+        var mapper = ObjectMapper<SystemTablePageData, TableInfo>.Create();
+        var data = systemTablePage.Data();
+        var mapped = mapper.MapMany(data);
+        return mapped;
     }
 
     public T GetPage<T>(int pageId) where T : Page

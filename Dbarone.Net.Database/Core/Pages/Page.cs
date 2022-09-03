@@ -118,6 +118,8 @@ public class Page
 
         // Update page
         this.Headers().SlotsUsed++;
+        this.Slots.Add(this.Headers().FreeOffset);
+        this.Headers().FreeOffset += (ushort)buffer.Length;
         this._data.Add((row as PageData)!);
     }
 

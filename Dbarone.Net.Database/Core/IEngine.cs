@@ -13,4 +13,10 @@ public interface IEngine : IDisposable
     T GetPage<T>(int pageId) where T : Page;
     void CheckPoint();
     TableInfo CreateTable<T>(string tableName);
+
+    /// <summary>
+    /// Returns the collection of tables in the database.
+    /// </summary>
+    /// <returns></returns>
+    IEnumerable<TableInfo> Tables();
 }

@@ -4,7 +4,8 @@ public class Database : IDatabase
     private string _filename;
     private IEngine _engine;
 
-    public void CheckPoint() {
+    public void CheckPoint()
+    {
         _engine.CheckPoint();
     }
 
@@ -56,10 +57,16 @@ public class Database : IDatabase
 
     #region DDL
 
-    public TableInfo CreateTable<T>(string tableName){
+    public TableInfo CreateTable<T>(string tableName)
+    {
         return this._engine.CreateTable<T>(tableName);
     }
 
+    public IEnumerable<TableInfo> Tables()
+    {
+        return this._engine.Tables();
+    }
+    
     #endregion
 
     public void Dispose()

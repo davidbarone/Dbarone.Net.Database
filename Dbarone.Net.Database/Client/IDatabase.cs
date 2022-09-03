@@ -20,6 +20,7 @@ public interface IDatabase : IDisposable {
     #region DDL
 
     TableInfo CreateTable<T>(string tableName);
+    IEnumerable<TableInfo> Tables();
 
     #endregion
 
