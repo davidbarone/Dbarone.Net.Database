@@ -52,8 +52,8 @@ public class Page
 
             // add data
             // totalLength is the second UInt16 from start.
-            var totalLength = buffer.ReadUInt16(dataIndex + Types.GetByDataType(DataType.UInt16).Size);
-            var b = buffer.Slice(dataIndex, totalLength);
+            var totalLength = buffer.ReadUInt16(Global.PageHeaderSize + dataIndex + Types.GetByDataType(DataType.UInt16).Size);
+            var b = buffer.Slice(dataIndex + Global.PageHeaderSize, totalLength);
             var item = (PageData)Serializer.Deserialize(this.PageDataType, b);
             this._data.Add(item);
 
@@ -112,7 +112,8 @@ public class Page
 
         // Serialise row object
         var buffer = Serializer.Serialize(row);
-        if (!this.CanAddRowToPage(buffer.Length)) {
+        if (!this.CanAddRowToPage(buffer.Length))
+        {
             throw new Exception("Insufficient room on page.");
         }
 
@@ -168,7 +169,7 @@ public class Page
             // Serialize data
             // totalLength is the second UInt from start.
             var dataBytes = Serializer.Serialize(data[slot]);
-            buffer.Write(dataBytes, dataIndex);
+            buffer.Write(dataBytes, dataIndex + Global.PageHeaderSize);
 
             slotIndex = slotIndex - 2;
         }
