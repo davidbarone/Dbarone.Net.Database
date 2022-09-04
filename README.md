@@ -99,13 +99,58 @@ PrevPageId
 
 Data Pages
 ----------
-All data and metadata is stored in Data Pages. Each page is 8K, and comprises of 2 parts:
-- Page Header - Contains information about the page itself, and related pages (e.g. next page id)
-- Page Data - Contain the actual data
+All data and metadata is stored in data units called 'data pages'. Each data page is 8K, and comprises of 2 parts:
+- Page Header - Contains metadata about the page itself, and related pages (e.g. next page id)
+- Page Data - Contain the actual data. The page data section can contain multiple records.
+
+The page header is 96 bytes long. The remaining 8096 bytes in the data page can be used by the page data.
+
+|-----------------------------------------------------------------------------------------------|
+| Page Header (96 bytes)                                                                          | Page Data (8096 bytes) |
+| ----------------------------------------------------------------------------------------------- | ---------------------- |
+| pageid                                                                                          | pagetype               | ... | element #1 | element #2 | element #n |  | slot3 | slot2 | slot1 |
+| ----------------------------------------------------------------------------------------------- |
+
+Disk IO is performed at a data page level.
 
 Page Header
 -----------
+The page header section is fixed at 96 bytes, and contains a number of parameters relating to the page, including:
+- PageType: The type of page
+- PageId: The unique id of the page. The PageId corresponds to the position of the page in the database file. Page 0 is the first page in the file, Page 1 is the second, and so forth.
+- PrevPageId: If the page is part of a linked list of pages, then PrevPageId points to the previous page.
+- NextPageId: If the page is part of a linked list of pages, then PrevPageId points to the next page.
+- SlotsUsed: The number of data elements stored in the current page.
+- TransactionId: The transaction id that last updated the page.
+- IsDirty: Set to true if the page has been modified.
+- FreeOffset: The first free byte in the data section. 
+
+### Page Types
+There are a number of page types:
+- BootPage: The database header page. Always page id 0.
+- SystemTable: Stores table metadata. Always page id 1.
+- SystemColumn: Stores column metadata. Always page id 2.
+- Data:
+- Index:
+- Text
+- LOB:
 
 Page Data
 ---------
 The Page Data section contains the actual data in the page. At the end of the page data section is a special area known as the offset or slot table. This is a table of 2-byte integers that point to the start offset of each record in the page data. This allows for variable length data to be stored in the page data area.
+
+Serialisation
+-------------
+In order to move data from disk to memory and vice versa, it must be serialised. A custom serialiser has been implemented to do this. The serialiser is able to serialise any object, and stores the serialised output in the following format:
+
+| Field                 | Size (bytes)              | Description                                                          |
+| --------------------- | ------------------------- | -------------------------------------------------------------------- |
+| Buffer Length         | 2                         | The total size of the serialised output including metadata.          |
+| Data Length           | 2                         | The size of the serialised data.                                     |
+| Column Count          | 2                         | The total number of columns in the object.                           |
+| Fixed Column Count    | 2                         | The number of fixed length columns in the object.                    |
+| Fixed Data Length     | 2                         | The size of fixed length data.                                       |
+| Fixed Data            | n                         | The fixed length data.                                               |
+| Variable Column Count | 2                         | The number of variable length columns in the object.                 |
+| Variable Length Table | 2 * variable column count | Table of Int16 values denoting length of each variable length field. |
+| Variable Data         | n                         | The variable length data                                             |
