@@ -1,6 +1,8 @@
 # Dbarone.Net.Database
 A NoSQL database written in .NET.
 
+This database engine is intended for very simple use cases only.
+
 ## Architecture
 
 - https://www.guru99.com/sql-server-architecture.html
@@ -17,12 +19,6 @@ https://www.dabrowski.space/posts/sql-server-page-types-list/
 Foundation of Dbarone.Net.Database
 
 Size: 8KB
-
-Structure:
-- Header
-- Data
-- RowOffset Array
-
 
 https://docs.microsoft.com/en-us/sql/relational-databases/pages-and-extents-architecture-guide?view=sql-server-ver16
 https://www.sqlservercentral.com/blogs/sql-server-understanding-the-data-page-structure
@@ -87,16 +83,6 @@ BEGIN
 	SET @pageid = @pageid + 1
 END
 
-
-
-
-PageId UINT
-ObjectID UINT
-PageType tinyInt
-NextPageId
-PrevPageId
-
-
 Data Pages
 ----------
 All data and metadata is stored in data units called 'data pages'. Each data page is 8K, and comprises of 2 parts:
@@ -105,11 +91,13 @@ All data and metadata is stored in data units called 'data pages'. Each data pag
 
 The page header is 96 bytes long. The remaining 8096 bytes in the data page can be used by the page data.
 
-|-----------------------------------------------------------------------------------------------|
-| Page Header (96 bytes)                                                                          | Page Data (8096 bytes) |
-| ----------------------------------------------------------------------------------------------- | ---------------------- |
-| pageid                                                                                          | pagetype               | ... | element #1 | element #2 | element #n |  | slot3 | slot2 | slot1 |
-| ----------------------------------------------------------------------------------------------- |
+```
+|-----------------------------------------------------------------------------------------------------|
+| Page Header (96 bytes)  | Page Data (8096 bytes) including row offset array | (Row offset array)    |
+|-----------------------------------------------------------------------------------------------------|
+| PageId | PageType | ... | Element #1 | Element #2 | Element #n |            | SlotN | Slot2 | Slot1 |
+|-----------------------------------------------------------------------------------------------------|
+```
 
 Disk IO is performed at a data page level.
 
