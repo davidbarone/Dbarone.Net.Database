@@ -56,9 +56,9 @@ public class Serializer
         var props = obj.GetType().GetProperties();
 
         IBuffer bb = new BufferBase(buffer);
-        var totalColumns = bb.ReadUInt16(0);
-        var bufferLength = bb.ReadUInt16(2);
-        var totalLength = bb.ReadUInt16(4);
+        var bufferLength = bb.ReadUInt16(0);
+        var totalLength = bb.ReadUInt16(2);
+        var totalColumns = bb.ReadUInt16(4);
 
         Assert.Equals((ushort)buffer.Length, bufferLength);
 
@@ -163,9 +163,9 @@ public class Serializer
         var parms = GetParams(columns, obj);
 
         // Additional info stored
-        // Total Columns (2 bytes)
         // BufferLength (2 bytes)     // includes metadata fields
-        // Total Length (2 bytes)   // Just size of data
+        // Total Length (2 bytes)     // Just size of data
+        // Total Columns (2 bytes)
         // Fixed Length Columns (2 bytes)
         // Fixed Length size (2 bytes)
         // Variable Length Columns (2 bytes)
@@ -176,16 +176,16 @@ public class Serializer
 
         ushort index = 0;
 
-        // Total columns
-        buffer.Write(parms.TotalCount, index);
-        index += (Types.GetByDataType(DataType.UInt16).Size);
-
         // Buffer size
         buffer.Write(bufferSize, index);
         index += (Types.GetByDataType(DataType.UInt16).Size);
 
         // Total size
         buffer.Write(parms.TotalSize, index);
+        index += (Types.GetByDataType(DataType.UInt16).Size);
+
+        // Total columns
+        buffer.Write(parms.TotalCount, index);
         index += (Types.GetByDataType(DataType.UInt16).Size);
 
         // Fixed length columns
