@@ -93,10 +93,10 @@ The page header is 96 bytes long. The remaining 8096 bytes in the data page can 
 
 ```
 |-----------------------------------------------------------------------------------------------------|
-| Page Header (96 bytes)  | Page Data (8096 bytes) including row offset array | (Row offset array)    |
-|-----------------------------------------------------------------------------------------------------|
-| PageId | PageType | ... | Element #1 | Element #2 | Element #n |            | SlotN | Slot2 | Slot1 |
-|-----------------------------------------------------------------------------------------------------|
+| Page Header (96 bytes)                                                                                | Page Data (8096 bytes) including row offset array | (Row offset array) |
+| ----------------------------------------------------------------------------------------------------- |
+| PageId                                                                                                | PageType                                          | ...                | Element #1 | Element #2 | Element #n |  | SlotN | Slot2 | Slot1 |
+| ----------------------------------------------------------------------------------------------------- |
 ```
 
 Disk IO is performed at a data page level.
@@ -131,14 +131,15 @@ Serialisation
 -------------
 In order to move data from disk to memory and vice versa, it must be serialised. A custom serialiser has been implemented to do this. The serialiser is able to serialise any object, and stores the serialised output in the following format:
 
-| Field                 | Size (bytes)              | Description                                                          |
-| --------------------- | ------------------------- | -------------------------------------------------------------------- |
-| Buffer Length         | 2                         | The total size of the serialised output including metadata.          |
-| Data Length           | 2                         | The size of the serialised data.                                     |
-| Column Count          | 2                         | The total number of columns in the object.                           |
-| Fixed Column Count    | 2                         | The number of fixed length columns in the object.                    |
-| Fixed Data Length     | 2                         | The size of fixed length data.                                       |
-| Fixed Data            | n                         | The fixed length data.                                               |
-| Variable Column Count | 2                         | The number of variable length columns in the object.                 |
-| Variable Length Table | 2 * variable column count | Table of Int16 values denoting length of each variable length field. |
-| Variable Data         | n                         | The variable length data                                             |
+| Field                 | Size (bytes)              | Row Overhead | Description                                                             |
+| --------------------- | ------------------------- | ------------ | ----------------------------------------------------------------------- |
+| Buffer Length         | 2                         | Yes          | The total size of the serialised output including row overhead.         |
+| Data Length           | 2                         | Yes          | The size of the serialised data excluding row overhead.                 |
+| Column Count          | 2                         | Yes          | The total number of columns in the object.                              |
+| Null Bitmap           | ColumnCount / 8           | Yes          | Stores 1 bit for every column. bit set to true if column value is null. |
+| Fixed Column Count    | 2                         | Yes          | The number of fixed length columns in the object.                       |
+| Fixed Data Length     | 2                         | Yes          | The size of fixed length data.                                          |
+| Fixed Data            | n                         | No           | The fixed length data.                                                  |
+| Variable Column Count | 2                         | Yes          | The number of variable length columns in the object.                    |
+| Variable Length Table | 2 * variable column count | Yes          | Table of Int16 values denoting length of each variable length field.    |
+| Variable Data         | n                         | No           | The variable length data                                                |

@@ -1,6 +1,8 @@
 namespace Dbarone.Net.Database;
 using System;
 using System.Collections.Generic;
+using Dbarone.Net.Extensions.Reflection;
+using Dbarone.Net.Assertions;
 
 /// <summary>
 /// Defines the types allowed in Dbarone.Net.Database.
@@ -21,6 +23,10 @@ public class Types
         {
             t = Enum.GetUnderlyingType(type);
         }
+        else if (type.IsNullable())
+        {
+            t = type.GetNullableUnderlyingType();
+        }
         return _dict[t];
     }
 
@@ -36,6 +42,7 @@ public class Types
     /// <returns></returns>
     public static ushort SizeOf(object obj)
     {
+        if (obj == null) { return 0; }
         var typeInfo = GetByType(obj.GetType());
         if (typeInfo.IsFixedLength)
         {

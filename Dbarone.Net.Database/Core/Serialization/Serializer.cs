@@ -1,5 +1,6 @@
 namespace Dbarone.Net.Database;
 using Dbarone.Net.Assertions;
+using System.Collections;
 
 /// <summary>
 /// Serializes and deserializes .NET objects to and from byte[] arrays.
@@ -19,9 +20,12 @@ public class Serializer
         foreach (var property in properties)
         {
             TypeInfo t = default!;
-            if (property.PropertyType.IsEnum) {
+            if (property.PropertyType.IsEnum)
+            {
                 t = Types.GetByType(Enum.GetUnderlyingType(property.PropertyType));
-            } else {
+            }
+            else
+            {
                 t = Types.GetByType(property.PropertyType);
             }
             columns.Add(new ColumnInfo()
@@ -59,20 +63,36 @@ public class Serializer
         var bufferLength = bb.ReadUInt16(0);
         var totalLength = bb.ReadUInt16(2);
         var totalColumns = bb.ReadUInt16(4);
+        ushort columnIndex = 0;
+
+        // Set up null bitmap
+        var nullBitmap = new BitArray(totalColumns);
+        var nullBitmapBytes = (ushort)Math.Ceiling((double)totalColumns / 8);
+        nullBitmap = new BitArray(bb.ReadBytes(6, nullBitmapBytes));
 
         Assert.Equals((ushort)buffer.Length, bufferLength);
 
-        var fixedLengthColumns = bb.ReadUInt16(6);
-        ushort fixedLength = bb.ReadUInt16(8);
-        ushort startFixedLength = 10;
+        var fixedLengthColumns = bb.ReadUInt16(6 + nullBitmapBytes);
+        ushort fixedLength = bb.ReadUInt16(8 + nullBitmapBytes);
+        ushort startFixedLength = (ushort)(10 + nullBitmapBytes);
         ushort index = startFixedLength;
 
         foreach (var col in fixedColumns)
         {
             var prop = props.First(p => p.Name.Equals(col.ColumnName));
-            var value = bb.Read(col.DataType, index);
-            prop.SetValue(obj, value);
+
+            if (nullBitmap[columnIndex] == true)
+            {
+                prop.SetValue(obj, null);
+            }
+            else
+            {
+                var value = bb.Read(col.DataType, index);
+                prop.SetValue(obj, value);
+            }
+
             index += Types.GetByDataType(col.DataType).Size;
+            columnIndex++;
         }
 
         // Check fixed data length is correct
@@ -91,13 +111,24 @@ public class Serializer
         for (var i = 0; i < variableLengthCount; i++)
         {
             var col = variableColumns[i];
-            var value = bb.Read(col.DataType, index, variableLengthLengths[i]);
             var prop = props.First(p => p.Name.Equals(col.ColumnName));
-            prop.SetValue(obj, value);
+
+            if (nullBitmap[columnIndex] == true)
+            {
+                prop.SetValue(obj, null);
+            }
+            else
+            {
+                var value = bb.Read(col.DataType, index, variableLengthLengths[i]);
+                prop.SetValue(obj, value);
+            }
+
             index += variableLengthLengths[i];
+            columnIndex++;
         }
 
         Assert.Equals(totalColumns, (ushort)(fixedLengthColumns + variableLengthCount));
+        Assert.Equals(columnIndex, totalColumns);
 
         return obj;
     }
@@ -166,12 +197,16 @@ public class Serializer
         // BufferLength (2 bytes)     // includes metadata fields
         // Total Length (2 bytes)     // Just size of data
         // Total Columns (2 bytes)
+        // Null bitmap (total columns / 8 bytes)
         // Fixed Length Columns (2 bytes)
         // Fixed Length size (2 bytes)
         // Variable Length Columns (2 bytes)
         // Variable Length Table (2 bytes * variable columns)
         var ushortSize = Types.GetByDataType(DataType.UInt16).Size;
-        var bufferSize = parms.TotalSize + (6 * ushortSize) + (ushortSize * parms.VariableCount);
+        var nullBitmap = new BitArray(parms.TotalCount);
+        ushort columnIndex = 0;
+        var nullBitmapBytes = (ushort)Math.Ceiling((double)parms.TotalCount / 8);
+        var bufferSize = parms.TotalSize + (6 * ushortSize) + (ushortSize * parms.VariableCount) + nullBitmapBytes;
         var buffer = new BufferBase(new byte[bufferSize]);
 
         ushort index = 0;
@@ -188,6 +223,10 @@ public class Serializer
         buffer.Write(parms.TotalCount, index);
         index += (Types.GetByDataType(DataType.UInt16).Size);
 
+        // Null Bitmap
+        // Pad space - fill in later
+        index += nullBitmapBytes;
+
         // Fixed length columns
         buffer.Write(parms.FixedCount, index);
         index += (Types.GetByDataType(DataType.UInt16).Size);
@@ -200,8 +239,16 @@ public class Serializer
         var fixedDataLengthOffset = index;
         foreach (var item in parms.FixedColumns)
         {
-            buffer.Write(item.Value, index);
+            if (item.Value == null)
+            {
+                nullBitmap[columnIndex] = true;
+            }
+            else
+            {
+                buffer.Write(item.Value, index);
+            }
             index += item.Size;
+            columnIndex++;
         }
 
         // Number of variable length columns
@@ -218,10 +265,24 @@ public class Serializer
         // variable values
         foreach (var item in parms.VariableColumns)
         {
-            buffer.Write(item.Value, index);
+            if (item.Value == null)
+            {
+                nullBitmap[columnIndex] = true;
+            }
+            else
+            {
+                buffer.Write(item.Value, index);
+            }
             index += item.Size;
+            columnIndex++;
         }
 
+        Assert.Equals(columnIndex, parms.TotalCount);
+
+        // Write null bitmap
+        var nullBitmapByteArray = new byte[nullBitmapBytes];
+        nullBitmap.CopyTo(nullBitmapByteArray, 0);
+        buffer.Write(nullBitmapByteArray, 6);   // bitmap array starts at offset 6
         return buffer.ToArray();
     }
 }
