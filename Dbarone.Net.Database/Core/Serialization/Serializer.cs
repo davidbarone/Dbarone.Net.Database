@@ -1,46 +1,13 @@
 namespace Dbarone.Net.Database;
 using Dbarone.Net.Assertions;
 using System.Collections;
+using Dbarone.Net.Extensions.Object;
 
 /// <summary>
 /// Serializes and deserializes .NET objects to and from byte[] arrays.
 /// </summary>
 public class Serializer
 {
-    /// <summary>
-    /// Gets the column information for an entity type.
-    /// </summary>
-    /// <param name="type"></param>
-    /// <returns></returns>
-    public static IEnumerable<ColumnInfo> GetColumnInfo(Type type)
-    {
-        List<ColumnInfo> columns = new List<ColumnInfo>();
-        var properties = type.GetProperties();
-        int i = 0;
-        foreach (var property in properties)
-        {
-            TypeInfo t = default!;
-            if (property.PropertyType.IsEnum)
-            {
-                t = Types.GetByType(Enum.GetUnderlyingType(property.PropertyType));
-            }
-            else
-            {
-                t = Types.GetByType(property.PropertyType);
-            }
-            columns.Add(new ColumnInfo()
-            {
-                ColumnName = property.Name,
-                DataType = t.DataType,
-                MaxLength = t.Size,
-                IsNullable = false,
-                Order = i++,
-                IsPrimaryKey = false
-            });
-        }
-        return columns;
-    }
-
     public static T Deserialize<T>(byte[] buffer)
     {
         return (T)Deserialize(typeof(T), buffer);
@@ -48,16 +15,33 @@ public class Serializer
 
     public static object Deserialize(Type type, byte[] buffer)
     {
-        var columns = GetColumnInfo(type);
+        var columns = GetColumnsForType(type);
+        return Deserialize(type, columns, buffer);
+    }
+
+    public static object Deserialize(Type type, IEnumerable<ColumnInfo> columns, byte[] buffer){
+
+        var dictionary = DeserializeDictionary(columns, buffer);
 
         object? obj = Activator.CreateInstance(type);
         if (obj == null)
         {
             throw new Exception("Error creating object");
         }
-        var fixedColumns = columns.Where(c => Types.GetByDataType(c.DataType).IsFixedLength).OrderBy(c => c.Order);
-        var variableColumns = columns.Where(c => !Types.GetByDataType(c.DataType).IsFixedLength).OrderBy(c => c.Order).ToList();
         var props = obj.GetType().GetProperties();
+
+        foreach (var column in columns){
+            props.First(p => p.Name.Equals(column.Name)).SetValue(obj, dictionary[column.Name]);
+        }
+        return obj;
+    }
+
+    public static IDictionary<string, object?> DeserializeDictionary(IEnumerable<ColumnInfo> columns, byte[] buffer){
+
+        Dictionary<string, object?> obj = new Dictionary<string, object?>();
+
+        var fixedColumns = columns.Where(c => Types.GetByDataType(c.DataType).IsFixedLength).ToList();
+        var variableColumns = columns.Where(c => !Types.GetByDataType(c.DataType).IsFixedLength).ToList();
 
         IBuffer bb = new BufferBase(buffer);
         var bufferLength = bb.ReadUInt16(0);
@@ -79,16 +63,14 @@ public class Serializer
 
         foreach (var col in fixedColumns)
         {
-            var prop = props.First(p => p.Name.Equals(col.ColumnName));
-
             if (nullBitmap[columnIndex] == true)
             {
-                prop.SetValue(obj, null);
+                obj[col.Name] = null;
             }
             else
             {
                 var value = bb.Read(col.DataType, index);
-                prop.SetValue(obj, value);
+                obj[col.Name] = value;
             }
 
             index += Types.GetByDataType(col.DataType).Size;
@@ -111,16 +93,15 @@ public class Serializer
         for (var i = 0; i < variableLengthCount; i++)
         {
             var col = variableColumns[i];
-            var prop = props.First(p => p.Name.Equals(col.ColumnName));
 
             if (nullBitmap[columnIndex] == true)
             {
-                prop.SetValue(obj, null);
+                obj[col.Name] = null;
             }
             else
             {
                 var value = bb.Read(col.DataType, index, variableLengthLengths[i]);
-                prop.SetValue(obj, value);
+                obj[col.Name] = value;
             }
 
             index += variableLengthLengths[i];
@@ -133,44 +114,6 @@ public class Serializer
         return obj;
     }
 
-    private static SerializationParams GetParams(IEnumerable<ColumnInfo> columns, object obj)
-    {
-        SerializationParams parms = new SerializationParams();
-        var props = obj.GetType().GetProperties();
-
-        var fixedColumns = columns.Where(c => Types.GetByDataType(c.DataType).IsFixedLength).OrderBy(c => c.Order);
-        var variableColumns = columns.Where(c => !Types.GetByDataType(c.DataType).IsFixedLength).OrderBy(c => c.Order);
-
-        parms.TotalCount = (ushort)columns.Count();
-        parms.FixedCount = (ushort)fixedColumns.Count();
-        parms.VariableCount = (ushort)variableColumns.Count();
-        parms.FixedSize = (ushort)fixedColumns.Sum(f => Types.GetByDataType(f.DataType).Size);
-        parms.FixedColumns = new List<ColumnSerializationInfo>();
-        foreach (var item in fixedColumns)
-        {
-            ColumnSerializationInfo csi = new ColumnSerializationInfo();
-            var prop = props.First(p => p.Name.Equals(item.ColumnName));
-            csi.ColumnName = item.ColumnName;
-            csi.Value = prop.GetValue(obj);
-            csi.Size = Types.GetByType(prop.PropertyType).Size;
-            parms.FixedColumns.Add(csi);
-        }
-        parms.VariableColumns = new List<ColumnSerializationInfo>();
-        foreach (var item in variableColumns)
-        {
-            ColumnSerializationInfo csi = new ColumnSerializationInfo();
-            var prop = props.First(p => p.Name.Equals(item.ColumnName));
-            csi.ColumnName = item.ColumnName;
-            csi.Value = prop.GetValue(obj);
-            csi.Size = Types.SizeOf(csi.Value);
-            parms.VariableColumns.Add(csi);
-        }
-        parms.VariableSize = (ushort)parms.VariableColumns.Sum(c => c.Size);
-        parms.TotalSize = (ushort)(parms.FixedSize + parms.VariableSize);
-
-        return parms;
-    }
-
     /// <summary>
     /// Serialises an object to a byte array.
     /// </summary>
@@ -178,7 +121,7 @@ public class Serializer
     /// <returns>A byte array representing the object.</returns>
     public static byte[] Serialize(object obj)
     {
-        var columnInfo = GetColumnInfo(obj.GetType());
+        var columnInfo = GetColumnsForType(obj.GetType());
         return Serialize(columnInfo, obj);
     }
 
@@ -190,6 +133,18 @@ public class Serializer
     /// <returns>A byte array representing the object.</returns>
     public static byte[] Serialize(IEnumerable<ColumnInfo> columns, object obj)
     {
+        var dict = obj.ToDictionary();
+        return SerializeDictionary(columns, dict!);
+    }
+
+    /// <summary>
+    /// Serializes a dictionary.
+    /// </summary>
+    /// <param name="columns">The column metadata.</param>
+    /// <param name="obj">The object / dictionary to serialize.</param>
+    /// <returns>A byte array of the serialized data.</returns>
+    public static byte[] SerializeDictionary(IEnumerable<ColumnInfo> columns, IDictionary<string, object?> obj) {
+
         // Get serialization parameters
         var parms = GetParams(columns, obj);
 
@@ -219,6 +174,7 @@ public class Serializer
         buffer.Write(parms.TotalSize, index);
         index += (Types.GetByDataType(DataType.UInt16).Size);
 
+
         // Total columns
         buffer.Write(parms.TotalCount, index);
         index += (Types.GetByDataType(DataType.UInt16).Size);
@@ -239,7 +195,7 @@ public class Serializer
         var fixedDataLengthOffset = index;
         foreach (var item in parms.FixedColumns)
         {
-            if (item.Value == null)
+            if (item.Value == null || !obj.ContainsKey(item.ColumnName))
             {
                 nullBitmap[columnIndex] = true;
             }
@@ -265,7 +221,7 @@ public class Serializer
         // variable values
         foreach (var item in parms.VariableColumns)
         {
-            if (item.Value == null)
+            if (item.Value == null || !obj.ContainsKey(item.ColumnName))
             {
                 nullBitmap[columnIndex] = true;
             }
@@ -285,4 +241,58 @@ public class Serializer
         buffer.Write(nullBitmapByteArray, 6);   // bitmap array starts at offset 6
         return buffer.ToArray();
     }
+
+    /// <summary>
+    /// Returns the columns for a particular type based on the public properties.
+    /// </summary>
+    /// <param name="type">The type to return columns for.</param>
+    /// <returns>A list of columns for the type.</returns>
+    public static IEnumerable<ColumnInfo> GetColumnsForType(Type type){
+        List<ColumnInfo> result = new List<ColumnInfo>();
+        var properties = type.GetProperties();
+        foreach (var property in properties)
+        {
+            result.Add(new ColumnInfo(property.Name, property.PropertyType));
+        }
+        return result;
+    }
+
+    #region Private Methods
+
+    private static SerializationParams GetParams(IEnumerable<ColumnInfo> columns, IDictionary<string, object?> obj)
+    {
+        SerializationParams parms = new SerializationParams();
+
+        var fixedColumns = columns.Where(c => Types.GetByDataType(c.DataType).IsFixedLength);
+        var variableColumns = columns.Where(c => !Types.GetByDataType(c.DataType).IsFixedLength);
+
+        parms.TotalCount = (ushort)columns.Count();
+        parms.FixedCount = (ushort)fixedColumns.Count();
+        parms.VariableCount = (ushort)variableColumns.Count();
+        parms.FixedSize = (ushort)fixedColumns.Sum(f => Types.GetByDataType(f.DataType).Size);
+        parms.FixedColumns = new List<ColumnSerializationInfo>();
+        foreach (var item in fixedColumns)
+        {
+            ColumnSerializationInfo csi = new ColumnSerializationInfo();
+            csi.ColumnName = item.Name;
+            csi.Value = obj.ContainsKey(item.Name) ? obj[item.Name] : null;
+            csi.Size = Types.GetByDataType(item.DataType).Size;
+            parms.FixedColumns.Add(csi);
+        }
+        parms.VariableColumns = new List<ColumnSerializationInfo>();
+        foreach (var item in variableColumns)
+        {
+            ColumnSerializationInfo csi = new ColumnSerializationInfo();
+            csi.ColumnName = item.Name;
+            csi.Value = obj.ContainsKey(item.Name) ? obj[item.Name] : null;
+            csi.Size = Types.SizeOf(csi.Value);
+            parms.VariableColumns.Add(csi);
+        }
+        parms.VariableSize = (ushort)parms.VariableColumns.Sum(c => c.Size);
+        parms.TotalSize = (ushort)(parms.FixedSize + parms.VariableSize);
+
+        return parms;
+    }
+
+    #endregion
 }

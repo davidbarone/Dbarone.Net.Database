@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="Dbarone.Net.Assertions" Version="1.0.2" />
+    <PackageReference Include="Dbarone.Net.Extensions.Object" Version="1.0.5" />
     <PackageReference Include="Dbarone.Net.Extensions.Reflection" Version="1.0.4" />
     <PackageReference Include="Dbarone.Net.Mapper" Version="1.0.0" />
     <PackageReference Include="dbarone.net.proxy" Version="1.0.1" />

@@ -11,7 +11,7 @@ public class SerializerTests
         var entity = TestEntity.Create();
         for (int i = 0; i < 1; i++)
         {
-            var columns = Serializer.GetColumnInfo(typeof(TestEntity));
+            var columns = Serializer.GetColumnsForType(typeof(TestEntity));
             var bytes = Serializer.Serialize(entity);
             var entity2 = Serializer.Deserialize<TestEntity>(bytes);
 
@@ -28,7 +28,7 @@ public class SerializerTests
             var entity = TestEntity.Create();
             for (int i = 0; i < 10000; i++)
             {
-                var columns = Serializer.GetColumnInfo(typeof(TestEntity));
+                var columns = Serializer.GetColumnsForType(typeof(TestEntity));
                 var bytes = Serializer.Serialize(entity);
                 var entity2 = Serializer.Deserialize<TestEntity>(bytes);
             }
