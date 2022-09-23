@@ -10,9 +10,17 @@ public class ColumnInfo
     //public bool IsPrimaryKey { get; set; }
     public bool IsNullable { get; set; }
 
-    public ColumnInfo(string name, Type type){
+    public ColumnInfo(string name, Type type)
+    {
         this.Name = name;
         this.DataType = Types.GetByType(type).DataType;
         this.IsNullable = type.IsNullable();
-    }    
+    }
+
+    public ColumnInfo(string name, DataType dataType, bool isNullable)
+    {
+        this.Name = name;
+        this.DataType = dataType;
+        this.IsNullable = isNullable;
+    }
 }

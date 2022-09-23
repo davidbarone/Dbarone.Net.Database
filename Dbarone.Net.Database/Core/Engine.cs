@@ -20,13 +20,36 @@ public class Engine : IEngine
 
     public TableInfo CreateTable<T>(string tableName){
         var systemTablePage = this.GetPage<SystemTablePage>(1);
+        var systemColumnPage = this.CreatePage<SystemColumnPage>();
         SystemTablePageData row = new SystemTablePageData()
         {
             TableName = tableName,
             PageId = 0,
-            IsSystemTable = false
+            IsSystemTable = false,
+            ColumnPageId = systemColumnPage.Headers().PageId
         };
         systemTablePage.AddDataRow(row);
+        var columns = Serializer.GetColumnsForType(typeof(T));
+        foreach (var column in columns) {
+            systemColumnPage.AddDataRow(new ColumnInfo(column.Name, column.DataType, column.IsNullable));
+        }
+        return null;
+    }
+
+    public TableInfo CreateTable(string tableName, IList<ColumnInfo> columns) {
+        var systemTablePage = this.GetPage<SystemTablePage>(1);
+        var systemColumnPage = this.CreatePage<SystemColumnPage>();
+        SystemTablePageData row = new SystemTablePageData()
+        {
+            TableName = tableName,
+            PageId = 0,
+            IsSystemTable = false,
+            ColumnPageId = systemColumnPage.Headers().PageId
+        };
+        systemTablePage.AddDataRow(row);
+        foreach (var column in columns) {
+            systemColumnPage.AddDataRow(new ColumnInfo(column.Name, column.DataType, column.IsNullable));
+        }
         return null;
     }
 
