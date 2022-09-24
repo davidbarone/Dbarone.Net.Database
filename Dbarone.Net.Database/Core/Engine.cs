@@ -1,5 +1,6 @@
 namespace Dbarone.Net.Database;
 using Dbarone.Net.Mapper;
+using System.Linq;
 
 /// <summary>
 /// The internal (private) database implementation.
@@ -31,7 +32,7 @@ public class Engine : IEngine
         systemTablePage.AddDataRow(row);
         var columns = Serializer.GetColumnsForType(typeof(T));
         foreach (var column in columns) {
-            systemColumnPage.AddDataRow(new ColumnInfo(column.Name, column.DataType, column.IsNullable));
+            systemColumnPage.AddDataRow(new SystemColumnPageData(column.Name, column.DataType, column.IsNullable));
         }
         return null;
     }
@@ -48,7 +49,7 @@ public class Engine : IEngine
         };
         systemTablePage.AddDataRow(row);
         foreach (var column in columns) {
-            systemColumnPage.AddDataRow(new ColumnInfo(column.Name, column.DataType, column.IsNullable));
+            systemColumnPage.AddDataRow(new SystemColumnPageData(column.Name, column.DataType, column.IsNullable));
         }
         return null;
     }
@@ -58,6 +59,17 @@ public class Engine : IEngine
         var mapper = ObjectMapper<SystemTablePageData, TableInfo>.Create();
         var data = systemTablePage.Data();
         var mapped = mapper.MapMany(data);
+        return mapped;
+    }
+
+    public IEnumerable<ColumnInfo> Columns(string tableName) {
+        var table = Tables().FirstOrDefault(t => t.TableName.Equals(tableName, StringComparison.OrdinalIgnoreCase));
+        if (table==null){
+            throw new Exception($"Invalid table name: [{tableName}].");
+        }
+        var systemColumnPage = this.GetPage<SystemColumnPage>(table.ColumnPageId);
+        var mapper = ObjectMapper<SystemColumnPageData, ColumnInfo>.Create();
+        var mapped = mapper.MapMany(systemColumnPage.Data());
         return mapped;
     }
 
@@ -100,9 +112,6 @@ public class Engine : IEngine
 
         // Create System table page (page #1)
         var systemTablePage = engine.CreatePage<SystemTablePage>();        
-
-        // Create System column page (page #2)
-        var systemColumnPage = engine.CreatePage<SystemColumnPage>();        
 
         return engine;
     }

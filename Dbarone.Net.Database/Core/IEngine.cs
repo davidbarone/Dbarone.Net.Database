@@ -19,4 +19,11 @@ public interface IEngine : IDisposable
     /// </summary>
     /// <returns></returns>
     IEnumerable<TableInfo> Tables();
+
+    /// <summary>
+    /// Returns the column information for a table.
+    /// </summary>
+    /// <param name="tableName"></param>
+    /// <returns></returns>
+    IEnumerable<ColumnInfo> Columns(string tableName);
 }
