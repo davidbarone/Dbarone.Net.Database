@@ -76,13 +76,19 @@ public class Connection
             Assert.Equal(System.DateTime.Now.Date, dbInfo.CreationTime.Date);
             Assert.Equal(1, dbInfo.Version);
             Assert.Equal("Dbarone.Net.Database", dbInfo.Magic);
-            Assert.Equal(3, dbInfo.PageCount);  // (0) Boot, (1) SystemTable, (2) SystemColumn
+            Assert.Equal(2, dbInfo.PageCount);  // (0) Boot, (1) SystemTable
         }
     }
 
-    [Fact]
-    public void TestCreateTable() {
+    class Customer
+    {
+        public string CustomerName { get; set; }
+        public int CustomerId { get; set; }
+    }
 
+    [Fact]
+    public void TestCreateTableFromEntity()
+    {
         // Arrange
         var tableName = "Customers";
         var dbName = "mydb4.db";
@@ -94,7 +100,8 @@ public class Connection
         // Act
         using (var db = Database.Create(dbName))
         {
-            db.CreateTable<object>(tableName);
+            db.CreateTable<Customer>(tableName);
+            
             db.CheckPoint();    // Save pages to disk
         }
 
@@ -106,5 +113,26 @@ public class Connection
             Assert.Single(tables);
             Assert.Equal(tableName, tables.First().TableName);
         }
+    }
+
+    public void TestCreate2TablesAndCheckColumns() {
+
+        // Arrange
+        var tableName = "Customers";
+        var dbName = "mydb5.db";
+        if (File.Exists(dbName))
+        {
+            File.Delete(dbName);
+        }
+
+        // Act
+        using (var db = Database.Create(dbName))
+        {
+            db.CreateTable<Customer>(tableName);
+            db.CreateTable("Address", )
+            
+            db.CheckPoint();    // Save pages to disk
+        }
+
     }
 }
