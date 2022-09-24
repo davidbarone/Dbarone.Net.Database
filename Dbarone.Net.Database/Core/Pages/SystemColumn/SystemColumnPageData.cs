@@ -4,10 +4,11 @@ using Dbarone.Net.Extensions.Reflection;
 /// <summary>
 /// The item data for the SystemColumnPage type.
 /// </summary>
-public class SystemColumnPageData : PageData  {
+public class SystemColumnPageData : PageData
+{
     public string Name { get; set; } = default!;
     public DataType DataType { get; set; } = default!;
-    public bool IsNullable { get; set; }  
+    public bool IsNullable { get; set; }
 
     public SystemColumnPageData(string name, Type type)
     {
@@ -21,5 +22,11 @@ public class SystemColumnPageData : PageData  {
         this.Name = name;
         this.DataType = dataType;
         this.IsNullable = isNullable;
-    }     
+    }
+
+    public SystemColumnPageData()
+    {
+
+    }
+
 }

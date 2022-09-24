@@ -23,4 +23,8 @@ public class ColumnInfo
         this.DataType = dataType;
         this.IsNullable = isNullable;
     }
+
+    public ColumnInfo() {
+        
+    }
 }

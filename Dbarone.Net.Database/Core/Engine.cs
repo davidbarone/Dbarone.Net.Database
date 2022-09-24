@@ -11,72 +11,7 @@ public class Engine : IEngine
     private Stream _stream;
     private BufferManager _bufferManager;
 
-    /// <summary>
-    /// Writes all dirty pages to disk.
-    /// </summary>
-    public void CheckPoint()
-    {
-        this._bufferManager.SavePages();
-    }
-
-    public TableInfo CreateTable<T>(string tableName){
-        var systemTablePage = this.GetPage<SystemTablePage>(1);
-        var systemColumnPage = this.CreatePage<SystemColumnPage>();
-        SystemTablePageData row = new SystemTablePageData()
-        {
-            TableName = tableName,
-            PageId = 0,
-            IsSystemTable = false,
-            ColumnPageId = systemColumnPage.Headers().PageId
-        };
-        systemTablePage.AddDataRow(row);
-        var columns = Serializer.GetColumnsForType(typeof(T));
-        foreach (var column in columns) {
-            systemColumnPage.AddDataRow(new SystemColumnPageData(column.Name, column.DataType, column.IsNullable));
-        }
-        return null;
-    }
-
-    public TableInfo CreateTable(string tableName, IList<ColumnInfo> columns) {
-        var systemTablePage = this.GetPage<SystemTablePage>(1);
-        var systemColumnPage = this.CreatePage<SystemColumnPage>();
-        SystemTablePageData row = new SystemTablePageData()
-        {
-            TableName = tableName,
-            PageId = 0,
-            IsSystemTable = false,
-            ColumnPageId = systemColumnPage.Headers().PageId
-        };
-        systemTablePage.AddDataRow(row);
-        foreach (var column in columns) {
-            systemColumnPage.AddDataRow(new SystemColumnPageData(column.Name, column.DataType, column.IsNullable));
-        }
-        return null;
-    }
-
-    public IEnumerable<TableInfo> Tables() {
-        var systemTablePage = this.GetPage<SystemTablePage>(1);
-        var mapper = ObjectMapper<SystemTablePageData, TableInfo>.Create();
-        var data = systemTablePage.Data();
-        var mapped = mapper.MapMany(data);
-        return mapped;
-    }
-
-    public IEnumerable<ColumnInfo> Columns(string tableName) {
-        var table = Tables().FirstOrDefault(t => t.TableName.Equals(tableName, StringComparison.OrdinalIgnoreCase));
-        if (table==null){
-            throw new Exception($"Invalid table name: [{tableName}].");
-        }
-        var systemColumnPage = this.GetPage<SystemColumnPage>(table.ColumnPageId);
-        var mapper = ObjectMapper<SystemColumnPageData, ColumnInfo>.Create();
-        var mapped = mapper.MapMany(systemColumnPage.Data());
-        return mapped;
-    }
-
-    public T GetPage<T>(int pageId) where T : Page
-    {
-        return this._bufferManager.GetPage<T>(pageId);
-    }
+    #region Constructor / destructor
 
     /// <summary>
     /// Instantiates a new Engine object.
@@ -97,12 +32,25 @@ public class Engine : IEngine
         this._bufferManager = new BufferManager(new DiskService(this._stream));
     }
 
+    public void Dispose()
+    {
+        if (this._stream != null)
+        {
+            //this._stream.Close();
+            this._stream.Dispose();
+        }
+    }
+
+    #endregion
+
+    #region Static members
+
     /// <summary>
     /// Creates a new database, and writes the core system pages required for functioning.
     /// </summary>
     /// <param name="filename">The filename.</param>
     /// <returns></returns>
-    public static Engine Create(string filename)
+    public static IEngine Create(string filename)
     {
         var engine = new Engine(filename, canWrite: true);
 
@@ -111,10 +59,129 @@ public class Engine : IEngine
         bootPage.Headers().CreationTime = DateTime.Now;
 
         // Create System table page (page #1)
-        var systemTablePage = engine.CreatePage<SystemTablePage>();        
+        var systemTablePage = engine.CreatePage<SystemTablePage>();
 
         return engine;
     }
+
+    public static Engine Open(string filename, bool canWrite)
+    {
+        return new Engine(filename, canWrite: true);
+    }
+
+    public static void Delete(string filename)
+    {
+        // open file and check valid database file.
+        var db = Open(filename, false);
+        var info = db.Database();
+        if (info.Magic == "Dbarone.Net.Database")
+        {
+            // If got here, good to delete
+            File.Delete(filename);
+            return;
+        }
+        throw new Exception("File is not valid format.");
+    }
+
+    #endregion
+
+    #region Metadata
+
+    public DatabaseInfo Database()
+    {
+        var page0 = this.GetPage<BootPage>(0);
+        return new DatabaseInfo
+        {
+            Magic = page0.Headers().Magic,
+            Version = page0.Headers().Version,
+            CreationTime = page0.Headers().CreationTime,
+            PageCount = page0.Headers().PageCount
+        };
+    }
+
+    public IEnumerable<TableInfo> Tables()
+    {
+        var systemTablePage = this.GetPage<SystemTablePage>(1);
+        var mapper = ObjectMapper<SystemTablePageData, TableInfo>.Create();
+        var data = systemTablePage.Data();
+        var mapped = mapper.MapMany(data);
+        return mapped;
+    }
+
+    public TableInfo Table(string tableName) {
+        var table = Tables().FirstOrDefault(t => t.TableName.Equals(tableName, StringComparison.OrdinalIgnoreCase));
+        if (table == null)
+        {
+            throw new Exception($"Invalid table name: [{tableName}].");
+        }
+        return table;
+    }
+
+    public IEnumerable<ColumnInfo> Columns(string tableName)
+    {
+        var table = Table(tableName);
+        var systemColumnPage = this.GetPage<SystemColumnPage>(table.ColumnPageId);
+        var mapper = ObjectMapper<SystemColumnPageData, ColumnInfo>.Create();
+        var mapped = mapper.MapMany(systemColumnPage.Data());
+        return mapped;
+    }
+
+    #endregion
+
+    /// <summary>
+    /// Writes all dirty pages to disk.
+    /// </summary>
+    public void CheckPoint()
+    {
+        this._bufferManager.SavePages();
+    }
+
+    public TableInfo CreateTable<T>(string tableName)
+    {
+        var systemTablePage = this.GetPage<SystemTablePage>(1);
+        var systemColumnPage = this.CreatePage<SystemColumnPage>();
+        SystemTablePageData row = new SystemTablePageData()
+        {
+            TableName = tableName,
+            PageId = 0,
+            IsSystemTable = false,
+            ColumnPageId = systemColumnPage.Headers().PageId
+        };
+        systemTablePage.AddDataRow(row);
+        var columns = Serializer.GetColumnsForType(typeof(T));
+        foreach (var column in columns)
+        {
+            systemColumnPage.AddDataRow(new SystemColumnPageData(column.Name, column.DataType, column.IsNullable));
+        }
+        return null;
+    }
+
+    public TableInfo CreateTable(string tableName, IEnumerable<ColumnInfo> columns)
+    {
+        var systemTablePage = this.GetPage<SystemTablePage>(1);
+        var systemColumnPage = this.CreatePage<SystemColumnPage>();
+        SystemTablePageData row = new SystemTablePageData()
+        {
+            TableName = tableName,
+            PageId = 0,
+            IsSystemTable = false,
+            ColumnPageId = systemColumnPage.Headers().PageId
+        };
+        systemTablePage.AddDataRow(row);
+        foreach (var column in columns)
+        {
+            systemColumnPage.AddDataRow(new SystemColumnPageData(column.Name, column.DataType, column.IsNullable));
+        }
+        return null;
+    }
+
+
+    public T GetPage<T>(int pageId) where T : Page
+    {
+        return this._bufferManager.GetPage<T>(pageId);
+    }
+
+
 
     /// <summary>
     /// Creates a new page. Also updates the PageCount header on the boot page.
@@ -148,22 +215,25 @@ public class Engine : IEngine
         return page;
     }
 
-    public static Engine Open(string filename, bool canWrite)
-    {
-        return new Engine(filename, canWrite: true);
-    }
 
-    public static void Delete(string filename)
-    {
-        File.Delete(filename);
-    }
+    #region Unsupported
 
-    public void Dispose()
-    {
-        if (this._stream != null)
-        {
-            //this._stream.Close();
-            this._stream.Dispose();
-        }
-    }
+    public TableInfo GetTableInfo(string tableName) { throw new NotSupportedException("Not supported."); }
+    public IEnumerable<ColumnInfo> GetColumnInfo(string tableName) { throw new NotSupportedException("Not supported."); }
+    public IEnumerable<T> Read<T>(string tableName) { throw new NotSupportedException("Not supported."); }
+
+    public bool BeginTransaction() { throw new NotSupportedException("Not supported."); }
+    public bool CommitTransaction() { throw new NotSupportedException("Not supported."); }
+    public bool RollbackTransaction() { throw new NotSupportedException("Not supported."); }
+
+    public int insert<T>(string table, T data) { throw new NotSupportedException("Not supported."); }
+    public int insert<T>(string table, IEnumerable<T> data) { throw new NotSupportedException("Not supported."); }
+    public int update<T>(string table, T data) { throw new NotSupportedException("Not supported."); }
+    public int update<T>(string table, IEnumerable<T> data) { throw new NotSupportedException("Not supported."); }
+    public int upsert<T>(string table, T data) { throw new NotSupportedException("Not supported."); }
+    public int upsert<T>(string table, IEnumerable<T> data) { throw new NotSupportedException("Not supported."); }
+    public int delete<T>(string table, T data) { throw new NotSupportedException("Not supported."); }
+    public int delete<T>(string table, IEnumerable<T> data) { throw new NotSupportedException("Not supported."); }
+
+    #endregion    
 }
