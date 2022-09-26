@@ -128,6 +128,17 @@ public class Engine : IEngine
 
     #endregion
 
+    #region DML
+
+    public int insert(string tableName, IDictionary<string, object?> row){
+        var table = Table(tableName);
+        var data = GetPage<DataPage>(table.PageId);
+        data.AddDataRow(new DictionaryPageData(row));
+        return 0;
+    }
+
+    #endregion
+
     /// <summary>
     /// Writes all dirty pages to disk.
     /// </summary>
@@ -140,12 +151,13 @@ public class Engine : IEngine
     {
         var systemTablePage = this.GetPage<SystemTablePage>(1);
         var systemColumnPage = this.CreatePage<SystemColumnPage>();
+        var dataPage = this.CreatePage<DataPage>();
         SystemTablePageData row = new SystemTablePageData()
         {
             TableName = tableName,
-            PageId = 0,
+            PageId = dataPage.Headers().PageId,
             IsSystemTable = false,
-            ColumnPageId = systemColumnPage.Headers().PageId
+            ColumnPageId = systemColumnPage.Headers().PageId,
         };
         systemTablePage.AddDataRow(row);
         var columns = Serializer.GetColumnsForType(typeof(T));
@@ -160,10 +172,11 @@ public class Engine : IEngine
     {
         var systemTablePage = this.GetPage<SystemTablePage>(1);
         var systemColumnPage = this.CreatePage<SystemColumnPage>();
+        var dataPage = this.CreatePage<DataPage>();
         SystemTablePageData row = new SystemTablePageData()
         {
             TableName = tableName,
-            PageId = 0,
+            PageId = dataPage.Headers().PageId,
             IsSystemTable = false,
             ColumnPageId = systemColumnPage.Headers().PageId
         };
@@ -175,13 +188,10 @@ public class Engine : IEngine
         return null;
     }
 
-
     public T GetPage<T>(int pageId) where T : Page
     {
         return this._bufferManager.GetPage<T>(pageId);
     }
-
-
 
     /// <summary>
     /// Creates a new page. Also updates the PageCount header on the boot page.
@@ -202,6 +212,10 @@ public class Engine : IEngine
         else if (typeof(T) == typeof(SystemColumnPage))
         {
             pageId = this._bufferManager.CreatePage(PageType.SystemColumn);
+        }
+        else if (typeof(T) == typeof(DataPage))
+        {
+            pageId = this._bufferManager.CreatePage(PageType.Data);
         }
 
         // Update boot page PageCount

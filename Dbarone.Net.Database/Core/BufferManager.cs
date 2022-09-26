@@ -47,6 +47,7 @@ public class BufferManager
             if (typeof(T) == typeof(BootPage)) page = (T)(object)new BootPage(pageId, buffer);
             else if (typeof(T) == typeof(SystemTablePage)) page = (T)(object)new SystemTablePage(pageId, buffer);
             else if (typeof(T) == typeof(SystemColumnPage)) page = (T)(object)new SystemColumnPage(pageId, buffer);
+            else if (typeof(T) == typeof(DataPage)) page = (T)(object)new DataPage(pageId, buffer);
             else throw new Exception("Unable to create a new page.");
             this._pages[pageId] = page;
             return (T)page;

@@ -10,7 +10,7 @@ public class Page
 {
     private PageBuffer _buffer;
     protected IPageHeader _headers;
-    protected IList<PageData> _data;
+    protected IList<IPageData> _data;
 
     protected virtual Type PageHeaderType { get { throw new NotImplementedException("Not implemented."); } }
 
@@ -24,7 +24,7 @@ public class Page
     /// <summary>
     /// Data within the page. The data is indexed using the slots array
     /// </summary>
-    public virtual IEnumerable<PageData> Data() { throw new NotImplementedException("Not implemented."); }
+    public virtual IEnumerable<IPageData> Data() { throw new NotImplementedException("Not implemented."); }
 
     /// <summary>
     /// The slot indexes.
@@ -67,7 +67,7 @@ public class Page
     public Page(int pageId, PageBuffer buffer, PageType pageType)
     {
         this._buffer = buffer;
-        this._data = new List<PageData>();
+        this._data = new List<IPageData>();
         this.Slots = new List<ushort>();
 
         if (!buffer.IsEmpty())
