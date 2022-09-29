@@ -1,6 +1,7 @@
 namespace Dbarone.Net.Database;
 
 public interface IDataPageHeader : IPageHeader {
+   
 }
 
 /// <summary>
@@ -8,4 +9,5 @@ public interface IDataPageHeader : IPageHeader {
 /// </summary>
 public class DataPageHeader : PageHeader , IDataPageHeader
 {
+
 }

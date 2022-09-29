@@ -44,10 +44,10 @@ public class BufferManager
             // cache miss - read from disk + add to buffer cache
             var buffer = _diskService.ReadPage(pageId);
             T? page = null;
-            if (typeof(T) == typeof(BootPage)) page = (T)(object)new BootPage(pageId, buffer);
-            else if (typeof(T) == typeof(SystemTablePage)) page = (T)(object)new SystemTablePage(pageId, buffer);
-            else if (typeof(T) == typeof(SystemColumnPage)) page = (T)(object)new SystemColumnPage(pageId, buffer);
-            else if (typeof(T) == typeof(DataPage)) page = (T)(object)new DataPage(pageId, buffer);
+            if (typeof(T) == typeof(BootPage)) page = (T)(object)new BootPage(pageId, buffer, this);
+            else if (typeof(T) == typeof(SystemTablePage)) page = (T)(object)new SystemTablePage(pageId, buffer, this);
+            else if (typeof(T) == typeof(SystemColumnPage)) page = (T)(object)new SystemColumnPage(pageId, buffer, this);
+            else if (typeof(T) == typeof(DataPage)) page = (T)(object)new DataPage(pageId, buffer, this);
             else throw new Exception("Unable to create a new page.");
             this._pages[pageId] = page;
             return (T)page;

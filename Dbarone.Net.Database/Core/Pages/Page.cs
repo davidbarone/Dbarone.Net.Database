@@ -9,12 +9,21 @@ using Dbarone.Net.Proxy;
 public class Page
 {
     private PageBuffer _buffer;
+    protected BufferManager _bufferManager;
     protected IPageHeader _headers;
     protected IList<IPageData> _data;
 
     protected virtual Type PageHeaderType { get { throw new NotImplementedException("Not implemented."); } }
 
     protected virtual Type PageDataType { get { throw new NotImplementedException("Not implemented."); } }
+
+    /// <summary>
+    /// Gets the column structure of each data row. By default returns the columns for the type `this.PageDataType`.
+    /// </summary>
+    /// <returns></returns>
+    protected virtual IEnumerable<ColumnInfo> GetDataColumns() {
+        return Serializer.GetColumnsForType(this.PageDataType);
+    }
 
     /// <summary>
     /// Header information.
@@ -30,11 +39,6 @@ public class Page
     /// The slot indexes.
     /// </summary>
     public IList<ushort> Slots { get; set; }
-
-    /// <summary>
-    /// Returns the structure of the data rows on this page type.
-    /// </summary>
-    //protected virtual IEnumerable<ColumnInfo>? DataRowStucture { get { return null; } }
 
     private void Hydrate(PageBuffer buffer)
     {
@@ -64,9 +68,10 @@ public class Page
     /// </summary>
     /// <param name="pageId">The page id.</param>
     /// <param name="buffer"></param>
-    public Page(int pageId, PageBuffer buffer, PageType pageType)
+    public Page(int pageId, PageBuffer buffer, PageType pageType, BufferManager bufferManager)
     {
         this._buffer = buffer;
+        this._bufferManager = bufferManager;
         this._data = new List<IPageData>();
         this.Slots = new List<ushort>();
 
@@ -109,7 +114,15 @@ public class Page
         Assert.IsType(row, this.PageDataType);
 
         // Serialise row object
-        var buffer = Serializer.Serialize(row);
+        // For page types that use DictionaryPageData (i.e. data pages), we get the inner dictionary.
+        var dictionaryRow = row as DictionaryPageData;
+        byte[]? buffer = null;
+        if (dictionaryRow !=null){
+            buffer = Serializer.SerializeDictionary(this.GetDataColumns(), dictionaryRow.Row);
+        } else
+        {
+            buffer = Serializer.Serialize(this.GetDataColumns(), row);
+        }
         if (!this.CanAddRowToPage(buffer.Length))
         {
             throw new Exception("Insufficient room on page.");

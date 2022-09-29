@@ -11,7 +11,7 @@ public class SystemTablePage : Page
     protected override Type PageHeaderType { get { return typeof(PageHeader); } }
     public override IPageHeader Headers() { return (IPageHeader)this._headers; }
     public override IEnumerable<SystemTablePageData> Data() { return (this._data.Select(d => (SystemTablePageData)d)); }
-    public SystemTablePage(int pageId, PageBuffer buffer) : base(pageId, buffer, PageType.SystemTable)
+    public SystemTablePage(int pageId, PageBuffer buffer, BufferManager bufferManager) : base(pageId, buffer, PageType.SystemTable, bufferManager)
     {
         Assert.Equals(this._headers.PageType, PageType.SystemTable);
     }

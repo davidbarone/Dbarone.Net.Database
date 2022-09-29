@@ -59,7 +59,7 @@ public interface IEngine : IDisposable
 
     #region DML
 
-    int insert<T>(string table, T row);
+    int Insert<T>(string table, T row);
     
     /// <summary>
     /// Inserts a row into a table using a dictionary of values.
@@ -67,8 +67,8 @@ public interface IEngine : IDisposable
     /// <param name="tableName">The name of the table to insert the row into.</param>
     /// <param name="row">The row data to insert.</param>
     /// <returns></returns>
-    int insert(string tableName, IDictionary<string, object?> row);
-    int insert<T>(string table, IEnumerable<T> data);
+    int InsertRaw(string tableName, IDictionary<string, object?> row);
+    int Insert<T>(string table, IEnumerable<T> data);
     int update<T>(string table, T data);
     int update<T>(string table, IEnumerable<T> data);
     int upsert<T>(string table, T data);

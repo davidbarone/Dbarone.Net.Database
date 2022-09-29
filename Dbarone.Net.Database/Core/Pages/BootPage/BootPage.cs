@@ -12,7 +12,7 @@ public class BootPage : Page
     public override IBootPageHeader Headers() { return (IBootPageHeader)this._headers; }
     public override IEnumerable<BootPageData> Data() { return (this._data.Select(d => (BootPageData)d)); }
 
-    public BootPage(int pageId, PageBuffer buffer) : base(pageId, buffer, PageType.Boot)
+    public BootPage(int pageId, PageBuffer buffer, BufferManager bufferManager) : base(pageId, buffer, PageType.Boot, bufferManager)
     {
         Assert.Equals(this._headers.PageType, PageType.Boot);
     }

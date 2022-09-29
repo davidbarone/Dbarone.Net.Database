@@ -130,12 +130,21 @@ public class Engine : IEngine
 
     #region DML
 
-    public int insert(string tableName, IDictionary<string, object?> row){
+    public int InsertRaw(string tableName, IDictionary<string, object?> row){
         var table = Table(tableName);
         var data = GetPage<DataPage>(table.PageId);
         data.AddDataRow(new DictionaryPageData(row));
         return 0;
     }
+
+    public int Insert<T>(string table, T data) {
+        if (data is IDictionary<string, object?>) {
+            return InsertRaw(table, data as IDictionary<string, object?>);
+        }
+        return 0;
+    }
+
+    public int Insert<T>(string table, IEnumerable<T> data) { throw new NotSupportedException("Not supported."); }
 
     #endregion
 
@@ -152,6 +161,7 @@ public class Engine : IEngine
         var systemTablePage = this.GetPage<SystemTablePage>(1);
         var systemColumnPage = this.CreatePage<SystemColumnPage>();
         var dataPage = this.CreatePage<DataPage>();
+        
         SystemTablePageData row = new SystemTablePageData()
         {
             TableName = tableName,
@@ -160,11 +170,13 @@ public class Engine : IEngine
             ColumnPageId = systemColumnPage.Headers().PageId,
         };
         systemTablePage.AddDataRow(row);
+        
         var columns = Serializer.GetColumnsForType(typeof(T));
         foreach (var column in columns)
         {
             systemColumnPage.AddDataRow(new SystemColumnPageData(column.Name, column.DataType, column.IsNullable));
         }
+
         return null;
     }
 
@@ -240,8 +252,6 @@ public class Engine : IEngine
     public bool CommitTransaction() { throw new NotSupportedException("Not supported."); }
     public bool RollbackTransaction() { throw new NotSupportedException("Not supported."); }
 
-    public int insert<T>(string table, T data) { throw new NotSupportedException("Not supported."); }
-    public int insert<T>(string table, IEnumerable<T> data) { throw new NotSupportedException("Not supported."); }
     public int update<T>(string table, T data) { throw new NotSupportedException("Not supported."); }
     public int update<T>(string table, IEnumerable<T> data) { throw new NotSupportedException("Not supported."); }
     public int upsert<T>(string table, T data) { throw new NotSupportedException("Not supported."); }
