@@ -12,7 +12,7 @@ public class DMLTests
     {
 
         // Arrange
-        var tableName = "Customers";
+        var tableName = "Addresses";
         var dbName = "mydb6.db";
         if (File.Exists(dbName))
         {
@@ -29,7 +29,7 @@ public class DMLTests
                 new ColumnInfo("Country", DataType.String, false)
             };
 
-            db.CreateTable("Addresses", columns);
+            db.CreateTable(tableName, columns);
             db.Insert("Addresses", new Dictionary<string, object?>{
                 {"AddressId", 123},
                 {"Address1", "4 Acacia Drive"},
@@ -44,9 +44,7 @@ public class DMLTests
         {
             // Assert
             var tables = db.Tables();
-            Assert.Equal(2, tables.Count());                    // 2 tables
-            Assert.Equal(2, db.Columns("Customers").Count());   // Customers has 2 columns
-            Assert.Equal(4, db.Columns("Addresses").Count());   // Addresses has 4 columns
+            Assert.Equal(1, tables.Count());                    // 1 table
             Assert.Equal(tableName, tables.First().TableName);
         }
     }

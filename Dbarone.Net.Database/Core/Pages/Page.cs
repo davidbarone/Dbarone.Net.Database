@@ -106,15 +106,12 @@ public class Page
     public virtual void CreateHeaderProxy() { throw new NotImplementedException(); }
 
     /// <summary>
-    /// Adds data row to the page.
+    /// Serialise row object.
+    /// For page types that use DictionaryPageData (i.e. data pages), we get the inner dictionary.
     /// </summary>
     /// <param name="row"></param>
-    public void AddDataRow(object row)
-    {
-        Assert.IsType(row, this.PageDataType);
-
-        // Serialise row object
-        // For page types that use DictionaryPageData (i.e. data pages), we get the inner dictionary.
+    /// <returns></returns>
+    protected byte[] SerializeDataRow(object row) {
         var dictionaryRow = row as DictionaryPageData;
         byte[]? buffer = null;
         if (dictionaryRow !=null){
@@ -123,6 +120,19 @@ public class Page
         {
             buffer = Serializer.Serialize(this.GetDataColumns(), row);
         }
+        return buffer;
+    }
+
+    /// <summary>
+    /// Adds data row to the page.
+    /// </summary>
+    /// <param name="row"></param>
+    public void AddDataRow(object row)
+    {
+        Assert.IsType(row, this.PageDataType);
+
+        var buffer = SerializeDataRow(row);
+
         if (!this.CanAddRowToPage(buffer.Length))
         {
             throw new Exception("Insufficient room on page.");
@@ -132,7 +142,7 @@ public class Page
         this.Headers().SlotsUsed++;
         this.Slots.Add(this.Headers().FreeOffset);
         this.Headers().FreeOffset += (ushort)buffer.Length;
-        this._data.Add((row as PageData)!);
+        this._data.Add((row as IPageData)!);
     }
 
     /// <summary>
@@ -179,7 +189,7 @@ public class Page
 
             // Serialize data
             // totalLength is the second UInt from start.
-            var dataBytes = Serializer.Serialize(data[slot]);
+            var dataBytes = SerializeDataRow(data[slot]);
             buffer.Write(dataBytes, dataIndex + Global.PageHeaderSize);
 
             slotIndex = slotIndex - 2;
