@@ -139,14 +139,14 @@ public class Engine : IEngine
     public IEnumerable<IDictionary<string, object?>> ReadRaw(string tableName)
     {
         var table = Table(tableName);
-        var data = GetPage<DataPage>(table.PageId);
+        var data = GetPage<DataPage>(table.RootPageId);
         return data.Data().Select(r => r.Row);
     }
 
     public int InsertRaw(string tableName, IDictionary<string, object?> row)
     {
         var table = Table(tableName);
-        var data = GetPage<DataPage>(table.PageId);
+        var data = GetPage<DataPage>(table.RootPageId);
         data.AddDataRow(new DictionaryPageData(row));
         return 0;
     }
@@ -182,7 +182,7 @@ public class Engine : IEngine
         SystemTablePageData row = new SystemTablePageData()
         {
             TableName = tableName,
-            PageId = dataPage.Headers().PageId,
+            RootPageId = dataPage.Headers().PageId,
             IsSystemTable = false,
             ColumnPageId = systemColumnPage.Headers().PageId,
         };
@@ -205,7 +205,7 @@ public class Engine : IEngine
         SystemTablePageData row = new SystemTablePageData()
         {
             TableName = tableName,
-            PageId = dataPage.Headers().PageId,
+            RootPageId = dataPage.Headers().PageId,
             IsSystemTable = false,
             ColumnPageId = systemColumnPage.Headers().PageId
         };

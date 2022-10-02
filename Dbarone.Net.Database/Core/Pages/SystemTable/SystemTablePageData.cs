@@ -16,10 +16,10 @@ public class SystemTablePageData : PageData {
     public bool IsSystemTable { get; set; }
     
     /// <summary>
-    /// First data page.
+    /// Root data page. Can be either leaf data page, or tree node
     /// </summary>
-    public int PageId { get; set; }
-    
+    public int RootPageId { get; set; }
+
     /// <summary>
     /// Column metadata page id.
     /// </summary>

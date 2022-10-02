@@ -30,7 +30,7 @@ public class DataPage : Page
     {
         // Get the column structure from the parent -> columns
         var systemTablePage = this._bufferManager.GetPage<SystemTablePage>(1);
-        var table = systemTablePage.Data().First(d => d.PageId == this.Headers().PageId);
+        var table = systemTablePage.Data().First(d => d.RootPageId == this.Headers().PageId);
         var systemColumnPage = this._bufferManager.GetPage<SystemColumnPage>(table.ColumnPageId);
         var mapper = Mapper.ObjectMapper<SystemColumnPageData, ColumnInfo>.Create();
         return mapper.MapMany(systemColumnPage.Data());
