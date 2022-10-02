@@ -1,136 +1,112 @@
 # Dbarone.Net.Database
 A NoSQL database written in .NET.
 
-This is a simple database engine written as an exercise to understand database theory a bit more.
+This is a simple database engine that can be used for very basic data storage use-cases (for example configurations, small prototype applications etc). It is written entirely in .NET Core, and should be portable to any system that can run .NET Core.
 
-This database engine is intended for very simple use cases only.
+*NOTE: This project is still in very early development, and is not useable yet.*
 
-## Architecture
+## Basics
 
-- https://www.guru99.com/sql-server-architecture.html
-- https://sqlity.net/en/2414/dbcc-fileheader/#:~:text=Every%20database%20file%20contains%20a%20single%20page%20that,good%20way%20to%20dive%20into%20the%20page%27s%20content%3A
-- https://www.c-sharpcorner.com/UploadFile/ff0d0f/how-sql-server-stores-data-in-data-pages-part-1/
-- https://social.technet.microsoft.com/wiki/contents/articles/53223.sql-server-understanding-and-fixing-boot-page-corruption.aspx
-- https://www.sqlskills.com/blogs/paul/inside-the-storage-engine-anatomy-of-a-page/
-- https://etutorials.org/SQL/microsoft+sql+server+2000/Part+V+SQL+Server+Internals+and+Performance+Tuning/Chapter+33.+SQL+Server+Internals/Database+Pages/
+Data is stored in a single file. There are no rules about the naming of the file. All data and metadata is stored within the file in 8K units called data pages.
 
 ## Data Page
 
-https://www.dabrowski.space/posts/sql-server-page-types-list/
+A data page is the foundation of Dbarone.Net.Database and each data page is 8KB (8192 bytes) in size. This default page size can be changed if required. For example, the .NET FileRead buffer default size is 4K. All data pages have a similar structure:
 
-Foundation of Dbarone.Net.Database
-
-Size: 8KB
-
-https://docs.microsoft.com/en-us/sql/relational-databases/pages-and-extents-architecture-guide?view=sql-server-ver16
-https://www.sqlservercentral.com/blogs/sql-server-understanding-the-data-page-structure
-https://www.sqlskills.com/blogs/paul/inside-the-storage-engine-anatomy-of-a-page/
-https://www.sqlskills.com/blogs/paul/inside-the-storage-engine-anatomy-of-a-record/
-
-Default size = 8192 (change to 4K which is FileReader buffer default?)
-
-Page HEader
-Data Record(s)
-Free area
-Row offset (slots)
-PageType
-    - Data
-    - Index
-    - Boot (combine SQL boot (9) page + file header (0) page)
-    - Text
-SlotCount - number of records on page
-Free - bytes free in page
-Lsn - Log sequence number (last transaction / log record that changed the page)
+| Section     | Size       | Purpose                                        |
+| ----------- | ---------- | ---------------------------------------------- |
+| Page Header | 96 bytes   | Header information for the current page.       |
+| Page Data   | 8096 bytes | Data contained in the page (multiple records). |
 
 
-Delete row in page - NOT compacted immediately - INSERTS deal with that
-SLot array is ordered - gets reshuffled as records are inserted + deleted
-1st slot entry should point to 1st record in page
+Disk IO is performed at a data page level. Disk IO is also buffered to improve performance.
 
+### Header
 
-/*
-View all pages
---------------
-DBCC IND ( { 'dbname' | dbid }, { 'objname' | objid }, { nonclustered indid | 1 | 0 | -1 | -2 });
-nonclustered indid = non-clustered Index ID
-1 = Clustered Index ID
-0 = Displays information in-row data pages and in-row IAM pages (from Heap)
--1 = Displays information for all pages of all indexes including LOB (Large object binary) pages and row-overflow pages
--2 = Displays information for all IAM pages
-*/
-DBCC IND('dbarone','posts', -1)
+The header section stores key parameters for the current page. The parameters vary depending on the page type. However, all pages share some basic header parameters:
 
-/*
-View single page
-----------------
-dbcc page ( {'dbname' | dbid}, filenum, pagenum [, printopt={0|1|2|3} ]);Printopt:
-0 - print just the page header
-1 - page header plus per-row hex dumps and a dump of the page slot array 
-2 - page header plus whole page hex dump
-3 - page header plus detailed per-row interpretation
-*/
-DBCC TRACEON(3604)	-- By default, output of DBCC TRACE sent to error log. 
-GO
-DBCC page('dbarone',1,9,3)
+| Name          | Type     | Purpose                                                                     |
+| ------------- | -------- | --------------------------------------------------------------------------- |
+| PageType      | PageType | The type of the page.                                                       |
+| PageId        | int      | The id / position of the current page.                                      |
+| PrevPageId    | int      | The page id of the previous related page in a doubly-linked list.           |
+| NextPageId    | int      | The page id of the next related page in a doubly-linked list.               |
+| SlotsUsed     | int      | The number of rows / slots used in the current data page.                   |
+| TransactionId | int      | The transaction id that made changes to the page.                           |
+| IsDirty       | boolean  | Set to true if the page has been modified, and needs to be flushed to disk. |
+| FreeOffset    | int      | The next free offset in the page data section.                              |
+| Lsn???        | int      | Last transaction / log record that changed the page?                        |
 
-
-
-DECLARE @pageid INT
-SET @pageid = 1
-DBCC TRACEON(3604)	-- By default, output of DBCC TRACE sent to error log. 
-
-while @pageid < 1000
-BEGIN
-	DBCC page('xxx',1,@pageid,2)
-	SET @pageid = @pageid + 1
-END
-
-Data Pages
-----------
-All data and metadata is stored in data units called 'data pages'. Each data page is 8K, and comprises of 2 parts:
-- Page Header - Contains metadata about the page itself, and related pages (e.g. next page id)
-- Page Data - Contain the actual data. The page data section can contain multiple records.
-
-The page header is 96 bytes long. The remaining 8096 bytes in the data page can be used by the page data.
-
-```
-|-----------------------------------------------------------------------------------------------------|
-| Page Header (96 bytes)                                                                                | Page Data (8096 bytes) including row offset array | (Row offset array) |
-| ----------------------------------------------------------------------------------------------------- |
-| PageId                                                                                                | PageType                                          | ...                | Element #1 | Element #2 | Element #n |  | SlotN | Slot2 | Slot1 |
-| ----------------------------------------------------------------------------------------------------- |
-```
-
-Disk IO is performed at a data page level.
-
-Page Header
------------
-The page header section is fixed at 96 bytes, and contains a number of parameters relating to the page, including:
-- PageType: The type of page
-- PageId: The unique id of the page. The PageId corresponds to the position of the page in the database file. Page 0 is the first page in the file, Page 1 is the second, and so forth.
-- PrevPageId: If the page is part of a linked list of pages, then PrevPageId points to the previous page.
-- NextPageId: If the page is part of a linked list of pages, then PrevPageId points to the next page.
-- SlotsUsed: The number of data elements stored in the current page.
-- TransactionId: The transaction id that last updated the page.
-- IsDirty: Set to true if the page has been modified.
-- FreeOffset: The first free byte in the data section. 
-
-### Page Types
+#### Page Types
 There are a number of page types:
-- BootPage: The database header page. Always page id 0.
-- SystemTable: Stores table metadata. Always page id 1.
-- SystemColumn: Stores column metadata. Always page id 2.
-- Data:
-- Index:
-- Text
-- LOB:
 
-Page Data
----------
-The Page Data section contains the actual data in the page. At the end of the page data section is a special area known as the offset or slot table. This is a table of 2-byte integers that point to the start offset of each record in the page data. This allows for variable length data to be stored in the page data area.
+| Page Type    | Purpose                                                                                    |
+| ------------ | ------------------------------------------------------------------------------------------ |
+| Boot         | The database header page. Always page id 0. Only 1 per database.                           |
+| SystemTable  | Stores table metadata. Starts at page id 1. Can span multiple pages.                       |
+| SystemColumn | Stores column metadata. At least 1 per table. Can span multiple pages.                     |
+| Data         | Stores row data for a table. At least 1 per table. Can span multiple pages.                |
+| Index        | Stores index data for a table. At least 1 per table. Can span multiple pages.              |
+| Text         | Stores large text (CLOB) data for a table. At least 1 per table. Can span multiple pages.  |
+| LOB          | Stores large object data (LOB) for a table. At least 1 per table. Can span multiple pages. |
 
-Serialisation
--------------
+### Data Section
+
+The page data section can be broken down further:
+
+| Section    | Size                | Purpose                                                                                                                                 |
+| ---------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Data Rows  | (variable length)   | Data is written as variable-length buffers starting at the top of the page data section.                                                |
+| Free Area  |                     | Remaining free area where data rows can be written.                                                                                     |
+| Slot Array | 2 bytes * row count | 2 byte offset pointing to the start of each row in the Page Data section. The slot array grows in reverse order. Also known as 'slots'. |
+
+The slot array table allows for variable length data to be stored in each data row.
+
+Rules around adding data rows to page data section:
+- Rows are always added to data pages (except index page types) in sequential order.
+- Each row has implicit `rowid` value which is the global position of the row.
+- rowid is only changed during a database rebuild process
+
+### Buffering
+
+Disk IO is buffered using the `BufferManager` class:
+- When a page is read from disk, it is cached. Subsequent accesses of the page are read from the memory cache.
+- When a page is modified in memory, an 'IsDirty' flag is set on the page.
+- Periodically, and when the `CheckPoint` command is manually executed, all dirty pages are written back to disk.
+
+## Data Types
+
+The following data types are supported in Dbarone.Net.Database, each mapping to a .NET type:
+
+### Fixed Length Data Types:
+
+| Type     | .NET Type | Size |
+| -------- | --------- | ---- |
+| Boolean  | bool      | 1    |
+| Byte     | byte      | 1    |
+| SByte    | sbyte     | 1    |
+| Char     | char      | 1    |
+| Decimal  | Decimal   | 16   |
+| Double   | double    | 8    |
+| Single   | float     | 4    |
+| Int16    | Int16     | 2    |
+| UInt16   | UInt16    | 2    |
+| Int32    | Int32     | 4    |
+| UInt32   | UInt32    | 4    |
+| Int64    | Int64     | 8    |
+| UInt64   | UInt64    | 8    |
+| Guid     | Guid      | 16   |
+| DateTime | DateTime  | 8    |
+
+## Variable Length Data Types
+
+| Type   | .NET Core Type |
+| ------ | -------------- |
+| string | string         |
+| Blob   | byte[]         |
+
+## Serialisation
+
 In order to move data from disk to memory and vice versa, it must be serialised. A custom serialiser has been implemented to do this. The serialiser is able to serialise any object, and stores the serialised output in the following format:
 
 | Field                 | Size (bytes)              | Row Overhead | Description                                                             |
@@ -145,3 +121,82 @@ In order to move data from disk to memory and vice versa, it must be serialised.
 | Variable Column Count | 2                         | Yes          | The number of variable length columns in the object.                    |
 | Variable Length Table | 2 * variable column count | Yes          | Table of Int16 values denoting length of each variable length field.    |
 | Variable Data         | n                         | No           | The variable length data                                                |
+
+## Database Rebuild
+
+A database rebuild rebuilds the entire data file. A database rebuild includes the following:
+- Checks all data pages are reachable and linked correctly
+- Checks the internal integrity of all pages
+- Physically removes any logically deleted data rows
+- Reassigns new rowid to all rows (due to removal of logically deleted rows.)
+- Rebuilds all pages, compacts, removes any unused pages
+- Rebuilds all indexes
+- Rows are never reordered in a data page
+- If row cannot be added to current page, a new page is created, and it is added there
+- Index Pages
+  - Index rows can be inserted in the middle of a page
+  - If a page becomes full, it is split into 2 pages - half onto each page.
+
+
+Delete row in page - NOT compacted immediately - INSERTS deal with that
+SLot array is ordered - gets reshuffled as records are inserted + deleted
+1st slot entry should point to 1st record in page
+
+## Research SQL Queries
+
+### Viewing All Pages in a SQL Server Database
+
+``` sql
+/*
+DBCC IND ( { 'dbname' | dbid }, { 'objname' | objid }, { nonclustered indid | 1 | 0 | -1 | -2 });
+nonclustered indid = non-clustered Index ID
+1 = Clustered Index ID
+0 = Displays information in-row data pages and in-row IAM pages (from Heap)
+-1 = Displays information for all pages of all indexes including LOB (Large object binary) pages and row-overflow pages
+-2 = Displays information for all IAM pages
+*/
+DBCC IND('mydatabase','mytable', -1)
+```
+
+### Viewing a Single Page in a SQL Server Database
+
+``` sql
+/*
+dbcc page ( {'dbname' | dbid}, filenum, pagenum [, printopt={0|1|2|3} ]);Printopt:
+0 - print just the page header
+1 - page header plus per-row hex dumps and a dump of the page slot array 
+2 - page header plus whole page hex dump
+3 - page header plus detailed per-row interpretation
+*/
+DBCC TRACEON(3604)	-- By default, output of DBCC TRACE sent to error log. 
+GO
+DBCC page('mydatabase',1,9,3)
+```
+
+## Bibiography
+
+### Architecture
+
+- SQL Server Architecture (Guru99): https://www.guru99.com/sql-server-architecture.html
+
+### Data Pages
+- How SQL Server stores data in data pages (c-sharpcorner): https://www.c-sharpcorner.com/UploadFile/ff0d0f/how-sql-server-stores-data-in-data-pages-part-1/
+- Reading SQL Server File Header Page (sqlity.net): https://sqlity.net/en/2414/dbcc-fileheader/#:~:text=Every%20database%20file%20contains%20a%20single%20page%20that,good%20way%20to%20dive%20into%20the%20page%27s%20content%3A
+- Fixing boot page corruption (technet.microsoft): https://social.technet.microsoft.com/wiki/contents/articles/53223.sql-server-understanding-and-fixing-boot-page-corruption.aspx
+- Anatomy of a data page (sqlskills): https://www.sqlskills.com/blogs/paul/inside-the-storage-engine-anatomy-of-a-page/
+- Data page internals (etutorials): https://etutorials.org/SQL/microsoft+sql+server+2000/Part+V+SQL+Server+Internals+and+Performance+Tuning/Chapter+33.+SQL+Server+Internals/Database+Pages/
+- Data page types: https://www.dabrowski.space/posts/sql-server-page-types-list/
+- Page & Architecture Guide (learn.microsoft): https://learn.microsoft.com/en-us/sql/relational-databases/pages-and-extents-architecture-guide?view=sql-server-ver16
+- Understanding data page structure (sqlservercentral): https://www.sqlservercentral.com/blogs/sql-server-understanding-the-data-page-structure
+- Storage engine anatomy of a page (sqlskills): https://www.sqlskills.com/blogs/paul/inside-the-storage-engine-anatomy-of-a-page/
+- Storage engine anatomy of a record (sqlskills): https://www.sqlskills.com/blogs/paul/inside-the-storage-engine-anatomy-of-a-record/
+
+## Naming Conventions
+
+Naming conventions
+- Alpha-numeric
+- Alpha first character
+- Case Insensitive
+- 128 characters max
+- Keywords (cannot be used as column name)
+  - rowid
