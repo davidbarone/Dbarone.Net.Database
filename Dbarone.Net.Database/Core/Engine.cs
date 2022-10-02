@@ -64,6 +64,10 @@ public class Engine : IEngine
         return engine;
     }
 
+    public static bool Exists(string filename) {
+        return File.Exists(filename);
+    }
+    
     public static Engine Open(string filename, bool canWrite)
     {
         return new Engine(filename, canWrite: true);
@@ -129,6 +133,12 @@ public class Engine : IEngine
     #endregion
 
     #region DML
+
+    public IEnumerable<IDictionary<string, object?>> ReadRaw(string tableName){
+        var table = Table(tableName);
+        var data = GetPage<DataPage>(table.PageId);
+        return data.Data().Select(r => r.Row);
+    }
 
     public int InsertRaw(string tableName, IDictionary<string, object?> row){
         var table = Table(tableName);

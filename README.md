@@ -1,6 +1,8 @@
 # Dbarone.Net.Database
 A NoSQL database written in .NET.
 
+This is a simple database engine written as an exercise to understand database theory a bit more.
+
 This database engine is intended for very simple use cases only.
 
 ## Architecture

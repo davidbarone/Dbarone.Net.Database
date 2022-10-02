@@ -59,6 +59,8 @@ public interface IEngine : IDisposable
 
     #region DML
 
+    IEnumerable<IDictionary<string, object?>> ReadRaw(string tableName);
+
     int Insert<T>(string table, T row);
     
     /// <summary>

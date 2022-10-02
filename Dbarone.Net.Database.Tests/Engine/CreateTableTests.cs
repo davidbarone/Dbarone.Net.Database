@@ -4,11 +4,11 @@ using Dbarone.Net.Database;
 using System.IO;
 using System.Linq;
 
-public class DDLTests
+public class CreateTableTests : TestBase
 {
     class Customer
     {
-        public string CustomerName { get; set; }
+        public string CustomerName { get; set; } = default!;
         public int CustomerId { get; set; }
     }
 
@@ -16,12 +16,12 @@ public class DDLTests
     public void TestCreateTableFromEntity()
     {
         // Arrange
-        var tableName = "Customers";
-        var dbName = "mydb4.db";
+        var dbName = GetDatabaseFileNameFromMethod();
         if (File.Exists(dbName))
         {
             File.Delete(dbName);
         }
+        var tableName = "Customers";
 
         // Act
         using (var db = Engine.Create(dbName))
@@ -41,15 +41,15 @@ public class DDLTests
     }
 
     [Fact]
-    public void TestCreate2TablesAndCheckColumns() {
-
+    public void TestCreate2TablesAndCheckColumns()
+    {
         // Arrange
-        var tableName = "Customers";
-        var dbName = "mydb5.db";
+        var dbName = GetDatabaseFileNameFromMethod();
         if (File.Exists(dbName))
         {
             File.Delete(dbName);
         }
+        var tableName = "Customers";
 
         // Act
         using (var db = Engine.Create(dbName))

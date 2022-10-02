@@ -21,7 +21,8 @@ public class Page
     /// Gets the column structure of each data row. By default returns the columns for the type `this.PageDataType`.
     /// </summary>
     /// <returns></returns>
-    protected virtual IEnumerable<ColumnInfo> GetDataColumns() {
+    protected virtual IEnumerable<ColumnInfo> GetDataColumns()
+    {
         return Serializer.GetColumnsForType(this.PageDataType);
     }
 
@@ -57,9 +58,21 @@ public class Page
             // add data
             var totalLength = buffer.ReadUInt16(Global.PageHeaderSize + dataIndex); // First 2 bytes of each record store the record total length.
             var b = buffer.Slice(dataIndex + Global.PageHeaderSize, totalLength);
-            var item = (PageData)Serializer.Deserialize(this.PageDataType, b);
-            this._data.Add(item);
-            slotIndex = slotIndex - 2;
+
+            if (this.PageDataType == typeof(DictionaryPageData))
+            {
+                // dictionary data
+                var dict = (IDictionary<string, object>)Serializer.DeserializeDictionary(this.GetDataColumns(), b);
+                this._data.Add(new DictionaryPageData(dict!));
+                slotIndex = slotIndex - 2;
+            }
+            else
+            {
+                // POCO data
+                var item = (PageData)Serializer.Deserialize(this.PageDataType, b);
+                this._data.Add(item);
+                slotIndex = slotIndex - 2;
+            }
         }
     }
 
@@ -111,12 +124,15 @@ public class Page
     /// </summary>
     /// <param name="row"></param>
     /// <returns></returns>
-    protected byte[] SerializeDataRow(object row) {
+    protected byte[] SerializeDataRow(object row)
+    {
         var dictionaryRow = row as DictionaryPageData;
         byte[]? buffer = null;
-        if (dictionaryRow !=null){
+        if (dictionaryRow != null)
+        {
             buffer = Serializer.SerializeDictionary(this.GetDataColumns(), dictionaryRow.Row);
-        } else
+        }
+        else
         {
             buffer = Serializer.Serialize(this.GetDataColumns(), row);
         }

@@ -4,13 +4,13 @@ using Dbarone.Net.Database;
 using System.IO;
 using System.Linq;
 
-public class IOTests
+public class StaticMethodTests : TestBase
 {
     [Fact]
     public void CreateDatabase()
     {
         // Arrange
-        var dbName = "mydb1.db";
+        var dbName = GetDatabaseFileNameFromMethod();
         if (File.Exists(dbName))
         {
             File.Delete(dbName);
@@ -29,7 +29,7 @@ public class IOTests
     public void OpenDatabase()
     {
         // Arrange
-        var dbName = "mydb2.db";
+        var dbName = GetDatabaseFileNameFromMethod();
         if (File.Exists(dbName))
         {
             File.Delete(dbName);
@@ -56,7 +56,7 @@ public class IOTests
     public void WhenCreateDatabaseCheckPagesCreated()
     {
         // Arrange
-        var dbName = "mydb3.db";
+        var dbName = GetDatabaseFileNameFromMethod();
         if (File.Exists(dbName))
         {
             File.Delete(dbName);
