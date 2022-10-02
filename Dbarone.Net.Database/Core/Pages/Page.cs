@@ -87,14 +87,11 @@ public class Page
         this._bufferManager = bufferManager;
         this._data = new List<IPageData>();
         this.Slots = new List<ushort>();
+        this._headers = (IPageHeader)Activator.CreateInstance(this.PageHeaderType)!;
 
         if (!buffer.IsEmpty())
         {
             Hydrate(buffer);
-        }
-        else
-        {
-            this._headers = (IPageHeader)Activator.CreateInstance(this.PageHeaderType)!;
         }
 
         // Create proxy for header to set the IsDirty flag whenever any header property changes.
@@ -167,8 +164,11 @@ public class Page
     /// <param name="interceptorArgs"></param>
     public static void IsDirtyInterceptor<TPageHeaderInterface>(InterceptorArgs<TPageHeaderInterface> interceptorArgs) where TPageHeaderInterface : IPageHeader
     {
-        // Change MakeSound behaviour on all animals
-        if (interceptorArgs.BoundaryType == BoundaryType.After && interceptorArgs.TargetMethod.Name.Substring(0, 4) == "set_")
+        // Sets the IsDirty flag if any setter on header object is called.
+        if (
+            interceptorArgs.BoundaryType == BoundaryType.After &&
+            interceptorArgs.Target != null &&
+            interceptorArgs.TargetMethod.Name.Substring(0, 4) == "set_")
         {
             interceptorArgs.Target.IsDirty = true;
         }

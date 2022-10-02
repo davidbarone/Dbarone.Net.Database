@@ -64,10 +64,11 @@ public class Engine : IEngine
         return engine;
     }
 
-    public static bool Exists(string filename) {
+    public static bool Exists(string filename)
+    {
         return File.Exists(filename);
     }
-    
+
     public static Engine Open(string filename, bool canWrite)
     {
         return new Engine(filename, canWrite: true);
@@ -112,7 +113,8 @@ public class Engine : IEngine
         return mapped;
     }
 
-    public TableInfo Table(string tableName) {
+    public TableInfo Table(string tableName)
+    {
         var table = Tables().FirstOrDefault(t => t.TableName.Equals(tableName, StringComparison.OrdinalIgnoreCase));
         if (table == null)
         {
@@ -134,22 +136,27 @@ public class Engine : IEngine
 
     #region DML
 
-    public IEnumerable<IDictionary<string, object?>> ReadRaw(string tableName){
+    public IEnumerable<IDictionary<string, object?>> ReadRaw(string tableName)
+    {
         var table = Table(tableName);
         var data = GetPage<DataPage>(table.PageId);
         return data.Data().Select(r => r.Row);
     }
 
-    public int InsertRaw(string tableName, IDictionary<string, object?> row){
+    public int InsertRaw(string tableName, IDictionary<string, object?> row)
+    {
         var table = Table(tableName);
         var data = GetPage<DataPage>(table.PageId);
         data.AddDataRow(new DictionaryPageData(row));
         return 0;
     }
 
-    public int Insert<T>(string table, T data) {
-        if (data is IDictionary<string, object?>) {
-            return InsertRaw(table, data as IDictionary<string, object?>);
+    public int Insert<T>(string table, T data)
+    {
+        var dataDict = data as IDictionary<string, object?>;
+        if (dataDict != null)
+        {
+            return InsertRaw(table, dataDict);
         }
         return 0;
     }
@@ -171,7 +178,7 @@ public class Engine : IEngine
         var systemTablePage = this.GetPage<SystemTablePage>(1);
         var systemColumnPage = this.CreatePage<SystemColumnPage>();
         var dataPage = this.CreatePage<DataPage>();
-        
+
         SystemTablePageData row = new SystemTablePageData()
         {
             TableName = tableName,
@@ -180,14 +187,14 @@ public class Engine : IEngine
             ColumnPageId = systemColumnPage.Headers().PageId,
         };
         systemTablePage.AddDataRow(row);
-        
+
         var columns = Serializer.GetColumnsForType(typeof(T));
         foreach (var column in columns)
         {
             systemColumnPage.AddDataRow(new SystemColumnPageData(column.Name, column.DataType, column.IsNullable));
         }
 
-        return null;
+        return Table(tableName);
     }
 
     public TableInfo CreateTable(string tableName, IEnumerable<ColumnInfo> columns)
@@ -207,7 +214,7 @@ public class Engine : IEngine
         {
             systemColumnPage.AddDataRow(new SystemColumnPageData(column.Name, column.DataType, column.IsNullable));
         }
-        return null;
+        return Table(tableName);
     }
 
     public T GetPage<T>(int pageId) where T : Page

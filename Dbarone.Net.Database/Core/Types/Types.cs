@@ -27,6 +27,10 @@ public class Types
         {
             t = type.GetNullableUnderlyingType();
         }
+        if (t == null)
+        {
+            throw new Exception($"Cannot get type information for type: [${type.Name}].");
+        }
         return _dict[t];
     }
 

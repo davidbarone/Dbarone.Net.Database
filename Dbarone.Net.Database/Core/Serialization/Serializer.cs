@@ -285,7 +285,10 @@ public class Serializer
             ColumnSerializationInfo csi = new ColumnSerializationInfo();
             csi.ColumnName = item.Name;
             csi.Value = obj.ContainsKey(item.Name) ? obj[item.Name] : null;
-            csi.Size = Types.SizeOf(csi.Value);
+            if (csi.Value != null)
+            {
+                csi.Size = Types.SizeOf(csi.Value);
+            }
             parms.VariableColumns.Add(csi);
         }
         parms.VariableSize = (ushort)parms.VariableColumns.Sum(c => c.Size);
