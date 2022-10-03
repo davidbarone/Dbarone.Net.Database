@@ -191,6 +191,9 @@ DBCC page('mydatabase',1,9,3)
 - Storage engine anatomy of a page (sqlskills): https://www.sqlskills.com/blogs/paul/inside-the-storage-engine-anatomy-of-a-page/
 - Storage engine anatomy of a record (sqlskills): https://www.sqlskills.com/blogs/paul/inside-the-storage-engine-anatomy-of-a-record/
 
+### Row Overflow
+- https://sqlity.net/en/1051/blob-and-row-overflow-storage-internals-row-overflow-data/
+
 ## Naming Conventions
 
 Naming conventions
