@@ -12,7 +12,7 @@ public class DataPage : Page
     public override IDataPageHeader Headers() { return (IDataPageHeader)this._headers; }
     public override IEnumerable<DictionaryPageData> Data() { return (this._data.Select(d => (DictionaryPageData)d)); }
 
-    public DataPage(int pageId, PageBuffer buffer, BufferManager bufferManager) : base(pageId, buffer, PageType.Data, bufferManager)
+    public DataPage(int pageId, PageBuffer buffer, IEnumerable<ColumnInfo> dataColumns) : base(pageId, buffer, PageType.Data, dataColumns)
     {
         Assert.Equals(this._headers.PageType, PageType.Data);
     }
@@ -24,15 +24,5 @@ public class DataPage : Page
         var generator = new ProxyGenerator<IDataPageHeader>();
         generator.Interceptor = Page.IsDirtyInterceptor;
         this._headers = generator.Decorate((IDataPageHeader)this._headers!);
-    }
-
-    protected override IEnumerable<ColumnInfo> GetDataColumns()
-    {
-        // Get the column structure from the parent -> columns
-        var systemTablePage = this._bufferManager.GetPage<SystemTablePage>(1);
-        var table = systemTablePage.Data().First(d => d.RootPageId == this.Headers().PageId);
-        var systemColumnPage = this._bufferManager.GetPage<SystemColumnPage>(table.ColumnPageId);
-        var mapper = Mapper.ObjectMapper<SystemColumnPageData, ColumnInfo>.Create();
-        return mapper.MapMany(systemColumnPage.Data());
     }
 }

@@ -1,5 +1,4 @@
 namespace Dbarone.Net.Database;
-using Dbarone.Net.Extensions.Reflection;
 using Dbarone.Net.Assertions;
 using Dbarone.Net.Proxy;
 
@@ -9,20 +8,24 @@ using Dbarone.Net.Proxy;
 public class Page
 {
     private PageBuffer _buffer;
-    protected BufferManager _bufferManager;
     protected IPageHeader _headers;
     protected IList<IPageData> _data;
 
     protected virtual Type PageHeaderType { get { throw new NotImplementedException("Not implemented."); } }
 
     protected virtual Type PageDataType { get { throw new NotImplementedException("Not implemented."); } }
+    protected IEnumerable<ColumnInfo> DataColumns { get; set; }
 
     /// <summary>
     /// Gets the column structure of each data row. By default returns the columns for the type `this.PageDataType`.
     /// </summary>
     /// <returns></returns>
-    protected virtual IEnumerable<ColumnInfo> GetDataColumns()
+    protected virtual IEnumerable<ColumnInfo> GetDefaultDataColumns()
     {
+        if (this.PageDataType == typeof(DictionaryPageData))
+        {
+            throw new Exception($"Cannot get columns for data type: {this.PageDataType.Name}.");
+        }
         return Serializer.GetColumnsForType(this.PageDataType);
     }
 
@@ -62,7 +65,7 @@ public class Page
             if (this.PageDataType == typeof(DictionaryPageData))
             {
                 // dictionary data
-                var dict = (IDictionary<string, object>)Serializer.DeserializeDictionary(this.GetDataColumns(), b);
+                var dict = (IDictionary<string, object>)Serializer.DeserializeDictionary(this.DataColumns, b);
                 this._data.Add(new DictionaryPageData(dict!));
                 slotIndex = slotIndex - 2;
             }
@@ -81,13 +84,20 @@ public class Page
     /// </summary>
     /// <param name="pageId">The page id.</param>
     /// <param name="buffer"></param>
-    public Page(int pageId, PageBuffer buffer, PageType pageType, BufferManager bufferManager)
+    public Page(int pageId, PageBuffer buffer, PageType pageType, IEnumerable<ColumnInfo>? dataColumns = null)
     {
         this._buffer = buffer;
-        this._bufferManager = bufferManager;
         this._data = new List<IPageData>();
         this.Slots = new List<ushort>();
         this._headers = (IPageHeader)Activator.CreateInstance(this.PageHeaderType)!;
+        if (dataColumns != null)
+        {
+            this.DataColumns = dataColumns;
+        }
+        else
+        {
+            this.DataColumns = GetDefaultDataColumns();
+        }
 
         if (!buffer.IsEmpty())
         {
@@ -116,24 +126,36 @@ public class Page
     public virtual void CreateHeaderProxy() { throw new NotImplementedException(); }
 
     /// <summary>
-    /// Serialise row object.
-    /// For page types that use DictionaryPageData (i.e. data pages), we get the inner dictionary.
+    /// Serialise row object. For page types that use
+    /// DictionaryPageData (i.e. data pages), we get
+    /// the inner dictionary.
     /// </summary>
-    /// <param name="row"></param>
-    /// <returns></returns>
-    protected byte[] SerializeDataRow(object row)
+    /// <param name="row">The row to serialise.</param>
+    /// <returns>A byte[] array</returns>
+    public byte[] SerializeDataRow(object row)
     {
         var dictionaryRow = row as DictionaryPageData;
         byte[]? buffer = null;
         if (dictionaryRow != null)
         {
-            buffer = Serializer.SerializeDictionary(this.GetDataColumns(), dictionaryRow.Row);
+            buffer = Serializer.SerializeDictionary(this.DataColumns, dictionaryRow.Row);
         }
         else
         {
-            buffer = Serializer.Serialize(this.GetDataColumns(), row);
+            buffer = Serializer.Serialize(this.DataColumns, row);
         }
         return buffer;
+    }
+
+    /// <summary>
+    /// Gets the data at a particular slot
+    /// </summary>
+    /// <param name="slot"></param>
+    /// <returns></returns>
+    public IPageData GetRowAtSlot(int slot){
+        var slots = this.Headers().SlotsUsed;
+        Assert.Between(slot, 0, slots - 1);
+        return this._data[slot];
     }
 
     /// <summary>
@@ -156,6 +178,33 @@ public class Page
         this.Slots.Add(this.Headers().FreeOffset);
         this.Headers().FreeOffset += (ushort)buffer.Length;
         this._data.Add((row as IPageData)!);
+    }
+
+    public void AddDataRowFromBuffer(byte[] buffer)
+    {
+        if (!this.CanAddRowToPage(buffer.Length))
+        {
+            throw new Exception("Insufficient room on page.");
+        }
+
+        // Update page
+        this.Headers().SlotsUsed++;
+        this.Slots.Add(this.Headers().FreeOffset);
+        this.Headers().FreeOffset += (ushort)buffer.Length;
+
+        // Get object from buffer:
+        if (this.PageDataType == typeof(DictionaryPageData))
+        {
+            // dictionary data
+            var dict = (IDictionary<string, object>)Serializer.DeserializeDictionary(this.DataColumns, buffer);
+            this._data.Add(new DictionaryPageData(dict!));
+        }
+        else
+        {
+            // POCO data
+            var item = (PageData)Serializer.Deserialize(this.PageDataType, buffer);
+            this._data.Add(item);
+        }
     }
 
     /// <summary>
@@ -226,6 +275,30 @@ public class Page
             - ((this.Headers().SlotsUsed + 1) * Types.GetByDataType(DataType.UInt16).Size)  // Slot table (including extra slot for new row)
             - rowBuferSize)                                                                 // Data to be written
         >= 0;
+    }
+
+    /// <summary>
+    /// Returns the number of bytes available for the specified slot. Used when updating data rows in slots.
+    /// </summary>
+    /// <param name="slot"></param>
+    /// <returns></returns>
+    public int GetAvailableSpaceForSlot(short slot)
+    {
+        var slots = this.Headers().SlotsUsed;
+        Assert.Between(slot, 0, slots - 1);
+        if (slot == slots - 1)
+        {
+            // last slot - space available includes free padding at end of data
+            return Global.PageSize                                                             // Page size
+            - Global.PageHeaderSize                                                         // Ignore page header
+            - this.Headers().FreeOffset                                                     // Space already used by data rows
+            - ((this.Headers().SlotsUsed + 1) * Types.GetByDataType(DataType.UInt16).Size);  // Slot table (including extra slot for new row)
+        }
+        else
+        {
+            // not last slot. Return offset of next slot - current slot
+            return this.Slots[slot + 1] - this.Slots[slot];
+        }
     }
 
     /// <summary>

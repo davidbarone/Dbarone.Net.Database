@@ -11,6 +11,8 @@ public class Engine : IEngine
     private Stream _stream;
     private BufferManager _bufferManager;
 
+    private IHeapTableManager<SystemTablePageData> _systemTablesHeap;
+
     #region Constructor / destructor
 
     /// <summary>
@@ -30,6 +32,7 @@ public class Engine : IEngine
             (int)Global.PageSize);
 
         this._bufferManager = new BufferManager(new DiskService(this._stream));
+        this._systemTablesHeap = new HeapTableManager<SystemTablePageData, SystemTablePage>(1, this._bufferManager);
     }
 
     public void Dispose()
@@ -199,21 +202,37 @@ public class Engine : IEngine
 
     public TableInfo CreateTable(string tableName, IEnumerable<ColumnInfo> columns)
     {
-        var systemTablePage = this.GetPage<SystemTablePage>(1);
-        var systemColumnPage = this.CreatePage<SystemColumnPage>();
-        var dataPage = this.CreatePage<DataPage>();
-        SystemTablePageData row = new SystemTablePageData()
+        // Create table
+        this._systemTablesHeap.AddRow(new SystemTablePageData()
         {
             TableName = tableName,
-            RootPageId = dataPage.Headers().PageId,
+            RootPageId = 0,
+            //RootPageId = dataPage.Headers().PageId,
             IsSystemTable = false,
-            ColumnPageId = systemColumnPage.Headers().PageId
-        };
-        systemTablePage.AddDataRow(row);
+            //ColumnPageId = systemColumnPage.Headers().PageId
+            ColumnPageId = 0
+        });
+
+        // Create columns
+        var systemColumnPage = this.CreatePage<SystemColumnPage>();
         foreach (var column in columns)
         {
             systemColumnPage.AddDataRow(new SystemColumnPageData(column.Name, column.DataType, column.IsNullable));
         }
+
+        // Create data page
+        var dataPage = this.CreatePage<DataPage>();
+
+        // Update the table metadata
+        this._systemTablesHeap.UpdateRows(r => new SystemTablePageData
+        {
+            TableName = r.TableName,
+            RootPageId = dataPage.Headers().PageId,
+            IsSystemTable = r.IsSystemTable,
+            ColumnPageId = systemColumnPage.Headers().PageId
+        }, r => r.TableName.Equals(tableName, StringComparison.OrdinalIgnoreCase));
+        
+        // return
         return Table(tableName);
     }
 
