@@ -7,16 +7,18 @@ using Dbarone.Net.Proxy;
 /// </summary>
 public class BootPage : Page
 {
-    protected override Type PageDataType { get { return typeof(BootPageData); } }
-    protected override Type PageHeaderType { get { return typeof(BootPageHeader); } }
+    public override Type PageDataType { get { return typeof(BootPageData); } }
+    public override Type PageHeaderType { get { return typeof(BootPageHeader); } }
     public override IBootPageHeader Headers() { return (IBootPageHeader)this._headers; }
     public override IEnumerable<BootPageData> Data() { return (this._data.Select(d => (BootPageData)d)); }
 
-    public BootPage(int pageId, PageBuffer buffer) : base(pageId, buffer, PageType.Boot)
+    public BootPage(int pageId) : base(pageId, null, PageType.Boot)
     {
         Assert.Equals(this._headers.PageType, PageType.Boot);
     }
 
+    public BootPage() { }
+    
     public override void CreateHeaderProxy()
     {
         // Decorate the header with IsDirtyInterceptor
@@ -24,5 +26,11 @@ public class BootPage : Page
         var generator = new ProxyGenerator<IBootPageHeader>();
         generator.Interceptor = Page.IsDirtyInterceptor;
         this._headers = generator.Decorate((IBootPageHeader)this._headers!);
+    }
+
+    public int GetNextObjectId() {
+        var id = this.Headers().NextObjectId;
+        this.Headers().NextObjectId++;
+        return id;
     }
 }

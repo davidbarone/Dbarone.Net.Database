@@ -21,11 +21,10 @@ public class DiskService
     public int PageCount { get { return this._pageCount; } }
 
     /// <summary>
-    /// Creates and persists a new page to disk.
+    /// Creates storage on disk for a new page.
     /// </summary>
-    /// <param name="pageType"></param>
     /// <returns></returns>
-    public int CreatePage(PageType pageType)
+    public int CreatePage()
     {
         int pageSize = Global.PageSize;
         byte[] buffer = new byte[pageSize];

@@ -11,6 +11,14 @@ public class Engine : IEngine
     private Stream _stream;
     private BufferManager _bufferManager;
 
+    /// <summary>
+    /// Returns a reference to the boot page.
+    /// </summary>
+    /// <returns></returns>
+    private BootPage GetBootPage() {
+        return _bufferManager.GetPage<BootPage>(0);
+    }
+
     private IHeapTableManager<SystemTablePageData> _systemTablesHeap;
 
     #region Constructor / destructor
@@ -150,7 +158,10 @@ public class Engine : IEngine
     {
         var table = Table(tableName);
         var data = GetPage<DataPage>(table.RootPageId);
-        data.AddDataRow(new DictionaryPageData(row));
+        var dict = new DictionaryPageData(row);
+        var columns = this._bufferManager.GetColumnsForPage(data);
+        var buffer = this._bufferManager.SerialiseRow(row, columns);
+        data.AddDataRow(dict, buffer);
         return 0;
     }
 
@@ -173,43 +184,64 @@ public class Engine : IEngine
     /// </summary>
     public void CheckPoint()
     {
-        this._bufferManager.SavePages();
+        this._bufferManager.SaveDirtyPages();
     }
 
     public TableInfo CreateTable<T>(string tableName)
     {
-        var systemTablePage = this.GetPage<SystemTablePage>(1);
-        var systemColumnPage = this.CreatePage<SystemColumnPage>();
-        var dataPage = this.CreatePage<DataPage>();
+        // Gets the unique object id for the new table.
+        var parentObjectId = GetBootPage().GetNextObjectId();
 
-        SystemTablePageData row = new SystemTablePageData()
+        // Create table
+        this._systemTablesHeap.AddRow(new SystemTablePageData()
         {
             TableName = tableName,
-            RootPageId = dataPage.Headers().PageId,
+            ObjectId = parentObjectId,
+            RootPageId = 0,
             IsSystemTable = false,
-            ColumnPageId = systemColumnPage.Headers().PageId,
-        };
-        systemTablePage.AddDataRow(row);
+            ColumnPageId = 0
+        });
 
+        // Create columns
+        var systemColumnPage = this.CreatePage<SystemColumnPage>();
         var columns = Serializer.GetColumnsForType(typeof(T));
+        
         foreach (var column in columns)
         {
-            systemColumnPage.AddDataRow(new SystemColumnPageData(column.Name, column.DataType, column.IsNullable));
+            var obj = new SystemColumnPageData(parentObjectId, column.Name, column.DataType, column.IsNullable);
+            var buffer = this._bufferManager.SerialiseRow(obj, columns);
+            systemColumnPage.AddDataRow(obj, buffer);
         }
 
+        // Create data page
+        var dataPage = this.CreatePage<DataPage>(parentObjectId);
+
+        // Update the table metadata
+        this._systemTablesHeap.UpdateRows(r => new SystemTablePageData
+        {
+            ObjectId = parentObjectId,
+            TableName = r.TableName,
+            RootPageId = dataPage.Headers().PageId,
+            IsSystemTable = r.IsSystemTable,
+            ColumnPageId = systemColumnPage.Headers().PageId
+        }, r => r.ObjectId == parentObjectId);
+
+        // return
         return Table(tableName);
     }
 
     public TableInfo CreateTable(string tableName, IEnumerable<ColumnInfo> columns)
     {
+        // Gets the unique object id for the new table.
+        var parentObjectId = GetBootPage().GetNextObjectId();
+
         // Create table
         this._systemTablesHeap.AddRow(new SystemTablePageData()
         {
             TableName = tableName,
+            ObjectId = parentObjectId,            
             RootPageId = 0,
-            //RootPageId = dataPage.Headers().PageId,
             IsSystemTable = false,
-            //ColumnPageId = systemColumnPage.Headers().PageId
             ColumnPageId = 0
         });
 
@@ -217,20 +249,23 @@ public class Engine : IEngine
         var systemColumnPage = this.CreatePage<SystemColumnPage>();
         foreach (var column in columns)
         {
-            systemColumnPage.AddDataRow(new SystemColumnPageData(column.Name, column.DataType, column.IsNullable));
+            var obj = new SystemColumnPageData(parentObjectId, column.Name, column.DataType, column.IsNullable);
+            var buffer = this._bufferManager.SerialiseRow(obj, columns);
+            systemColumnPage.AddDataRow(obj, buffer);
         }
 
         // Create data page
-        var dataPage = this.CreatePage<DataPage>();
+        var dataPage = this.CreatePage<DataPage>(parentObjectId);
 
         // Update the table metadata
         this._systemTablesHeap.UpdateRows(r => new SystemTablePageData
         {
+            ObjectId = parentObjectId,            
             TableName = r.TableName,
             RootPageId = dataPage.Headers().PageId,
             IsSystemTable = r.IsSystemTable,
             ColumnPageId = systemColumnPage.Headers().PageId
-        }, r => r.TableName.Equals(tableName, StringComparison.OrdinalIgnoreCase));
+        }, r => r.ObjectId == parentObjectId);
         
         // return
         return Table(tableName);
@@ -246,33 +281,13 @@ public class Engine : IEngine
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
-    private T CreatePage<T>() where T : Page
+    private T CreatePage<T>(int? parentObjectId = null) where T : Page
     {
-        int pageId = 0;
-        if (typeof(T) == typeof(BootPage))
-        {
-            pageId = this._bufferManager.CreatePage(PageType.Boot);
-        }
-        else if (typeof(T) == typeof(SystemTablePage))
-        {
-            pageId = this._bufferManager.CreatePage(PageType.SystemTable);
-        }
-        else if (typeof(T) == typeof(SystemColumnPage))
-        {
-            pageId = this._bufferManager.CreatePage(PageType.SystemColumn);
-        }
-        else if (typeof(T) == typeof(DataPage))
-        {
-            pageId = this._bufferManager.CreatePage(PageType.Data);
-        }
+        var page = this._bufferManager.CreatePage<T>(parentObjectId);
 
         // Update boot page PageCount
         var bootPage = this.GetPage<BootPage>(0);
         bootPage.Headers().PageCount++;
-
-        // Update the pageId
-        var page = this._bufferManager.GetPage<T>(pageId);
-        page.Headers().PageId = pageId;
 
         return page;
     }

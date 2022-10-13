@@ -5,6 +5,7 @@ public interface IBootPageHeader : IPageHeader {
     byte Version { get; set; }
     int PageCount { get; set; }
     DateTime CreationTime { get; set; }
+    int NextObjectId { get; set; }
 }
 
 /// <summary>
@@ -31,4 +32,9 @@ public class BootPageHeader : PageHeader , IBootPageHeader
     /// Database creation date/time
     /// </summary>
     public DateTime CreationTime { get; set; } = DateTime.Now;
+
+    /// <summary>
+    /// Provides a mechanism to generate database-wide unique numbers.
+    /// </summary>
+    public int NextObjectId { get; set; }
 }

@@ -7,16 +7,18 @@ using Dbarone.Net.Proxy;
 /// </summary>
 public class SystemColumnPage : Page
 {
-    protected override Type PageDataType { get { return typeof(SystemColumnPageData); } }
-    protected override Type PageHeaderType { get { return typeof(PageHeader); } }
+    public override Type PageDataType { get { return typeof(SystemColumnPageData); } }
+    public override Type PageHeaderType { get { return typeof(PageHeader); } }
     public override IPageHeader Headers() { return (IPageHeader)this._headers; }
     public override IEnumerable<SystemColumnPageData> Data() { return (this._data.Select(d => (SystemColumnPageData)d)); }
 
-    public SystemColumnPage(int pageId, PageBuffer buffer) : base(pageId, buffer, PageType.SystemColumn)
+    public SystemColumnPage(int pageId) : base(pageId, null, PageType.SystemColumn)
     {
         Assert.Equals(this._headers.PageType, PageType.SystemColumn);
     }
 
+    public SystemColumnPage() { }
+    
     public override void CreateHeaderProxy()
     {
         // Decorate the header with IsDirtyInterceptor

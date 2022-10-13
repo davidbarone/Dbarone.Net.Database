@@ -18,6 +18,19 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
         return Scan().Count();
     }
 
+    /// <summary>
+    /// Scans through linked list to get last page.
+    /// </summary>
+    /// <returns></returns>
+    private int GetLastPage() {
+        var page = this.BufferManager.GetPage<TPageType>(FirstPageId);
+        while (page.Headers().NextPageId != null)
+        {
+            page = this.BufferManager.GetPage<TPageType>(page.Headers().NextPageId!.Value);
+        }
+        return page.Headers().PageId;
+    }
+
     public TRow[] Scan()
     {
         var page = this.BufferManager.GetPage<TPageType>(FirstPageId);
@@ -76,7 +89,11 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
     }
 
     public void AddRow(TRow row){
-        throw new NotSupportedException();
+        var pageId = GetLastPage();
+        var page = this.BufferManager.GetPage<TPageType>(pageId);
+        var columns = this.BufferManager.GetColumnsForPage(page);
+        var buffer = this.BufferManager.SerialiseRow(row, columns);
+        page.AddDataRow(row, buffer);
     }
 
     public void AddRows(TRow[] row){

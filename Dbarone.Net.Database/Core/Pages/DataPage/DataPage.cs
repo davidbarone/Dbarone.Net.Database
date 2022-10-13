@@ -7,15 +7,18 @@ using Dbarone.Net.Proxy;
 /// </summary>
 public class DataPage : Page
 {
-    protected override Type PageDataType { get { return typeof(DictionaryPageData); } }
-    protected override Type PageHeaderType { get { return typeof(DataPageHeader); } }
+    public override Type PageDataType { get { return typeof(DictionaryPageData); } }
+    public override Type PageHeaderType { get { return typeof(DataPageHeader); } }
     public override IDataPageHeader Headers() { return (IDataPageHeader)this._headers; }
     public override IEnumerable<DictionaryPageData> Data() { return (this._data.Select(d => (DictionaryPageData)d)); }
 
-    public DataPage(int pageId, PageBuffer buffer, IEnumerable<ColumnInfo> dataColumns) : base(pageId, buffer, PageType.Data, dataColumns)
+    public DataPage(int pageId, int? parentObjectId) : base(pageId, parentObjectId, PageType.Data)
     {
+        Assert.NotNull(parentObjectId);
         Assert.Equals(this._headers.PageType, PageType.Data);
     }
+
+    public DataPage() { }
 
     public override void CreateHeaderProxy()
     {

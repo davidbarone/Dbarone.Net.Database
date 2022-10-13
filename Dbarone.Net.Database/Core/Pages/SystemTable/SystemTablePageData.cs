@@ -6,6 +6,11 @@ namespace Dbarone.Net.Database;
 public class SystemTablePageData : PageData {
     
     /// <summary>
+    /// Unique Id for the table.
+    /// </summary>
+    public int ObjectId { get; set; }
+    
+    /// <summary>
     /// The table name.
     /// </summary>
     public string TableName { get; set; } = default!;
