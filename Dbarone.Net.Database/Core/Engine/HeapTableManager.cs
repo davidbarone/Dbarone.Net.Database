@@ -22,7 +22,8 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
     /// Scans through linked list to get last page.
     /// </summary>
     /// <returns></returns>
-    private int GetLastPage() {
+    private int GetLastPage()
+    {
         var page = this.BufferManager.GetPage<TPageType>(FirstPageId);
         while (page.Headers().NextPageId != null)
         {
@@ -49,7 +50,7 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
         do
         {
             var page = this.BufferManager.GetPage<TPageType>(FirstPageId);
-            for (var i = 0; i < page.Headers().SlotsUsed; i++)
+            for (ushort i = 0; i < page.Headers().SlotsUsed; i++)
             {
                 var row = (TRow)page.GetRowAtSlot(i);
                 if (predicate(row))
@@ -70,7 +71,7 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
         do
         {
             var page = this.BufferManager.GetPage<TPageType>(FirstPageId);
-            for (var i = 0; i < page.Headers().SlotsUsed; i++)
+            for (ushort i = 0; i < page.Headers().SlotsUsed; i++)
             {
                 var row = (TRow)page.GetRowAtSlot(i);
                 if (predicate(row))
@@ -84,11 +85,13 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
         return locations.ToArray();
     }
 
-    public TRow GetRow(DataRowLocation location){
+    public TRow GetRow(DataRowLocation location)
+    {
         throw new NotSupportedException();
     }
 
-    public void AddRow(TRow row){
+    public void AddRow(TRow row)
+    {
         var pageId = GetLastPage();
         var page = this.BufferManager.GetPage<TPageType>(pageId);
         var columns = this.BufferManager.GetColumnsForPage(page);
@@ -96,15 +99,25 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
         page.AddDataRow(row, buffer);
     }
 
-    public void AddRows(TRow[] row){
+    public void AddRows(TRow[] row)
+    {
         throw new NotSupportedException();
     }
 
-    public void UpdateRows(Func<TRow, TRow> transform, Func<TRow, bool> predicate){
-        throw new NotSupportedException();
+    public void UpdateRows(Func<TRow, TRow> transform, Func<TRow, bool> predicate)
+    {
+        var locations = SearchMany(predicate);
+        foreach (var location in locations){
+            var page = this.BufferManager.GetPage<TPageType>(location.PageId);
+            var currentRowSize = page.GetAvailableSpaceForSlot(location.Slot);
+            var updatedRow = transform((TRow)page.GetRowAtSlot(location.Slot))!;
+            var buffer = this.BufferManager.SerialiseRow(updatedRow, this.BufferManager.GetColumnsForPage(page));
+            page.UpdateDataRow(location.Slot, updatedRow, buffer);
+        }
     }
 
-    public void DeleteRows(Func<TRow, bool> predicate){
+    public void DeleteRows(Func<TRow, bool> predicate)
+    {
         throw new NotSupportedException();
     }
 }

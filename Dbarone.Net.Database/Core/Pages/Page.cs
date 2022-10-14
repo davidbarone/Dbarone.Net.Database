@@ -34,7 +34,11 @@ public class Page
     /// <summary>
     /// Default constructor.
     /// </summary>
-    public Page() { }
+    public Page() {
+        this._data = new List<IPageData>();
+        this.Slots = new List<ushort>();
+        this._headers = (IPageHeader)Activator.CreateInstance(this.PageHeaderType)!;
+     }
 
     /// <summary>
     /// Gets the column structure of each data row. By default returns the columns for the type `this.PageDataType`.
@@ -97,7 +101,7 @@ public class Page
     public void AddDataRow(object row, byte[] buffer)
     {
         Assert.IsType(row, this.PageDataType);
-
+        
         if (buffer.Length>GetFreeRowSpace()){
             throw new Exception("Insufficient room on page.");
         }
@@ -107,6 +111,34 @@ public class Page
         this.Slots.Add(this.Headers().FreeOffset);
         this.Headers().FreeOffset += (ushort)buffer.Length;
         this._data.Add((row as IPageData)!);
+    }
+
+    public void UpdateDataRow(ushort slot, object row, byte[] buffer){
+        Assert.IsType(row, this.PageDataType);
+        Assert.Between(slot, 0, this.Headers().SlotsUsed - 1);
+
+        if (buffer.Length>GetAvailableSpaceForSlot(slot)){
+            throw new Exception($"Insufficient room in slot {slot}.");
+        }
+
+        // Update page
+        if (slot<this.Headers().SlotsUsed-1) {
+            // not the last slot - nothing required - updated into existing slot that fits
+            // There may be some unused space though - will need to add compaction function later.
+        } else {
+            // Get previous slot, and add updated size
+            if (this.Slots.Count()==1){
+                this.Headers().FreeOffset = (ushort)buffer.Length;
+            } else
+            {
+                this.Headers().FreeOffset = (ushort)(this.Slots[slot - 1] + buffer.Length);
+            }
+        }
+
+        this._data[slot] = (row as IPageData)!;
+
+        // Set page dirty
+        this.SetDirty();
     }
 
     /// <summary>
@@ -142,7 +174,7 @@ public class Page
     /// </summary>
     /// <param name="slot"></param>
     /// <returns></returns>
-    public int GetAvailableSpaceForSlot(short slot)
+    public int GetAvailableSpaceForSlot(ushort slot)
     {
         var slots = this.Headers().SlotsUsed;
         Assert.Between(slot, 0, slots - 1);

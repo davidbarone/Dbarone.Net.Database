@@ -10,9 +10,9 @@ public class DataRowLocation {
     /// <summary>
     /// Slot index of the data row (zero based).
     /// </summary>
-    public int Slot { get; set; }
+    public ushort Slot { get; set; }
 
-    public DataRowLocation(int pageId, int slot) {
+    public DataRowLocation(int pageId, ushort slot) {
         this.PageId = pageId;
         this.Slot = slot;
     }
