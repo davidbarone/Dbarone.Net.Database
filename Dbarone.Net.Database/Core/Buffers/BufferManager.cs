@@ -1,5 +1,6 @@
 namespace Dbarone.Net.Database;
 using Dbarone.Net.Assertions;
+using Dbarone.Net.Mapper;
 
 /// <summary>
 /// In memory cache of pages as they are modified or read from disk. Dirty pages are written back to disk with a CHECKPOINT command.
@@ -250,10 +251,16 @@ public class BufferManager : IBufferManager
             // The columns are configured at the parent object.
             if (page.Headers().PageType == PageType.Data)
             {
-                var parentId = page.Headers().ParentObjectId;
-                throw new Exception("sdfs");
+                if (page.GetType()==typeof(DataPage)) {
+                    var tablesPage = GetPage<SystemTablePage>(1);
+                    var table = tablesPage.Data().First(d => d.ObjectId == page.Headers().ParentObjectId);
+                    var columnsPage = GetPage<SystemColumnPage>(table.ColumnPageId);
+                    var mapper = Mapper.ObjectMapper<SystemColumnPageData, ColumnInfo>.Create();
+                    return mapper.MapMany(columnsPage.Data());
+                }
+                throw new Exception("Cannot get columns for page.");
             }
-            throw new Exception("sdfs");
+            throw new Exception("Cannot get columns for page.");
         }
     }
 
