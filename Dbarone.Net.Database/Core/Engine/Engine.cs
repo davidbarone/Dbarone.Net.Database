@@ -209,7 +209,8 @@ public class Engine : IEngine
         foreach (var column in columns)
         {
             var obj = new SystemColumnPageData(parentObjectId, column.Name, column.DataType, column.IsNullable);
-            var buffer = this._bufferManager.SerialiseRow(obj, columns);
+            var columnMeta = Serializer.GetColumnsForType(systemColumnPage.PageDataType);
+            var buffer = this._bufferManager.SerialiseRow(obj, columnMeta);
             systemColumnPage.AddDataRow(obj, buffer);
         }
 
@@ -250,7 +251,8 @@ public class Engine : IEngine
         foreach (var column in columns)
         {
             var obj = new SystemColumnPageData(parentObjectId, column.Name, column.DataType, column.IsNullable);
-            var buffer = this._bufferManager.SerialiseRow(obj, columns);
+            var columnMeta = Serializer.GetColumnsForType(systemColumnPage.PageDataType);
+            var buffer = this._bufferManager.SerialiseRow(obj, columnMeta);
             systemColumnPage.AddDataRow(obj, buffer);
         }
 
