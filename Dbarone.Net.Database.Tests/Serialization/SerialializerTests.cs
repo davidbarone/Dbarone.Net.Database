@@ -20,6 +20,7 @@ public class SerializerTests
         }
     }
 
+    [Fact]
     public void Serializer_CompletesIn()
     {
         // Serialise / deserialise 10,000 objects in 10 seconds.

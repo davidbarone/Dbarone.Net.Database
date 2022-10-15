@@ -9,7 +9,6 @@ public class Page
 {
     public IPageHeader _headers;
     public IList<IPageData> _data;
-    public IEnumerable<ColumnInfo> DataColumns { get; set; }
     public virtual Type PageHeaderType { get { throw new NotImplementedException("Not implemented."); } }
     public virtual Type PageDataType { get { throw new NotImplementedException("Not implemented."); } }
     public IList<ushort> Slots { get; set; }

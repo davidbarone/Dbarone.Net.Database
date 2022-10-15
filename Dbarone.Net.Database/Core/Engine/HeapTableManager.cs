@@ -95,8 +95,8 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
         var pageId = GetLastPage();
         var page = this.BufferManager.GetPage<TPageType>(pageId);
         var columns = this.BufferManager.GetColumnsForPage(page);
-        var buffer = this.BufferManager.SerialiseRow(row, columns);
-        page.AddDataRow(row, buffer);
+        var buffer = this.BufferManager.SerialiseRow(row!, columns);
+        page.AddDataRow(row!, buffer);
     }
 
     public void AddRows(TRow[] row)

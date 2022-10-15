@@ -31,7 +31,7 @@ public class PageBufferTests
         var actual = pb.ReadBool(testIndex);
 
         // Assert
-        Assert.Equal(true, actual);
+        Assert.True(actual);
     }
 
     [Fact]

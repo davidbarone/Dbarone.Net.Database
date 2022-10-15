@@ -43,7 +43,7 @@ public class DataTests1 : TestBase
         {
             // Assert
             var tables = db.Tables();
-            Assert.Equal(1, tables.Count());                    // 1 table
+            Assert.Single(tables);                    // 1 table
             Assert.Equal(tableName, tables.First().TableName);
         }
     }
@@ -85,7 +85,7 @@ public class DataTests1 : TestBase
         {
             // Assert
             var tables = db.Tables();
-            Assert.Equal(1, tables.Count());                    // 1 table
+            Assert.Single(tables);                    // 1 table
             Assert.Equal(tableName, tables.First().TableName);
 
             // Read table
