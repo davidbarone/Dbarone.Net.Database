@@ -150,8 +150,9 @@ public class Engine : IEngine
     public IEnumerable<IDictionary<string, object?>> ReadRaw(string tableName)
     {
         var table = Table(tableName);
-        var data = GetPage<DataPage>(table.RootPageId);
-        return data.Data().Select(r => r.Row);
+        var firstPageId = table.RootPageId;
+        HeapTableManager<DictionaryPageData, DataPage> heap = new HeapTableManager<DictionaryPageData, DataPage>(firstPageId, this._bufferManager);
+        return heap.Scan().Select(r => r.Row);
     }
 
     public int InsertRaw(string tableName, IDictionary<string, object?> row)

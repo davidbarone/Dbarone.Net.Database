@@ -174,7 +174,8 @@ public class BufferManager : IBufferManager
             if (page.PageDataType == typeof(DictionaryPageData))
             {
                 // dictionary data
-                var dict = (IDictionary<string, object>)Serializer.DeserializeDictionary(page.DataColumns, b);
+                var columnMeta = this.GetColumnsForPage(page);
+                var dict = (IDictionary<string, object>)Serializer.DeserializeDictionary(columnMeta, b);
                 page._data.Add(new DictionaryPageData(dict!));
                 slotIndex = slotIndex - 2;
             }
