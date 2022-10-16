@@ -23,15 +23,21 @@ public class SystemTablePageData : PageData {
     /// <summary>
     /// First data page.
     /// </summary>
-    public int FirstPageId { get; set; }
+    public int FirstDataPageId { get; set; }
 
     /// <summary>
     /// Last data page.
     /// </summary>
-    public int LastPageId { get; set; }
+    public int LastDataPageId { get; set; }
 
     /// <summary>
     /// Column metadata page id.
     /// </summary>
-    public int ColumnPageId { get; set; }
+    public int FirstColumnPageId { get; set; }
+
+    /// <summary>
+    /// Column metadata page id.
+    /// </summary>
+    public int LastColumnPageId { get; set; }
+
 }

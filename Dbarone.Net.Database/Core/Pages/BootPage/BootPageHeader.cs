@@ -6,6 +6,8 @@ public interface IBootPageHeader : IPageHeader {
     int PageCount { get; set; }
     DateTime CreationTime { get; set; }
     int NextObjectId { get; set; }
+    int FirstTablesPageId { get; set; }
+    int LastTablesPageId { get; set; }
 }
 
 /// <summary>
@@ -37,4 +39,15 @@ public class BootPageHeader : PageHeader , IBootPageHeader
     /// Provides a mechanism to generate database-wide unique numbers.
     /// </summary>
     public int NextObjectId { get; set; }
+
+    /// <summary>
+    /// First page id of system tables.
+    /// </summary>
+    public int FirstTablesPageId { get; set; }
+
+    /// <summary>
+    /// Last page id of system tables.
+    /// </summary>
+    public int LastTablesPageId { get; set; }
+
 }

@@ -3,33 +3,52 @@ using System.Linq;
 
 public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where TPageType : Page
 {
+    private int? ParentObjectId { get; set; }
     private BufferManager BufferManager { get; set; }
     IEnumerable<ColumnInfo> Columns { get; set; } = default!;
     private int FirstPageId { get; set; }
+    private int LastPageId { get; set; }
 
-    public HeapTableManager(int firstPageId, BufferManager bufferManager)
+    public HeapTableManager(BufferManager bufferManager, int? parentObjectId = null)
     {
+        this.ParentObjectId = parentObjectId;
         this.BufferManager = bufferManager;
-        this.FirstPageId = firstPageId;
+
+        // Calculate first/last page ids
+        if (typeof(TPageType) == typeof(DataPage))
+        {
+            // Get from tableinfo
+            var tablesHeap = new HeapTableManager<SystemTablePageData, SystemTablePage>(bufferManager);
+            var loc = tablesHeap.SearchSingle(d => d.ObjectId == parentObjectId);
+            var row = tablesHeap.GetRow(loc);
+            this.FirstPageId = row.FirstDataPageId;
+            this.LastPageId = row.LastDataPageId;
+        }
+        else if (typeof(TPageType) == typeof(SystemTablePage))
+        {
+            this.FirstPageId = 1;
+            this.LastPageId = 1;
+        }
+        else if (typeof(TPageType) == typeof(SystemColumnPage))
+        {
+            var tablesHeap = new HeapTableManager<SystemTablePageData, SystemTablePage>(bufferManager);
+            var loc = tablesHeap.SearchSingle(d => d.ObjectId == parentObjectId);
+            var row = tablesHeap.GetRow(loc);
+            this.FirstPageId = row.FirstColumnPageId;
+            this.LastPageId = row.LastColumnPageId;
+        }
+        else
+        {
+            throw new Exception("Unexpeected data type for new HeapTableManager instance.");
+        }
+
+        // TO DO: Calculate columns here.
+
     }
 
     public int Count()
     {
         return Scan().Count();
-    }
-
-    /// <summary>
-    /// Scans through linked list to get last page.
-    /// </summary>
-    /// <returns></returns>
-    private int GetLastPage()
-    {
-        var page = this.BufferManager.GetPage<TPageType>(FirstPageId);
-        while (page.Headers().NextPageId != null)
-        {
-            page = this.BufferManager.GetPage<TPageType>(page.Headers().NextPageId!.Value);
-        }
-        return page.Headers().PageId;
     }
 
     public TRow[] Scan()
@@ -87,20 +106,70 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
 
     public TRow GetRow(DataRowLocation location)
     {
-        throw new NotSupportedException();
+        var page = this.BufferManager.GetPage<TPageType>(location.PageId);
+        return (TRow)page.GetRowAtSlot(location.Slot);
+    }
+
+    private void UpdateLastPageId(int lastPageId)
+    {
+        this.LastPageId = lastPageId;
+        
+        // Calculate first/last page ids
+        if (typeof(TPageType) == typeof(DataPage))
+        {
+            // Get from tableinfo
+            var tablesHeap = new HeapTableManager<SystemTablePageData, SystemTablePage>(this.BufferManager);
+            tablesHeap.UpdateRows(r => new SystemTablePageData()
+            {
+                ObjectId = r.ObjectId,
+                TableName = r.TableName,
+                IsSystemTable = r.IsSystemTable,
+                FirstDataPageId = r.FirstDataPageId,
+                LastDataPageId = lastPageId,
+                FirstColumnPageId = r.FirstColumnPageId,
+                LastColumnPageId = r.LastColumnPageId
+            }, r => r.ObjectId == this.ParentObjectId);
+        }
+        else if (typeof(TPageType) == typeof(SystemTablePage))
+        {
+            var bootPage = this.BufferManager.GetPage<BootPage>(0);
+            bootPage.Headers().LastTablesPageId = lastPageId;
+        }
+        else if (typeof(TPageType) == typeof(SystemColumnPage))
+        {
+            // Get from tableinfo
+            var tablesHeap = new HeapTableManager<SystemTablePageData, SystemTablePage>(this.BufferManager);
+            tablesHeap.UpdateRows(r => new SystemTablePageData()
+            {
+                ObjectId = r.ObjectId,
+                TableName = r.TableName,
+                IsSystemTable = r.IsSystemTable,
+                FirstDataPageId = r.FirstDataPageId,
+                LastDataPageId = r.LastDataPageId,
+                FirstColumnPageId = r.FirstColumnPageId,
+                LastColumnPageId = lastPageId
+            }, r => r.ObjectId == this.ParentObjectId);
+        }
+        else
+        {
+            throw new Exception("Unexpeected data type for new HeapTableManager instance.");
+        }
     }
 
     public void AddRow(TRow row)
     {
-        var pageId = GetLastPage();
-        var page = this.BufferManager.GetPage<TPageType>(pageId);
+        var page = this.BufferManager.GetPage<TPageType>(this.LastPageId);
 
         var columns = this.BufferManager.GetColumnsForPage(page);
         var buffer = this.BufferManager.SerialiseRow(row!, columns);
 
         // Room on page? - if not, create new page.
-        if (buffer.Length > page.GetFreeRowSpace()) {
+        if (buffer.Length > page.GetFreeRowSpace())
+        {
             page = this.BufferManager.CreatePage<TPageType>(page.Headers().ParentObjectId, page);
+
+            // update last page ids
+            UpdateLastPageId(page.Headers().PageId);
         }
 
         page.AddDataRow(row!, buffer);
@@ -114,7 +183,8 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
     public void UpdateRows(Func<TRow, TRow> transform, Func<TRow, bool> predicate)
     {
         var locations = SearchMany(predicate);
-        foreach (var location in locations){
+        foreach (var location in locations)
+        {
             var page = this.BufferManager.GetPage<TPageType>(location.PageId);
             var currentRowSize = page.GetAvailableSpaceForSlot(location.Slot);
             var updatedRow = transform((TRow)page.GetRowAtSlot(location.Slot))!;

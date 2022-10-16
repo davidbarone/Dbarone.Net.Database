@@ -40,7 +40,7 @@ public class Engine : IEngine
             (int)Global.PageSize);
 
         this._bufferManager = new BufferManager(new DiskService(this._stream));
-        this._systemTablesHeap = new HeapTableManager<SystemTablePageData, SystemTablePage>(1, this._bufferManager);
+        this._systemTablesHeap = new HeapTableManager<SystemTablePageData, SystemTablePage>(this._bufferManager);
     }
 
     public void Dispose()
@@ -137,9 +137,9 @@ public class Engine : IEngine
     public IEnumerable<ColumnInfo> Columns(string tableName)
     {
         var table = Table(tableName);
-        var systemColumnPage = this.GetPage<SystemColumnPage>(table.ColumnPageId);
+        var heap = new HeapTableManager<SystemColumnPageData, SystemColumnPage>(this._bufferManager, table.ObjectId);
         var mapper = ObjectMapper<SystemColumnPageData, ColumnInfo>.Create();
-        var mapped = mapper.MapMany(systemColumnPage.Data());
+        var mapped = mapper.MapMany(heap.Scan());
         return mapped;
     }
 
@@ -150,17 +150,15 @@ public class Engine : IEngine
     public IEnumerable<IDictionary<string, object?>> ReadRaw(string tableName)
     {
         var table = Table(tableName);
-        var firstPageId = table.FirstPageId;
-        HeapTableManager<DictionaryPageData, DataPage> heap = new HeapTableManager<DictionaryPageData, DataPage>(firstPageId, this._bufferManager);
+        HeapTableManager<DictionaryPageData, DataPage> heap = new HeapTableManager<DictionaryPageData, DataPage>(this._bufferManager, table.ObjectId);
         return heap.Scan().Select(r => r.Row);
     }
 
     public int InsertRaw(string tableName, IDictionary<string, object?> row)
     {
         var table = Table(tableName);
-        var data = GetPage<DataPage>(table.FirstPageId);
         var dict = new DictionaryPageData(row);
-        var heap = new HeapTableManager<DictionaryPageData, DataPage>(table.FirstPageId, this._bufferManager);
+        var heap = new HeapTableManager<DictionaryPageData, DataPage>(this._bufferManager, table.ObjectId);
         heap.AddRow(dict);
         return 0;
     }
@@ -197,10 +195,11 @@ public class Engine : IEngine
         {
             TableName = tableName,
             ObjectId = parentObjectId,
-            FirstPageId = 0,
-            LastPageId = 0,
+            FirstDataPageId = 0,
+            LastDataPageId = 0,
             IsSystemTable = false,
-            ColumnPageId = 0
+            FirstColumnPageId = 0,
+            LastColumnPageId = 0
         });
 
         // Create columns
@@ -223,10 +222,11 @@ public class Engine : IEngine
         {
             ObjectId = parentObjectId,
             TableName = r.TableName,
-            FirstPageId = dataPage.Headers().PageId,
-            LastPageId = dataPage.Headers().PageId,
+            FirstDataPageId = dataPage.Headers().PageId,
+            LastDataPageId = dataPage.Headers().PageId,
             IsSystemTable = r.IsSystemTable,
-            ColumnPageId = systemColumnPage.Headers().PageId
+            FirstColumnPageId = systemColumnPage.Headers().PageId,
+            LastColumnPageId = systemColumnPage.Headers().PageId
         }, r => r.ObjectId == parentObjectId);
 
         // return
@@ -243,10 +243,11 @@ public class Engine : IEngine
         {
             TableName = tableName,
             ObjectId = parentObjectId,            
-            FirstPageId = 0,
-            LastPageId = 0,
+            FirstDataPageId = 0,
+            LastDataPageId = 0,
             IsSystemTable = false,
-            ColumnPageId = 0
+            FirstColumnPageId = 0,
+            LastColumnPageId = 0
         });
 
         // Create columns
@@ -267,10 +268,11 @@ public class Engine : IEngine
         {
             ObjectId = parentObjectId,            
             TableName = r.TableName,
-            FirstPageId = dataPage.Headers().PageId,
-            LastPageId = dataPage.Headers().PageId,
+            FirstDataPageId = dataPage.Headers().PageId,
+            LastDataPageId = dataPage.Headers().PageId,
             IsSystemTable = r.IsSystemTable,
-            ColumnPageId = systemColumnPage.Headers().PageId
+            FirstColumnPageId = systemColumnPage.Headers().PageId,
+            LastColumnPageId = systemColumnPage.Headers().PageId
         }, r => r.ObjectId == parentObjectId);
         
         // return

@@ -245,11 +245,10 @@ public class BufferManager : IBufferManager
             if (page.Headers().PageType == PageType.Data)
             {
                 if (page.GetType()==typeof(DataPage)) {
-                    var tablesPage = GetPage<SystemTablePage>(1);
-                    var table = tablesPage.Data().First(d => d.ObjectId == page.Headers().ParentObjectId);
-                    var columnsPage = GetPage<SystemColumnPage>(table.ColumnPageId);
+                    var parentObjectId = page.Headers().ParentObjectId;
+                    var heap = new HeapTableManager<SystemColumnPageData, SystemColumnPage>(this, parentObjectId);
                     var mapper = Mapper.ObjectMapper<SystemColumnPageData, ColumnInfo>.Create();
-                    return mapper.MapMany(columnsPage.Data());
+                    return mapper.MapMany(heap.Scan());
                 }
                 throw new Exception("Cannot get columns for page.");
             }
