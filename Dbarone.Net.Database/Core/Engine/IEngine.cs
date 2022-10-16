@@ -70,7 +70,7 @@ public interface IEngine : IDisposable
     /// <param name="row">The row data to insert.</param>
     /// <returns></returns>
     int InsertRaw(string tableName, IDictionary<string, object?> row);
-    int Insert<T>(string table, IEnumerable<T> data);
+    int BulkInsert<T>(string table, IEnumerable<T> data);
     int update<T>(string table, T data);
     int update<T>(string table, IEnumerable<T> data);
     int upsert<T>(string table, T data);

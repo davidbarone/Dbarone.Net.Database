@@ -42,8 +42,14 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
             throw new Exception("Unexpeected data type for new HeapTableManager instance.");
         }
 
-        // TO DO: Calculate columns here.
+        // Get column information
+        this.Columns = GetColumnInformation();
+    }
 
+    private IEnumerable<ColumnInfo> GetColumnInformation() {
+        var page = this.BufferManager.GetPage<TPageType>(this.LastPageId);
+        var columns = this.BufferManager.GetColumnsForPage(page);
+        return columns;
     }
 
     public int Count()
@@ -159,9 +165,7 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
     public void AddRow(TRow row)
     {
         var page = this.BufferManager.GetPage<TPageType>(this.LastPageId);
-
-        var columns = this.BufferManager.GetColumnsForPage(page);
-        var buffer = this.BufferManager.SerialiseRow(row!, columns);
+        var buffer = this.BufferManager.SerialiseRow(row!, this.Columns);
 
         // Room on page? - if not, create new page.
         if (buffer.Length > page.GetFreeRowSpace())
@@ -171,13 +175,14 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
             // update last page ids
             UpdateLastPageId(page.Headers().PageId);
         }
-
         page.AddDataRow(row!, buffer);
     }
 
-    public void AddRows(TRow[] row)
+    public void AddRows(TRow[] rows)
     {
-        throw new NotSupportedException();
+        foreach (var row in rows){
+            AddRow(row);
+        }
     }
 
     public void UpdateRows(Func<TRow, TRow> transform, Func<TRow, bool> predicate)
@@ -188,7 +193,7 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
             var page = this.BufferManager.GetPage<TPageType>(location.PageId);
             var currentRowSize = page.GetAvailableSpaceForSlot(location.Slot);
             var updatedRow = transform((TRow)page.GetRowAtSlot(location.Slot))!;
-            var buffer = this.BufferManager.SerialiseRow(updatedRow, this.BufferManager.GetColumnsForPage(page));
+            var buffer = this.BufferManager.SerialiseRow(updatedRow, this.Columns);
             page.UpdateDataRow(location.Slot, updatedRow, buffer);
         }
     }

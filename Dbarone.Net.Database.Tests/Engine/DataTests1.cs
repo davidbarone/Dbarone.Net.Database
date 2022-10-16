@@ -118,16 +118,18 @@ public class DataTests1 : TestBase
             };
 
             db.CreateTable(tableName, columns);
-
-            for (int i = 0; i < 10000; i++)
+            
+            List<IDictionary<string, object?>> data = new List<IDictionary<string, object?>>();
+            for (int i = 0; i < 100000; i++)
             {
-                db.Insert("Addresses", new Dictionary<string, object?>{
+                data.Add(new Dictionary<string, object?>(){
                     {"AddressId", i},
                     {"Address1", "4 Acacia Drive"},
                     {"Address2", "Summertown"},
                     {"Country", "USA"}
                 });
             }
+            db.BulkInsert("Addresses", data);
             db.CheckPoint();    // Save pages to disk
         }
 
@@ -141,7 +143,7 @@ public class DataTests1 : TestBase
 
             // Read table
             var data = db.ReadRaw(tableName);
-            Assert.Equal(10000, data.Count());
+            Assert.Equal(100000, data.Count());
             Assert.Equal(0, data.First()["AddressId"]);
             Assert.Equal("4 Acacia Drive", data.First()["Address1"]);
         }

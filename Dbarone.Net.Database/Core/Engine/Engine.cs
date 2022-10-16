@@ -11,15 +11,27 @@ public class Engine : IEngine
     private Stream _stream;
     private BufferManager _bufferManager;
 
+    HeapTableManager<SystemTablePageData, SystemTablePage>? _systemTablesHeap = null;
+    private HeapTableManager<SystemTablePageData, SystemTablePage> SystemTablesHeap
+    {
+        get
+        {
+            if (_systemTablesHeap == null)
+            {
+                _systemTablesHeap = new HeapTableManager<SystemTablePageData, SystemTablePage>(this._bufferManager, null);
+            }
+            return _systemTablesHeap;
+        }
+    }
+
     /// <summary>
     /// Returns a reference to the boot page.
     /// </summary>
     /// <returns></returns>
-    private BootPage GetBootPage() {
+    private BootPage GetBootPage()
+    {
         return _bufferManager.GetPage<BootPage>(0);
     }
-
-    private IHeapTableManager<SystemTablePageData> _systemTablesHeap;
 
     #region Constructor / destructor
 
@@ -40,7 +52,6 @@ public class Engine : IEngine
             (int)Global.PageSize);
 
         this._bufferManager = new BufferManager(new DiskService(this._stream));
-        this._systemTablesHeap = new HeapTableManager<SystemTablePageData, SystemTablePage>(this._bufferManager);
     }
 
     public void Dispose()
@@ -173,7 +184,14 @@ public class Engine : IEngine
         return 0;
     }
 
-    public int Insert<T>(string table, IEnumerable<T> data) { throw new NotSupportedException("Not supported."); }
+    public int BulkInsert<T>(string tableName, IEnumerable<T> data)
+    {
+        var table = Table(tableName);
+        var rows = data.Select(d => new DictionaryPageData((d as IDictionary<string, object?>)!)).ToArray();
+        var heap = new HeapTableManager<DictionaryPageData, DataPage>(this._bufferManager, table.ObjectId);
+        heap.AddRows(rows);
+        return 0;
+    }
 
     #endregion
 
@@ -191,7 +209,7 @@ public class Engine : IEngine
         var parentObjectId = GetBootPage().GetNextObjectId();
 
         // Create table
-        this._systemTablesHeap.AddRow(new SystemTablePageData()
+        this.SystemTablesHeap.AddRow(new SystemTablePageData()
         {
             TableName = tableName,
             ObjectId = parentObjectId,
@@ -205,7 +223,7 @@ public class Engine : IEngine
         // Create columns
         var systemColumnPage = this.CreatePage<SystemColumnPage>();
         var columns = Serializer.GetColumnsForType(typeof(T));
-        
+
         foreach (var column in columns)
         {
             var obj = new SystemColumnPageData(parentObjectId, column.Name, column.DataType, column.IsNullable);
@@ -218,7 +236,7 @@ public class Engine : IEngine
         var dataPage = this.CreatePage<DataPage>(parentObjectId);
 
         // Update the table metadata
-        this._systemTablesHeap.UpdateRows(r => new SystemTablePageData
+        this.SystemTablesHeap.UpdateRows(r => new SystemTablePageData
         {
             ObjectId = parentObjectId,
             TableName = r.TableName,
@@ -239,10 +257,10 @@ public class Engine : IEngine
         var parentObjectId = GetBootPage().GetNextObjectId();
 
         // Create table
-        this._systemTablesHeap.AddRow(new SystemTablePageData()
+        this.SystemTablesHeap.AddRow(new SystemTablePageData()
         {
             TableName = tableName,
-            ObjectId = parentObjectId,            
+            ObjectId = parentObjectId,
             FirstDataPageId = 0,
             LastDataPageId = 0,
             IsSystemTable = false,
@@ -264,9 +282,9 @@ public class Engine : IEngine
         var dataPage = this.CreatePage<DataPage>(parentObjectId);
 
         // Update the table metadata
-        this._systemTablesHeap.UpdateRows(r => new SystemTablePageData
+        this.SystemTablesHeap.UpdateRows(r => new SystemTablePageData
         {
-            ObjectId = parentObjectId,            
+            ObjectId = parentObjectId,
             TableName = r.TableName,
             FirstDataPageId = dataPage.Headers().PageId,
             LastDataPageId = dataPage.Headers().PageId,
@@ -274,7 +292,7 @@ public class Engine : IEngine
             FirstColumnPageId = systemColumnPage.Headers().PageId,
             LastColumnPageId = systemColumnPage.Headers().PageId
         }, r => r.ObjectId == parentObjectId);
-        
+
         // return
         return Table(tableName);
     }
