@@ -30,23 +30,6 @@ public class BufferManager : IBufferManager
     private Dictionary<int, Page> _pages = new Dictionary<int, Page>();
 
     /// <summary>
-    /// Gets the column information for a data page, as separate page
-    /// reads are required for this information. Other page types can
-    /// get the column information automatically.
-    /// </summary>
-    /// <param name="pageId">The page id.</param>
-    /// <returns>The column information.</returns>
-    private IEnumerable<ColumnInfo> GetDataColumnsForDataPage(int pageId)
-    {
-        // Get the column structure from the parent -> columns
-        var systemTablePage = this.GetPage<SystemTablePage>(1);
-        var table = systemTablePage.Data().First(d => d.RootPageId == pageId);
-        var systemColumnPage = this.GetPage<SystemColumnPage>(table.ColumnPageId);
-        var mapper = Mapper.ObjectMapper<SystemColumnPageData, ColumnInfo>.Create();
-        return mapper.MapMany(systemColumnPage.Data());
-    }
-
-    /// <summary>
     /// Gets a page from the buffer cache. If page not present, reads from disk
     /// </summary>
     /// <param name="pageId"></param>

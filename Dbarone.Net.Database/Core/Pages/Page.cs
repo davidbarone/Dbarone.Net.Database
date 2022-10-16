@@ -40,49 +40,37 @@ public class Page
      }
 
     /// <summary>
-    /// Gets the column structure of each data row. By default returns the columns for the type `this.PageDataType`.
-    /// </summary>
-    /// <returns></returns>
-    protected virtual IEnumerable<ColumnInfo> GetDefaultDataColumns()
-    {
-        if (this.PageDataType == typeof(DictionaryPageData))
-        {
-            throw new Exception($"Cannot get columns for data type: {this.PageDataType.Name}.");
-        }
-        return Serializer.GetColumnsForType(this.PageDataType);
-    }
-
-    /// <summary>
-    /// Header information.
+    /// Returns the header structure. Subclasses can provide the specific type.
     /// </summary>
     public virtual IPageHeader Headers() { throw new NotImplementedException("Not implemented."); }
 
     /// <summary>
-    /// Data within the page. The data is indexed using the slots array
+    /// Returns the data within the page. The data is indexed using the slots array.
     /// </summary>
     public virtual IEnumerable<IPageData> Data() { throw new NotImplementedException("Not implemented."); }
 
     /// <summary>
-    /// Implement in a subclass to create header proxy.
+    /// Must be implemented in a subclass to create the header proxy.
     /// </summary>
     /// <param name="headers"></param>
     /// <returns></returns>
     public virtual void CreateHeaderProxy() { throw new NotImplementedException(); }
 
     /// <summary>
-    /// Manually set the page to dirty.
+    /// Manually sets the page to dirty.
     /// </summary>
     public void SetDirty()
     {
         this.Headers().IsDirty = true;
     }
 
+    #region Row Methods
 
     /// <summary>
-    /// Gets the data at a particular slot
+    /// Gets the data row at a particular slot index.
     /// </summary>
-    /// <param name="slot"></param>
-    /// <returns></returns>
+    /// <param name="slot">The slot index.</param>
+    /// <returns>Returns the row at the specified index.</returns>
     public IPageData GetRowAtSlot(int slot)
     {
         var slots = this.Headers().SlotsUsed;
@@ -112,6 +100,15 @@ public class Page
         this._data.Add((row as IPageData)!);
     }
 
+    /// <summary>
+    /// Updates a data row in place. Can only update the row if the updated
+    /// value serialised fits into the existing data row space. If not, an
+    /// exception is thrown.
+    /// </summary>
+    /// <param name="slot">The slot to update the data row of.</param>
+    /// <param name="row">The updated value.</param>
+    /// <param name="buffer">The buffer representation of the updated value.</param>
+    /// <exception cref="Exception">Throws an exception if the updated value does not fit into the existing slot space.</exception>
     public void UpdateDataRow(ushort slot, object row, byte[] buffer){
         Assert.IsType(row, this.PageDataType);
         Assert.Between(slot, 0, this.Headers().SlotsUsed - 1);
@@ -141,34 +138,6 @@ public class Page
     }
 
     /// <summary>
-    /// Sets the IsDirty to true if any setter is called.
-    /// </summary>
-    /// <param name="interceptorArgs"></param>
-    public static void IsDirtyInterceptor<TPageHeaderInterface>(InterceptorArgs<TPageHeaderInterface> interceptorArgs) where TPageHeaderInterface : IPageHeader
-    {
-        // Sets the IsDirty flag if any setter on header object is called.
-        if (
-            interceptorArgs.BoundaryType == BoundaryType.After &&
-            interceptorArgs.Target != null &&
-            interceptorArgs.TargetMethod.Name.Substring(0, 4) == "set_")
-        {
-            interceptorArgs.Target.IsDirty = true;
-        }
-    }
-
-    /// <summary>
-    /// Returns the space free on the page that can be used to store new row data.
-    /// </summary>
-    /// <returns></returns>
-    public int GetFreeRowSpace()
-    {
-        return Global.PageSize                                                             // Page size
-            - Global.PageHeaderSize                                                         // Ignore page header
-            - this.Headers().FreeOffset                                                     // Space already used by data rows
-            - ((this.Headers().SlotsUsed + 1) * Types.GetByDataType(DataType.UInt16).Size); // Slot table (including extra slot for new row)
-    }
-
-    /// <summary>
     /// Returns the number of bytes available for the specified slot. Used when updating data rows in slots.
     /// </summary>
     /// <param name="slot"></param>
@@ -193,13 +162,36 @@ public class Page
     }
 
     /// <summary>
-    /// Create a new page that is not yet persisted to disk.
+    /// Returns the space free on the page that can be used to store new row data.
     /// </summary>
-    /// <param name="pageId"></param>
-    /// <param name="buffer"></param>
-    public static void Create<TPageType>(int pageId, PageBuffer buffer)
+    /// <returns></returns>
+    public int GetFreeRowSpace()
     {
-
-
+        return Global.PageSize                                                             // Page size
+            - Global.PageHeaderSize                                                         // Ignore page header
+            - this.Headers().FreeOffset                                                     // Space already used by data rows
+            - ((this.Headers().SlotsUsed + 1) * Types.GetByDataType(DataType.UInt16).Size); // Slot table (including extra slot for new row)
     }
+
+    #endregion
+
+    #region Proxy
+
+    /// <summary>
+    /// Sets the IsDirty to true if any setter is called.
+    /// </summary>
+    /// <param name="interceptorArgs"></param>
+    public static void IsDirtyInterceptor<TPageHeaderInterface>(InterceptorArgs<TPageHeaderInterface> interceptorArgs) where TPageHeaderInterface : IPageHeader
+    {
+        // Sets the IsDirty flag if any setter on header object is called.
+        if (
+            interceptorArgs.BoundaryType == BoundaryType.After &&
+            interceptorArgs.Target != null &&
+            interceptorArgs.TargetMethod.Name.Substring(0, 4) == "set_")
+        {
+            interceptorArgs.Target.IsDirty = true;
+        }
+    }
+
+    #endregion
 }
