@@ -150,7 +150,7 @@ public class Engine : IEngine
     public IEnumerable<IDictionary<string, object?>> ReadRaw(string tableName)
     {
         var table = Table(tableName);
-        var firstPageId = table.RootPageId;
+        var firstPageId = table.FirstPageId;
         HeapTableManager<DictionaryPageData, DataPage> heap = new HeapTableManager<DictionaryPageData, DataPage>(firstPageId, this._bufferManager);
         return heap.Scan().Select(r => r.Row);
     }
@@ -158,11 +158,10 @@ public class Engine : IEngine
     public int InsertRaw(string tableName, IDictionary<string, object?> row)
     {
         var table = Table(tableName);
-        var data = GetPage<DataPage>(table.RootPageId);
+        var data = GetPage<DataPage>(table.FirstPageId);
         var dict = new DictionaryPageData(row);
-        var columns = this._bufferManager.GetColumnsForPage(data);
-        var buffer = this._bufferManager.SerialiseRow(row, columns);
-        data.AddDataRow(dict, buffer);
+        var heap = new HeapTableManager<DictionaryPageData, DataPage>(table.FirstPageId, this._bufferManager);
+        heap.AddRow(dict);
         return 0;
     }
 
@@ -198,7 +197,8 @@ public class Engine : IEngine
         {
             TableName = tableName,
             ObjectId = parentObjectId,
-            RootPageId = 0,
+            FirstPageId = 0,
+            LastPageId = 0,
             IsSystemTable = false,
             ColumnPageId = 0
         });
@@ -223,7 +223,8 @@ public class Engine : IEngine
         {
             ObjectId = parentObjectId,
             TableName = r.TableName,
-            RootPageId = dataPage.Headers().PageId,
+            FirstPageId = dataPage.Headers().PageId,
+            LastPageId = dataPage.Headers().PageId,
             IsSystemTable = r.IsSystemTable,
             ColumnPageId = systemColumnPage.Headers().PageId
         }, r => r.ObjectId == parentObjectId);
@@ -242,7 +243,8 @@ public class Engine : IEngine
         {
             TableName = tableName,
             ObjectId = parentObjectId,            
-            RootPageId = 0,
+            FirstPageId = 0,
+            LastPageId = 0,
             IsSystemTable = false,
             ColumnPageId = 0
         });
@@ -265,7 +267,8 @@ public class Engine : IEngine
         {
             ObjectId = parentObjectId,            
             TableName = r.TableName,
-            RootPageId = dataPage.Headers().PageId,
+            FirstPageId = dataPage.Headers().PageId,
+            LastPageId = dataPage.Headers().PageId,
             IsSystemTable = r.IsSystemTable,
             ColumnPageId = systemColumnPage.Headers().PageId
         }, r => r.ObjectId == parentObjectId);

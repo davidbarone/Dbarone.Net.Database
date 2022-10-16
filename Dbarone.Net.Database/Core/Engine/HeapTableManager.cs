@@ -94,8 +94,15 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
     {
         var pageId = GetLastPage();
         var page = this.BufferManager.GetPage<TPageType>(pageId);
+
         var columns = this.BufferManager.GetColumnsForPage(page);
         var buffer = this.BufferManager.SerialiseRow(row!, columns);
+
+        // Room on page? - if not, create new page.
+        if (buffer.Length > page.GetFreeRowSpace()) {
+            page = this.BufferManager.CreatePage<TPageType>(page.Headers().ParentObjectId, page);
+        }
+
         page.AddDataRow(row!, buffer);
     }
 

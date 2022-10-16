@@ -23,7 +23,7 @@ public interface IBufferManager
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
-    T CreatePage<T>(int? parentObjectId = null) where T : Page;
+    T CreatePage<T>(int? parentObjectId = null, Page? linkedPage = null) where T : Page;
 
     byte[] SerialiseRow(object row, IEnumerable<ColumnInfo> columns);
 }

@@ -75,7 +75,7 @@ public class BufferManager : IBufferManager
     /// <param name="parentObjectId">Optional parent id. Required for some page types.</param>
     /// <returns>Returns a new instantiated page.</returns>
     /// <exception cref="Exception"></exception>
-    private T InitialisePage<T>(int pageId, int? parentObjectId = null) where T : Page
+    private T InitialisePage<T>(int pageId, int? parentObjectId = null, int? prevPageId = null) where T : Page
     {
         //var buffer = _diskService.ReadPage(pageId);
 
@@ -86,6 +86,10 @@ public class BufferManager : IBufferManager
         else if (typeof(T) == typeof(SystemColumnPage)) page = (T)(object)new SystemColumnPage(pageId);
         else if (typeof(T) == typeof(DataPage)) page = (T)(object)new DataPage(pageId, parentObjectId);
         else throw new Exception("Unable to create a new page.");
+
+        if (prevPageId!=null) {
+            page.Headers().PrevPageId = prevPageId;
+        }
 
         // Create header proxy
         page.CreateHeaderProxy();
@@ -98,12 +102,17 @@ public class BufferManager : IBufferManager
         return (T)page;
     }
 
-    public T CreatePage<T>(int? parentObjectId = null) where T : Page
+    public T CreatePage<T>(int? parentObjectId = null, Page? linkedPage = null) where T : Page
     {
         var pageId = _diskService.CreatePage();
 
+        // Updated linked page
+        if (linkedPage!=null){
+            linkedPage.Headers().NextPageId = pageId;
+        }
+
         // Initialise page
-        return InitialisePage<T>(pageId, parentObjectId);
+        return InitialisePage<T>(pageId, parentObjectId, (linkedPage!=null)?linkedPage.Headers().PageId:null);
     }
 
     #region Serialisation

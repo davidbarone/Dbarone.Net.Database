@@ -21,9 +21,14 @@ public class SystemTablePageData : PageData {
     public bool IsSystemTable { get; set; }
     
     /// <summary>
-    /// Root data page. Can be either leaf data page, or tree node
+    /// First data page.
     /// </summary>
-    public int RootPageId { get; set; }
+    public int FirstPageId { get; set; }
+
+    /// <summary>
+    /// Last data page.
+    /// </summary>
+    public int LastPageId { get; set; }
 
     /// <summary>
     /// Column metadata page id.
