@@ -52,8 +52,8 @@ public interface IBuffer
     public Guid ReadGuid(int index);
     public byte[] ReadBytes(int index, int length);
     public DateTime ReadDateTime(int index);
-    public string ReadString(int index, int length);
-    public object Read(DataType dataType, int index, int? length = null);
+    public string ReadString(int index, int length, TextEncoding textEncoding = TextEncoding.UTF8);
+    public object Read(DataType dataType, int index, int? length = null, TextEncoding textEncoding = TextEncoding.UTF8);
 
     #endregion
 
@@ -75,8 +75,8 @@ public interface IBuffer
     public void Write(Guid value, int index);
     public void Write(byte[] value, int index);
     public void Write(DateTime  value, int index);
-    public void Write(string value, int index);
-    public void Write(object value, int index);
+    public void Write(string value, int index, TextEncoding textEncoding = TextEncoding.UTF8);
+    public void Write(object value, int index, TextEncoding textEncoding = TextEncoding.UTF8);
 
     #endregion
 

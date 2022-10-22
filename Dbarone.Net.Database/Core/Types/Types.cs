@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Dbarone.Net.Extensions.Reflection;
 using Dbarone.Net.Assertions;
+using System.Text;
 
 /// <summary>
 /// Defines the types allowed in Dbarone.Net.Database.
@@ -44,7 +45,7 @@ public class Types
     /// </summary>
     /// <param name="obj">The object to determine the size of.</param>
     /// <returns></returns>
-    public static ushort SizeOf(object obj)
+    public static ushort SizeOf(object obj, TextEncoding textEncoding = TextEncoding.UTF8)
     {
         if (obj == null) { return 0; }
         var typeInfo = GetByType(obj.GetType());
@@ -54,7 +55,14 @@ public class Types
         }
         else if (typeInfo.DataType == DataType.String)
         {
-            return (ushort)((string)obj).Length;
+            if (textEncoding==TextEncoding.UTF8){
+                return (ushort)Encoding.UTF8.GetBytes((string)obj).Length;
+            } else if (textEncoding==TextEncoding.Latin1) {
+                return (ushort)Encoding.Latin1.GetBytes((string)obj).Length;
+            }
+            else {
+                throw new Exception("Unable to get SizeOf due to invalid text encoding.");
+            }
         }
         else if (typeInfo.DataType == DataType.Blob)
         {

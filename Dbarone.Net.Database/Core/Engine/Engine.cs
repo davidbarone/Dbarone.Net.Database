@@ -72,13 +72,14 @@ public class Engine : IEngine
     /// </summary>
     /// <param name="filename">The filename.</param>
     /// <returns></returns>
-    public static IEngine Create(string filename)
+    public static IEngine Create(string filename, TextEncoding textEncoding = TextEncoding.UTF8)
     {
         var engine = new Engine(filename, canWrite: true);
 
         // Create boot page (page #0)
         var bootPage = engine.CreatePage<BootPage>();
         bootPage.Headers().CreationTime = DateTime.Now;
+        bootPage.Headers().TextEncoding = textEncoding;
 
         // Create System table page (page #1)
         var systemTablePage = engine.CreatePage<SystemTablePage>();
@@ -117,13 +118,8 @@ public class Engine : IEngine
     public DatabaseInfo Database()
     {
         var page0 = this.GetPage<BootPage>(0);
-        return new DatabaseInfo
-        {
-            Magic = page0.Headers().Magic,
-            Version = page0.Headers().Version,
-            CreationTime = page0.Headers().CreationTime,
-            PageCount = page0.Headers().PageCount
-        };
+        var mapper = Mapper.ObjectMapper<IBootPageHeader, DatabaseInfo>.Create();
+        return mapper.MapOne(page0.Headers())!;
     }
 
     public IEnumerable<TableInfo> Tables()

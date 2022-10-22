@@ -146,12 +146,20 @@ public class BufferBase : IBuffer
         return DateTime.FromBinary(this.ReadInt64(index));
     }
 
-    public string ReadString(int index, int length)
+    public string ReadString(int index, int length, TextEncoding textEncoding = TextEncoding.UTF8)
     {
-        return Encoding.UTF8.GetString(InternalBuffer, index, length);
+        if (textEncoding == TextEncoding.UTF8)
+        {
+            return Encoding.UTF8.GetString(InternalBuffer, index, length);
+        }
+        else if (textEncoding == TextEncoding.Latin1)
+        {
+            return Encoding.Latin1.GetString(InternalBuffer, index, length);
+        }
+        throw new Exception("Unable to read string encoding.");
     }
 
-    public object Read(DataType dataType, int index, int? length = null)
+    public object Read(DataType dataType, int index, int? length = null, TextEncoding textEncoding = TextEncoding.UTF8)
     {
         switch (dataType)
         {
@@ -185,7 +193,7 @@ public class BufferBase : IBuffer
                 return ReadDateTime(index);
             case DataType.String:
                 if (length == null) { throw new Exception("Length required (1)."); }
-                return ReadString(index, length.Value);
+                return ReadString(index, length.Value, textEncoding);
             case DataType.Guid:
                 return ReadGuid(index);
             case DataType.Blob:
@@ -308,16 +316,27 @@ public class BufferBase : IBuffer
         this.Write(value.ToBinary(), index);
     }
 
-    public void Write(string value, int index)
+    public void Write(string value, int index, TextEncoding textEncoding = TextEncoding.UTF8)
     {
-        // GetBytes writes directly to the buffer.
-        var bytes = Encoding.UTF8.GetBytes(value, 0, value.Length, this.InternalBuffer, index);
+        if (textEncoding == TextEncoding.UTF8)
+        {
+            // GetBytes writes directly to the buffer.
+            var bytes = Encoding.UTF8.GetBytes(value, 0, value.Length, this.InternalBuffer, index);
+        }
+        else if (textEncoding == TextEncoding.Latin1)
+        {
+            var bytes = Encoding.Latin1.GetBytes(value, 0, value.Length, this.InternalBuffer, index);
+        } else
+        {
+            throw new Exception("Unable to write string encoding.");
+        }
     }
 
-    public void Write(object value, int index)
+    public void Write(object value, int index, TextEncoding textEncoding = TextEncoding.UTF8)
     {
         var type = value.GetType();
-        if (type.IsEnum){
+        if (type.IsEnum)
+        {
             type = Enum.GetUnderlyingType(type);
         }
         if (type == typeof(bool))
@@ -378,7 +397,7 @@ public class BufferBase : IBuffer
         }
         else if (type == typeof(string))
         {
-            Write((string)value, index);
+            Write((string)value, index, textEncoding);
         }
         else if (type == typeof(Guid))
         {

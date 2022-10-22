@@ -26,6 +26,32 @@ public class StaticMethodTests : TestBase
     }
 
     [Fact]
+    public void CreateDatabaseTextEncodingLatin1()
+    {
+        // Arrange
+        var dbName = GetDatabaseFileNameFromMethod();
+        if (File.Exists(dbName))
+        {
+            File.Delete(dbName);
+        }
+
+        // Act
+        using (var db = Engine.Create(dbName, TextEncoding.Latin1))
+        {
+            db.CheckPoint();
+        }
+
+        using (var db = Engine.Open(dbName, false))
+        {
+            // Assert
+            Assert.NotNull(db);
+            Assert.IsAssignableFrom<IEngine>(db);
+            Assert.True(File.Exists(dbName));
+            Assert.Equal(TextEncoding.Latin1, db.Database().TextEncoding);
+        }
+    }
+
+    [Fact]
     public void OpenDatabase()
     {
         // Arrange

@@ -8,20 +8,20 @@ using Dbarone.Net.Extensions.Object;
 /// </summary>
 public class Serializer
 {
-    public static T Deserialize<T>(byte[] buffer)
+    public static T Deserialize<T>(byte[] buffer, TextEncoding textEncoding = TextEncoding.UTF8)
     {
-        return (T)Deserialize(typeof(T), buffer);
+        return (T)Deserialize(typeof(T), buffer, textEncoding);
     }
 
-    public static object Deserialize(Type type, byte[] buffer)
+    public static object Deserialize(Type type, byte[] buffer, TextEncoding textEncoding = TextEncoding.UTF8)
     {
         var columns = GetColumnsForType(type);
-        return Deserialize(type, columns, buffer);
+        return Deserialize(type, columns, buffer, textEncoding);
     }
 
-    public static object Deserialize(Type type, IEnumerable<ColumnInfo> columns, byte[] buffer){
+    public static object Deserialize(Type type, IEnumerable<ColumnInfo> columns, byte[] buffer, TextEncoding textEncoding = TextEncoding.UTF8){
 
-        var dictionary = DeserializeDictionary(columns, buffer);
+        var dictionary = DeserializeDictionary(columns, buffer, textEncoding);
 
         object? obj = Activator.CreateInstance(type);
         if (obj == null)
@@ -36,7 +36,7 @@ public class Serializer
         return obj;
     }
 
-    public static IDictionary<string, object?> DeserializeDictionary(IEnumerable<ColumnInfo> columns, byte[] buffer){
+    public static IDictionary<string, object?> DeserializeDictionary(IEnumerable<ColumnInfo> columns, byte[] buffer, TextEncoding textEncoding = TextEncoding.UTF8){
 
         Dictionary<string, object?> obj = new Dictionary<string, object?>();
 
@@ -100,7 +100,7 @@ public class Serializer
             }
             else
             {
-                var value = bb.Read(col.DataType, index, variableLengthLengths[i]);
+                var value = bb.Read(col.DataType, index, variableLengthLengths[i], textEncoding);
                 obj[col.Name] = value;
             }
 
@@ -119,10 +119,10 @@ public class Serializer
     /// </summary>
     /// <param name="obj">The object to serialize.</param>
     /// <returns>A byte array representing the object.</returns>
-    public static byte[] Serialize(object obj)
+    public static byte[] Serialize(object obj, TextEncoding textEncoding = TextEncoding.UTF8)
     {
         var columnInfo = GetColumnsForType(obj.GetType());
-        return Serialize(columnInfo, obj);
+        return Serialize(columnInfo, obj, textEncoding);
     }
 
     /// <summary>
@@ -131,10 +131,10 @@ public class Serializer
     /// <param name="columns">The column metadata for the object to serialize.</param>
     /// <param name="obj">The object to serialize.</param>
     /// <returns>A byte array representing the object.</returns>
-    public static byte[] Serialize(IEnumerable<ColumnInfo> columns, object obj)
+    public static byte[] Serialize(IEnumerable<ColumnInfo> columns, object obj, TextEncoding textEncoding = TextEncoding.UTF8)
     {
         var dict = obj.ToDictionary();
-        return SerializeDictionary(columns, dict!);
+        return SerializeDictionary(columns, dict!, textEncoding);
     }
 
     /// <summary>
@@ -143,10 +143,10 @@ public class Serializer
     /// <param name="columns">The column metadata.</param>
     /// <param name="obj">The object / dictionary to serialize.</param>
     /// <returns>A byte array of the serialized data.</returns>
-    public static byte[] SerializeDictionary(IEnumerable<ColumnInfo> columns, IDictionary<string, object?> obj) {
+    public static byte[] SerializeDictionary(IEnumerable<ColumnInfo> columns, IDictionary<string, object?> obj, TextEncoding textEncoding = TextEncoding.UTF8) {
 
         // Get serialization parameters
-        var parms = GetParams(columns, obj);
+        var parms = GetParams(columns, obj, textEncoding);
 
         // Additional info stored
         // BufferLength (2 bytes)     // includes metadata fields
@@ -227,7 +227,7 @@ public class Serializer
             }
             else
             {
-                buffer.Write(item.Value, index);
+                buffer.Write(item.Value, index, textEncoding);
             }
             index += item.Size;
             columnIndex++;
@@ -259,7 +259,7 @@ public class Serializer
 
     #region Private Methods
 
-    private static SerializationParams GetParams(IEnumerable<ColumnInfo> columns, IDictionary<string, object?> obj)
+    private static SerializationParams GetParams(IEnumerable<ColumnInfo> columns, IDictionary<string, object?> obj, TextEncoding textEncoding = TextEncoding.UTF8)
     {
         SerializationParams parms = new SerializationParams();
 
@@ -287,7 +287,7 @@ public class Serializer
             csi.Value = obj.ContainsKey(item.Name) ? obj[item.Name] : null;
             if (csi.Value != null)
             {
-                csi.Size = Types.SizeOf(csi.Value);
+                csi.Size = Types.SizeOf(csi.Value, textEncoding);
             }
             parms.VariableColumns.Add(csi);
         }

@@ -8,6 +8,7 @@ public interface IBootPageHeader : IPageHeader {
     int NextObjectId { get; set; }
     int FirstTablesPageId { get; set; }
     int LastTablesPageId { get; set; }
+    TextEncoding TextEncoding { get; set; }
 }
 
 /// <summary>
@@ -50,4 +51,8 @@ public class BootPageHeader : PageHeader , IBootPageHeader
     /// </summary>
     public int LastTablesPageId { get; set; }
 
+    /// <summary>
+    /// Sets the text encoding for the database.
+    /// </summary>
+    public TextEncoding TextEncoding { get; set; }
 }

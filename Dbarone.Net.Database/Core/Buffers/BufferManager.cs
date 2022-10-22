@@ -7,6 +7,7 @@ using Dbarone.Net.Mapper;
 /// </summary>
 public class BufferManager : IBufferManager
 {
+    private TextEncoding textEncoding = TextEncoding.UTF8;
     public BufferManager(DiskService diskService)
     {
         this._diskService = diskService;
@@ -63,6 +64,13 @@ public class BufferManager : IBufferManager
 
             // Add to cache, and return
             this._pages[pageId] = page;
+
+            // If Boot page, we set the text encoding for subsequent pages
+            // Page0 is always read using default encoding of UTF-8.
+            if (typeof(T)==typeof(BootPage) && pageId==0){
+                this.textEncoding = (page as BootPage)!.Headers().TextEncoding;
+            }
+
             return (T)page;
         }
     }
@@ -131,11 +139,11 @@ public class BufferManager : IBufferManager
         byte[]? buffer = null;
         if (dictionaryRow != null)
         {
-            buffer = Serializer.SerializeDictionary(columns, dictionaryRow.Row);
+            buffer = Serializer.SerializeDictionary(columns, dictionaryRow.Row, textEncoding);
         }
         else
         {
-            buffer = Serializer.Serialize(columns, row);
+            buffer = Serializer.Serialize(columns, row, textEncoding);
         }
         return buffer;
     }
@@ -150,7 +158,7 @@ public class BufferManager : IBufferManager
         // Hydrate Headers
         var headerLength = buffer.ReadUInt16(0);    // first 2 bytes of buffer are total length.
         var headerBuf = buffer.Slice(0, headerLength);
-        page._headers = (PageHeader)Serializer.Deserialize(page.PageHeaderType, headerBuf);
+        page._headers = (PageHeader)Serializer.Deserialize(page.PageHeaderType, headerBuf, textEncoding);
 
         // Hydrate slots
         var slotIndex = Global.PageSize - 2;
@@ -167,14 +175,14 @@ public class BufferManager : IBufferManager
             {
                 // dictionary data
                 var columnMeta = this.GetColumnsForPage(page);
-                var dict = (IDictionary<string, object>)Serializer.DeserializeDictionary(columnMeta, b);
+                var dict = (IDictionary<string, object>)Serializer.DeserializeDictionary(columnMeta, b, textEncoding);
                 page._data.Add(new DictionaryPageData(dict!));
                 slotIndex = slotIndex - 2;
             }
             else
             {
                 // POCO data
-                var item = (PageData)Serializer.Deserialize(page.PageDataType, b);
+                var item = (PageData)Serializer.Deserialize(page.PageDataType, b, textEncoding);
                 page._data.Add(item);
                 slotIndex = slotIndex - 2;
             }
@@ -199,7 +207,7 @@ public class BufferManager : IBufferManager
         {
             h = (IPageHeader)pi.GetValue(page.Headers())!;
         }
-        var headerBytes = Serializer.Serialize(h);
+        var headerBytes = Serializer.Serialize(h, textEncoding);
         Assert.NotGreaterThan(headerBytes.Length, Global.PageHeaderSize);
         buffer.Write(headerBytes, 0);
 
