@@ -25,5 +25,5 @@ public interface IBufferManager
     /// <returns></returns>
     T CreatePage<T>(int? parentObjectId = null, Page? linkedPage = null) where T : Page;
 
-    byte[] SerialiseRow(object row, IEnumerable<ColumnInfo> columns);
+    byte[] SerialiseRow(object row, RowStatus rowStatus, IEnumerable<ColumnInfo> columns);
 }

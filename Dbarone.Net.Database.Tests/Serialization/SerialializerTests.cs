@@ -12,8 +12,8 @@ public class SerializerTests
         for (int i = 0; i < 1; i++)
         {
             var columns = Serializer.GetColumnsForType(typeof(TestEntity));
-            var bytes = Serializer.Serialize(entity);
-            var entity2 = Serializer.Deserialize<TestEntity>(bytes);
+            var bytes = Serializer.Serialize(entity, RowStatus.None);
+            var entity2 = Serializer.Deserialize<TestEntity>(bytes).Result;
 
             // Check deserialised entity same as original entity.
             Assert.True(entity2.ValueEquals(entity));
@@ -30,8 +30,8 @@ public class SerializerTests
             for (int i = 0; i < 10000; i++)
             {
                 var columns = Serializer.GetColumnsForType(typeof(TestEntity));
-                var bytes = Serializer.Serialize(entity);
-                var entity2 = Serializer.Deserialize<TestEntity>(bytes);
+                var bytes = Serializer.Serialize(entity, RowStatus.None);
+                var entity2 = Serializer.Deserialize<TestEntity>(bytes).Result;
             }
         }, new System.TimeSpan(0, 0, 10));
     }

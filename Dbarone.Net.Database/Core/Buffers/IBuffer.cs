@@ -34,6 +34,11 @@ public interface IBuffer
     /// <returns></returns>
     public byte[] Slice(int index, int length);
 
+    /// <summary>
+    /// Gets the size of the buffer.
+    /// </summary>
+    public int Size { get; }
+
     #region Read methods
 
     public bool ReadBool(int index);

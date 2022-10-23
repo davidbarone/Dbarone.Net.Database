@@ -133,17 +133,17 @@ public class BufferManager : IBufferManager
     /// <param name="row">The row to serialise.</param>
     /// <param name="columns">The column metadata.</param>
     /// <returns>A byte[] array</returns>
-    public byte[] SerialiseRow(object row, IEnumerable<ColumnInfo> columns)
+    public byte[] SerialiseRow(object row, RowStatus rowStatus, IEnumerable<ColumnInfo> columns)
     {
         var dictionaryRow = row as DictionaryPageData;
         byte[]? buffer = null;
         if (dictionaryRow != null)
         {
-            buffer = Serializer.SerializeDictionary(columns, dictionaryRow.Row, textEncoding);
+            buffer = Serializer.SerializeDictionary(columns, dictionaryRow.Row, rowStatus, textEncoding);
         }
         else
         {
-            buffer = Serializer.Serialize(columns, row, textEncoding);
+            buffer = Serializer.Serialize(columns, row, rowStatus, textEncoding);
         }
         return buffer;
     }
@@ -158,7 +158,7 @@ public class BufferManager : IBufferManager
         // Hydrate Headers
         var headerLength = buffer.ReadUInt16(0);    // first 2 bytes of buffer are total length.
         var headerBuf = buffer.Slice(0, headerLength);
-        page._headers = (PageHeader)Serializer.Deserialize(page.PageHeaderType, headerBuf, textEncoding);
+        page._headers = (PageHeader)Serializer.Deserialize(page.PageHeaderType, headerBuf, textEncoding).Result!;
 
         // Hydrate slots
         var slotIndex = Global.PageSize - 2;
@@ -175,22 +175,24 @@ public class BufferManager : IBufferManager
             {
                 // dictionary data
                 var columnMeta = this.GetColumnsForPage(page);
-                var dict = (IDictionary<string, object>)Serializer.DeserializeDictionary(columnMeta, b, textEncoding);
-                page._data.Add(new DictionaryPageData(dict!));
+                var item = Serializer.DeserializeDictionary(columnMeta, b, textEncoding);
+                page._data.Add(new DictionaryPageData(item.Result!));
+                page.Statuses.Add(item.RowStatus);
                 slotIndex = slotIndex - 2;
             }
             else
             {
                 // POCO data
-                var item = (PageData)Serializer.Deserialize(page.PageDataType, b, textEncoding);
-                page._data.Add(item);
+                var item = Serializer.Deserialize(page.PageDataType, b, textEncoding);
+                page._data.Add((PageData)item.Result!);
+                page.Statuses.Add(item.RowStatus);
                 slotIndex = slotIndex - 2;
             }
         }
     }
 
     /// <summary>
-    /// Converts a page to a PageBuffer which can be persisted to disk.
+    /// Converts a page to a PageBuffer which can be persisted to disk. Is called when persisting pages to disk.
     /// </summary>
     /// <param name="page">The page to convert.</param>
     /// <returns>Returns a PageBuffer representation of the page.</returns>
@@ -207,7 +209,7 @@ public class BufferManager : IBufferManager
         {
             h = (IPageHeader)pi.GetValue(page.Headers())!;
         }
-        var headerBytes = Serializer.Serialize(h, textEncoding);
+        var headerBytes = Serializer.Serialize(h, RowStatus.None, textEncoding);
         Assert.NotGreaterThan(headerBytes.Length, Global.PageHeaderSize);
         buffer.Write(headerBytes, 0);
 
@@ -222,7 +224,7 @@ public class BufferManager : IBufferManager
             // Serialize data
             // totalLength is the second UInt from start.
             var columns = GetColumnsForPage(page);
-            var dataBytes = SerialiseRow(data[slot], columns);
+            var dataBytes = SerialiseRow(data[slot], page.Statuses[slot], columns);
             buffer.Write(dataBytes, dataIndex + Global.PageHeaderSize);
 
             slotIndex = slotIndex - 2;

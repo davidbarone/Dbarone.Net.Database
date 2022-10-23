@@ -12,6 +12,7 @@ public class Page
     public virtual Type PageHeaderType { get { throw new NotImplementedException("Not implemented."); } }
     public virtual Type PageDataType { get { throw new NotImplementedException("Not implemented."); } }
     public IList<ushort> Slots { get; set; }
+    public IList<RowStatus> Statuses { get; set; }
 
     /// <summary>
     /// Creates a new page.
@@ -22,6 +23,7 @@ public class Page
     {
         this._data = new List<IPageData>();
         this.Slots = new List<ushort>();
+        this.Statuses = new List<RowStatus>();
         this._headers = (IPageHeader)Activator.CreateInstance(this.PageHeaderType)!;
         //this.DataColumns = GetDefaultDataColumns();
         this.Headers().PageId = pageId;
@@ -36,6 +38,7 @@ public class Page
     public Page() {
         this._data = new List<IPageData>();
         this.Slots = new List<ushort>();
+        this.Statuses = new List<RowStatus>();
         this._headers = (IPageHeader)Activator.CreateInstance(this.PageHeaderType)!;
      }
 
@@ -78,14 +81,23 @@ public class Page
         return this._data[slot];
     }
 
+    public RowStatus GetRowStatus(ushort slot) {
+        return this.Statuses[slot];
+    }
+
+    public void SetRowStatus(ushort slot, RowStatus status) {
+        this.Statuses[slot] = status;
+    }
+
     /// <summary>
     /// Adds a data row to a page. Both the row and the buffer are required, so that the
     /// free space can be checked prior to adding.
     /// </summary>
     /// <param name="row">The row to be added.</param>
     /// <param name="buffer">The buffer representation of the row.</param>
-    /// <exception cref="Exception"></exception>
-    public void AddDataRow(object row, byte[] buffer)
+    /// <returns>The slot id of the new row.</returns>
+    /// <exception cref="Exception">Throws exception if insufficient room on page for row.</exception>
+    public int AddDataRow(object row, byte[] buffer)
     {
         Assert.IsType(row, this.PageDataType);
         
@@ -96,8 +108,10 @@ public class Page
         // Update page
         this.Headers().SlotsUsed++;
         this.Slots.Add(this.Headers().FreeOffset);
+        this.Statuses.Add(RowStatus.None);
         this.Headers().FreeOffset += (ushort)buffer.Length;
         this._data.Add((row as IPageData)!);
+        return this.Headers().SlotsUsed;
     }
 
     /// <summary>
@@ -140,7 +154,7 @@ public class Page
     /// <summary>
     /// Returns the number of bytes available for the specified slot. Used when updating data rows in slots.
     /// </summary>
-    /// <param name="slot"></param>
+    /// <param name="slot">Slot index.</param>
     /// <returns></returns>
     public int GetAvailableSpaceForSlot(ushort slot)
     {
@@ -173,6 +187,13 @@ public class Page
             - ((this.Headers().SlotsUsed + 1) * Types.GetByDataType(DataType.UInt16).Size); // Slot table (including extra slot for new row)
     }
 
+    /// <summary>
+    /// Row is considered as requiring overflow storage if > 1/4 free space on new page.
+    /// </summary>
+    /// <returns></returns>
+    public int GetOverflowThresholdSize() {
+        return (Global.PageSize - Global.PageHeaderSize - (4 * Types.GetByDataType(DataType.UInt16).Size)) / 4;
+    }
     #endregion
 
     #region Proxy

@@ -46,7 +46,8 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
         this.Columns = GetColumnInformation();
     }
 
-    private IEnumerable<ColumnInfo> GetColumnInformation() {
+    private IEnumerable<ColumnInfo> GetColumnInformation()
+    {
         var page = this.BufferManager.GetPage<TPageType>(this.LastPageId);
         var columns = this.BufferManager.GetColumnsForPage(page);
         return columns;
@@ -119,7 +120,7 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
     private void UpdateLastPageId(int lastPageId)
     {
         this.LastPageId = lastPageId;
-        
+
         // Calculate first/last page ids
         if (typeof(TPageType) == typeof(DataPage))
         {
@@ -162,10 +163,53 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
         }
     }
 
-    public void AddRow(TRow row)
+    private void AddOverflowDataRow(TRow row, byte[] bytes)
+    {
+        var i = 0;
+        BufferBase buffer = new BufferBase(bytes);
+        var bufferLength = buffer.Size;
+        var remainder = bufferLength;
+        int maxChunkSize;
+        OverflowPage? overflow = null;
+        OverflowPage? prevPage = null;
+
+        do
+        {
+            overflow = this.BufferManager.CreatePage<OverflowPage>();
+
+            if (prevPage == null)
+            {
+                // On first iteration, save pointer in main page.
+                AddOverflowPointer(overflow.Headers().PageId, buffer.Size);
+            }
+            else
+            {
+                // For non-first iteration, set up doubly linked list to previous page.
+                prevPage.Headers().NextPageId = overflow.Headers().PageId;
+                overflow.Headers().PrevPageId = prevPage.Headers().PageId;
+            }
+            prevPage = overflow;
+            remainder = bufferLength = i;
+            maxChunkSize = overflow.GetFreeRowSpace();
+            var chunkSize = maxChunkSize > remainder ? maxChunkSize : remainder;
+            var chunk = buffer.Slice(i, chunkSize);
+            overflow.AddDataRow(chunk, chunk);
+            i += chunkSize;
+            remainder -= chunkSize;
+        }
+        while (remainder > 0);
+    }
+
+    /// <summary>
+    /// Adds overflow header record in main data page.
+    /// </summary>
+    /// <param name="firstOverflowPageId">The page id of the first overflow page.</param>
+    /// <param name="bufferSize">The total buffer size of the actual serialized data.</param>
+    public int AddOverflowPointer(int firstOverflowPageId, int bufferSize)
     {
         var page = this.BufferManager.GetPage<TPageType>(this.LastPageId);
-        var buffer = this.BufferManager.SerialiseRow(row!, this.Columns);
+        var row = new OverflowPointer(firstOverflowPageId, bufferSize);
+        var buffer = this.BufferManager.SerialiseRow(row, RowStatus.Overflow, Serializer.GetColumnsForType(typeof(OverflowPointer)));
 
         // Room on page? - if not, create new page.
         if (buffer.Length > page.GetFreeRowSpace())
@@ -175,12 +219,37 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
             // update last page ids
             UpdateLastPageId(page.Headers().PageId);
         }
-        page.AddDataRow(row!, buffer);
+        return page.AddDataRow(row, buffer);
+    }
+
+    public void AddRow(TRow row)
+    {
+        var page = this.BufferManager.GetPage<TPageType>(this.LastPageId);
+        var buffer = this.BufferManager.SerialiseRow(row!, RowStatus.None, this.Columns);
+
+        if (buffer.Length > page.GetOverflowThresholdSize())
+        {
+            // Overflow storage
+            AddOverflowDataRow(row, buffer);
+        }
+        else
+        {
+            // Room on page? - if not, create new page.
+            if (buffer.Length > page.GetFreeRowSpace())
+            {
+                page = this.BufferManager.CreatePage<TPageType>(page.Headers().ParentObjectId, page);
+
+                // update last page ids
+                UpdateLastPageId(page.Headers().PageId);
+            }
+            page.AddDataRow(row!, buffer);
+        }
     }
 
     public void AddRows(TRow[] rows)
     {
-        foreach (var row in rows){
+        foreach (var row in rows)
+        {
             AddRow(row);
         }
     }
@@ -191,9 +260,10 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
         foreach (var location in locations)
         {
             var page = this.BufferManager.GetPage<TPageType>(location.PageId);
+            var currentStatus = page.Statuses[location.Slot];
             var currentRowSize = page.GetAvailableSpaceForSlot(location.Slot);
             var updatedRow = transform((TRow)page.GetRowAtSlot(location.Slot))!;
-            var buffer = this.BufferManager.SerialiseRow(updatedRow, this.Columns);
+            var buffer = this.BufferManager.SerialiseRow(updatedRow, currentStatus, this.Columns);
             page.UpdateDataRow(location.Slot, updatedRow, buffer);
         }
     }

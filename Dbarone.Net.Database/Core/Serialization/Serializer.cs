@@ -8,20 +8,22 @@ using Dbarone.Net.Extensions.Object;
 /// </summary>
 public class Serializer
 {
-    public static T Deserialize<T>(byte[] buffer, TextEncoding textEncoding = TextEncoding.UTF8)
+    public static DeserializationResult<T> Deserialize<T>(byte[] buffer, TextEncoding textEncoding = TextEncoding.UTF8)
     {
-        return (T)Deserialize(typeof(T), buffer, textEncoding);
+        var result = Deserialize(typeof(T), buffer, textEncoding);
+        return new DeserializationResult<T>((T)result.Result, result.RowStatus);
     }
 
-    public static object Deserialize(Type type, byte[] buffer, TextEncoding textEncoding = TextEncoding.UTF8)
+    public static DeserializationResult<object> Deserialize(Type type, byte[] buffer, TextEncoding textEncoding = TextEncoding.UTF8)
     {
         var columns = GetColumnsForType(type);
         return Deserialize(type, columns, buffer, textEncoding);
     }
 
-    public static object Deserialize(Type type, IEnumerable<ColumnInfo> columns, byte[] buffer, TextEncoding textEncoding = TextEncoding.UTF8){
+    public static DeserializationResult<object> Deserialize(Type type, IEnumerable<ColumnInfo> columns, byte[] buffer, TextEncoding textEncoding = TextEncoding.UTF8)
+    {
 
-        var dictionary = DeserializeDictionary(columns, buffer, textEncoding);
+        var result = DeserializeDictionary(columns, buffer, textEncoding);
 
         object? obj = Activator.CreateInstance(type);
         if (obj == null)
@@ -30,14 +32,15 @@ public class Serializer
         }
         var props = obj.GetType().GetProperties();
 
-        foreach (var column in columns){
-            props.First(p => p.Name.Equals(column.Name)).SetValue(obj, dictionary[column.Name]);
+        foreach (var column in columns)
+        {
+            props.First(p => p.Name.Equals(column.Name)).SetValue(obj, result.Result[column.Name]);
         }
-        return obj;
+        return new DeserializationResult<object>(obj, result.RowStatus);
     }
 
-    public static IDictionary<string, object?> DeserializeDictionary(IEnumerable<ColumnInfo> columns, byte[] buffer, TextEncoding textEncoding = TextEncoding.UTF8){
-
+    public static DeserializationResult<IDictionary<string, object?>> DeserializeDictionary(IEnumerable<ColumnInfo> columns, byte[] buffer, TextEncoding textEncoding = TextEncoding.UTF8)
+    {
         Dictionary<string, object?> obj = new Dictionary<string, object?>();
 
         var fixedColumns = columns.Where(c => Types.GetByDataType(c.DataType).IsFixedLength).ToList();
@@ -47,18 +50,19 @@ public class Serializer
         var bufferLength = bb.ReadUInt16(0);
         var totalLength = bb.ReadUInt16(2);
         var totalColumns = bb.ReadUInt16(4);
+        var rowStatus = (RowStatus)bb.ReadByte(6);
         ushort columnIndex = 0;
 
         // Set up null bitmap
         var nullBitmap = new BitArray(totalColumns);
         var nullBitmapBytes = (ushort)Math.Ceiling((double)totalColumns / 8);
-        nullBitmap = new BitArray(bb.ReadBytes(6, nullBitmapBytes));
+        nullBitmap = new BitArray(bb.ReadBytes(7, nullBitmapBytes));
 
         Assert.Equals((ushort)buffer.Length, bufferLength);
 
-        var fixedLengthColumns = bb.ReadUInt16(6 + nullBitmapBytes);
-        ushort fixedLength = bb.ReadUInt16(8 + nullBitmapBytes);
-        ushort startFixedLength = (ushort)(10 + nullBitmapBytes);
+        var fixedLengthColumns = bb.ReadUInt16(7 + nullBitmapBytes);
+        ushort fixedLength = bb.ReadUInt16(9 + nullBitmapBytes);
+        ushort startFixedLength = (ushort)(11 + nullBitmapBytes);
         ushort index = startFixedLength;
 
         foreach (var col in fixedColumns)
@@ -111,7 +115,7 @@ public class Serializer
         Assert.Equals(totalColumns, (ushort)(fixedLengthColumns + variableLengthCount));
         Assert.Equals(columnIndex, totalColumns);
 
-        return obj;
+        return new DeserializationResult<IDictionary<string, object?>>(obj, rowStatus);
     }
 
     /// <summary>
@@ -119,10 +123,10 @@ public class Serializer
     /// </summary>
     /// <param name="obj">The object to serialize.</param>
     /// <returns>A byte array representing the object.</returns>
-    public static byte[] Serialize(object obj, TextEncoding textEncoding = TextEncoding.UTF8)
+    public static byte[] Serialize(object obj, RowStatus rowStatus, TextEncoding textEncoding = TextEncoding.UTF8)
     {
         var columnInfo = GetColumnsForType(obj.GetType());
-        return Serialize(columnInfo, obj, textEncoding);
+        return Serialize(columnInfo, obj, rowStatus, textEncoding);
     }
 
     /// <summary>
@@ -131,10 +135,10 @@ public class Serializer
     /// <param name="columns">The column metadata for the object to serialize.</param>
     /// <param name="obj">The object to serialize.</param>
     /// <returns>A byte array representing the object.</returns>
-    public static byte[] Serialize(IEnumerable<ColumnInfo> columns, object obj, TextEncoding textEncoding = TextEncoding.UTF8)
+    public static byte[] Serialize(IEnumerable<ColumnInfo> columns, object obj, RowStatus rowStatus, TextEncoding textEncoding = TextEncoding.UTF8)
     {
         var dict = obj.ToDictionary();
-        return SerializeDictionary(columns, dict!, textEncoding);
+        return SerializeDictionary(columns, dict!, rowStatus, textEncoding);
     }
 
     /// <summary>
@@ -143,7 +147,8 @@ public class Serializer
     /// <param name="columns">The column metadata.</param>
     /// <param name="obj">The object / dictionary to serialize.</param>
     /// <returns>A byte array of the serialized data.</returns>
-    public static byte[] SerializeDictionary(IEnumerable<ColumnInfo> columns, IDictionary<string, object?> obj, TextEncoding textEncoding = TextEncoding.UTF8) {
+    public static byte[] SerializeDictionary(IEnumerable<ColumnInfo> columns, IDictionary<string, object?> obj, RowStatus rowStatus, TextEncoding textEncoding = TextEncoding.UTF8)
+    {
 
         // Get serialization parameters
         var parms = GetParams(columns, obj, textEncoding);
@@ -152,16 +157,18 @@ public class Serializer
         // BufferLength (2 bytes)     // includes metadata fields
         // Total Length (2 bytes)     // Just size of data
         // Total Columns (2 bytes)
+        // Row status (1 byte)
         // Null bitmap (total columns / 8 bytes)
         // Fixed Length Columns (2 bytes)
         // Fixed Length size (2 bytes)
         // Variable Length Columns (2 bytes)
         // Variable Length Table (2 bytes * variable columns)
         var ushortSize = Types.GetByDataType(DataType.UInt16).Size;
+        var byteSize = Types.GetByDataType(DataType.Byte).Size;
         var nullBitmap = new BitArray(parms.TotalCount);
         ushort columnIndex = 0;
         var nullBitmapBytes = (ushort)Math.Ceiling((double)parms.TotalCount / 8);
-        var bufferSize = parms.TotalSize + (6 * ushortSize) + (ushortSize * parms.VariableCount) + nullBitmapBytes;
+        var bufferSize = parms.TotalSize + (6 * ushortSize) + (ushortSize * parms.VariableCount) + nullBitmapBytes + byteSize;
         var buffer = new BufferBase(new byte[bufferSize]);
 
         ushort index = 0;
@@ -174,10 +181,13 @@ public class Serializer
         buffer.Write(parms.TotalSize, index);
         index += (Types.GetByDataType(DataType.UInt16).Size);
 
-
         // Total columns
         buffer.Write(parms.TotalCount, index);
         index += (Types.GetByDataType(DataType.UInt16).Size);
+
+        // Row status
+        buffer.Write(rowStatus, index);
+        index += (Types.GetByDataType(DataType.Byte).Size);
 
         // Null Bitmap
         // Pad space - fill in later
@@ -238,7 +248,7 @@ public class Serializer
         // Write null bitmap
         var nullBitmapByteArray = new byte[nullBitmapBytes];
         nullBitmap.CopyTo(nullBitmapByteArray, 0);
-        buffer.Write(nullBitmapByteArray, 6);   // bitmap array starts at offset 6
+        buffer.Write(nullBitmapByteArray, 7);   // bitmap array starts at offset 7
         return buffer.ToArray();
     }
 
@@ -247,7 +257,8 @@ public class Serializer
     /// </summary>
     /// <param name="type">The type to return columns for.</param>
     /// <returns>A list of columns for the type.</returns>
-    public static IEnumerable<ColumnInfo> GetColumnsForType(Type type){
+    public static IEnumerable<ColumnInfo> GetColumnsForType(Type type)
+    {
         List<ColumnInfo> result = new List<ColumnInfo>();
         var properties = type.GetProperties();
         foreach (var property in properties)

@@ -49,6 +49,7 @@ There are a number of page types:
 | Index        | Stores index data for a table. At least 1 per table. Can span multiple pages.              |
 | Text         | Stores large text (CLOB) data for a table. At least 1 per table. Can span multiple pages.  |
 | LOB          | Stores large object data (LOB) for a table. At least 1 per table. Can span multiple pages. |
+| Overflow     | Stores CLOB and BLOB data that cannot fit onto a single page.                              |
 
 ### Data Section
 

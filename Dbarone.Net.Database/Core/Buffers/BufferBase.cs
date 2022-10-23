@@ -56,6 +56,11 @@ public class BufferBase : IBuffer
         return buffer;
     }
 
+    public int Size {
+        get {
+            return this.InternalBuffer.Length;
+        }
+    }
 
 
     #region Read methods

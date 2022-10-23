@@ -26,4 +26,9 @@ public enum PageType : int
     /// A page type that stores table metadata.
     /// </summary>
     SystemColumn = 5,
+
+    /// <summary>
+    /// Stores large data which spills over 1 page in size.
+    /// </summary>
+    Overflow = 6
 }
