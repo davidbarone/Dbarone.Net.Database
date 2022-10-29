@@ -54,6 +54,7 @@ public class BufferManager : IBufferManager
             else if (typeof(T) == typeof(SystemTablePage)) page = (T)(object)new SystemTablePage();
             else if (typeof(T) == typeof(SystemColumnPage)) page = (T)(object)new SystemColumnPage();
             else if (typeof(T) == typeof(DataPage)) page = (T)(object)new DataPage();
+            else if (typeof(T) == typeof(OverflowPage)) page = (T)(object)new OverflowPage();
             else throw new Exception("Unable to create a new page.");
 
             // Hydrate the page from the buffer
@@ -67,7 +68,8 @@ public class BufferManager : IBufferManager
 
             // If Boot page, we set the text encoding for subsequent pages
             // Page0 is always read using default encoding of UTF-8.
-            if (typeof(T)==typeof(BootPage) && pageId==0){
+            if (typeof(T) == typeof(BootPage) && pageId == 0)
+            {
                 this.textEncoding = (page as BootPage)!.Headers().TextEncoding;
             }
 
@@ -93,9 +95,11 @@ public class BufferManager : IBufferManager
         else if (typeof(T) == typeof(SystemTablePage)) page = (T)(object)new SystemTablePage(pageId);
         else if (typeof(T) == typeof(SystemColumnPage)) page = (T)(object)new SystemColumnPage(pageId);
         else if (typeof(T) == typeof(DataPage)) page = (T)(object)new DataPage(pageId, parentObjectId);
+        else if (typeof(T) == typeof(OverflowPage)) page = (T)(object)new OverflowPage(pageId);
         else throw new Exception("Unable to create a new page.");
 
-        if (prevPageId!=null) {
+        if (prevPageId != null)
+        {
             page.Headers().PrevPageId = prevPageId;
         }
 
@@ -115,12 +119,13 @@ public class BufferManager : IBufferManager
         var pageId = _diskService.CreatePage();
 
         // Updated linked page
-        if (linkedPage!=null){
+        if (linkedPage != null)
+        {
             linkedPage.Headers().NextPageId = pageId;
         }
 
         // Initialise page
-        return InitialisePage<T>(pageId, parentObjectId, (linkedPage!=null)?linkedPage.Headers().PageId:null);
+        return InitialisePage<T>(pageId, parentObjectId, (linkedPage != null) ? linkedPage.Headers().PageId : null);
     }
 
     #region Serialisation
@@ -168,25 +173,46 @@ public class BufferManager : IBufferManager
             page.Slots.Add(dataIndex);
 
             // add data
-            var totalLength = buffer.ReadUInt16(Global.PageHeaderSize + dataIndex); // First 2 bytes of each record store the record total length.
-            var b = buffer.Slice(dataIndex + Global.PageHeaderSize, totalLength);
+            if (page.PageDataType==typeof(BufferPageData)) {
+                // for overflow page, page stores single cell - length of buffer available from headers
+                var totalLength = page.Headers().FreeOffset;
+                var b = buffer.Slice(dataIndex + Global.PageHeaderSize, totalLength);
+                page._data.Add(new BufferPageData(b));
+                page.Statuses.Add(RowStatus.None);
+                slotIndex = slotIndex - 2;
+            } else
+            {
+                var totalLength = buffer.ReadUInt16(Global.PageHeaderSize + dataIndex); // First 2 bytes of each record store the record total length.
+                var b = buffer.Slice(dataIndex + Global.PageHeaderSize, totalLength);
 
-            if (page.PageDataType == typeof(DictionaryPageData))
-            {
-                // dictionary data
-                var columnMeta = this.GetColumnsForPage(page);
-                var item = Serializer.DeserializeDictionary(columnMeta, b, textEncoding);
-                page._data.Add(new DictionaryPageData(item.Result!));
-                page.Statuses.Add(item.RowStatus);
-                slotIndex = slotIndex - 2;
-            }
-            else
-            {
-                // POCO data
-                var item = Serializer.Deserialize(page.PageDataType, b, textEncoding);
-                page._data.Add((PageData)item.Result!);
-                page.Statuses.Add(item.RowStatus);
-                slotIndex = slotIndex - 2;
+                if (page.PageDataType == typeof(DictionaryPageData))
+                {
+                    if (Serializer.GetRowStatus(b).HasFlag(RowStatus.Overflow))
+                    {
+                        // overflow data
+                        DeserializationResult<object> item = Serializer.Deserialize(typeof(OverflowPointer), b, textEncoding);
+                        page._data.Add((OverflowPointer)item.Result!);
+                        page.Statuses.Add(item.RowStatus);
+                        slotIndex = slotIndex - 2;
+                    }
+                    else
+                    {
+                        // dictionary data
+                        var columnMeta = this.GetColumnsForPage(page);
+                        var item = Serializer.DeserializeDictionary(columnMeta, b, textEncoding);
+                        page._data.Add(new DictionaryPageData(item.Result!));
+                        page.Statuses.Add(item.RowStatus);
+                        slotIndex = slotIndex - 2;
+                    }
+                }
+                else
+                {
+                    // POCO data
+                    var item = Serializer.Deserialize(page.PageDataType, b, textEncoding);
+                    page._data.Add((PageData)item.Result!);
+                    page.Statuses.Add(item.RowStatus);
+                    slotIndex = slotIndex - 2;
+                }
             }
         }
     }
@@ -214,7 +240,7 @@ public class BufferManager : IBufferManager
         buffer.Write(headerBytes, 0);
 
         // Serialize slots
-        var data = page.Data().ToList();
+        var data = page._data.ToList();
         var slotIndex = Global.PageSize - 2;
         for (int slot = 0; slot < page.Headers().SlotsUsed; slot++)
         {
@@ -223,10 +249,26 @@ public class BufferManager : IBufferManager
 
             // Serialize data
             // totalLength is the second UInt from start.
-            var columns = GetColumnsForPage(page);
-            var dataBytes = SerialiseRow(data[slot], page.Statuses[slot], columns);
-            buffer.Write(dataBytes, dataIndex + Global.PageHeaderSize);
-
+            var bufferPageData = data[slot] as BufferPageData;
+            var overflowPointer = data[slot] as OverflowPointer;
+            if (bufferPageData != null)
+            {
+                // For buffer page data (used in overflow pages), data already byte[].
+                // Just write out.
+                buffer.Write(bufferPageData.Buffer, dataIndex + Global.PageHeaderSize);
+            } else if (overflowPointer!=null) {
+                // cell is an overflow pointer
+                var columns = Serializer.GetColumnsForType(typeof(OverflowPointer));
+                var dataBytes = SerialiseRow(data[slot], RowStatus.Overflow, columns);
+                buffer.Write(dataBytes, dataIndex + Global.PageHeaderSize);
+            }
+            else
+            {
+                // Normal data - must serialise.
+                var columns = GetColumnsForPage(page);
+                var dataBytes = SerialiseRow(data[slot], page.Statuses[slot], columns);
+                buffer.Write(dataBytes, dataIndex + Global.PageHeaderSize);
+            }
             slotIndex = slotIndex - 2;
         }
         return buffer;
@@ -254,7 +296,8 @@ public class BufferManager : IBufferManager
             // The columns are configured at the parent object.
             if (page.Headers().PageType == PageType.Data)
             {
-                if (page.GetType()==typeof(DataPage)) {
+                if (page.GetType() == typeof(DataPage))
+                {
                     var parentObjectId = page.Headers().ParentObjectId;
                     var heap = new HeapTableManager<SystemColumnPageData, SystemColumnPage>(this, parentObjectId);
                     var mapper = Mapper.ObjectMapper<SystemColumnPageData, ColumnInfo>.Create();

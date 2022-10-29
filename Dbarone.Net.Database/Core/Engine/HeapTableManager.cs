@@ -46,6 +46,21 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
         this.Columns = GetColumnInformation();
     }
 
+    private byte[] GetOverflowData(OverflowPointer overflowPointer)
+    {
+        var pageId = overflowPointer.FirstOverflowPageId;
+        var page = this.BufferManager.GetPage<OverflowPage>(pageId);
+        IEnumerable<byte> data = page.GetOverflowData();
+        int? nextPageId = page.Headers().NextPageId;
+        while (nextPageId != null)
+        {
+            page = this.BufferManager.GetPage<OverflowPage>(nextPageId.Value);
+            data = data.Concat(page.GetOverflowData());
+            nextPageId = page.Headers().NextPageId;
+        }
+        return data.ToArray();
+    }
+
     private IEnumerable<ColumnInfo> GetColumnInformation()
     {
         var page = this.BufferManager.GetPage<TPageType>(this.LastPageId);
@@ -58,16 +73,48 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
         return Scan().Count();
     }
 
-    public TRow[] Scan()
+    public IEnumerable<TRow> Scan()
     {
-        var page = this.BufferManager.GetPage<TPageType>(FirstPageId);
-        var data = page.Data().Select(r => (TRow)r);
-        while (page.Headers().NextPageId != null)
+        TPageType? page = null;
+        do
         {
-            page = this.BufferManager.GetPage<TPageType>(page.Headers().NextPageId!.Value);
-            data = data.Union(page.Data().Select(r => (TRow)r));
-        }
-        return data.ToArray();
+            if (page == null)
+            {
+                page = this.BufferManager.GetPage<TPageType>(FirstPageId);
+            }
+            else
+            {
+                int? nextPageId = page.Headers().NextPageId;
+                if (nextPageId != null)
+                {
+                    page = this.BufferManager.GetPage<TPageType>(nextPageId.Value);
+                }
+                else
+                {
+                    page = null;
+                }
+            }
+            if (page != null)
+            {
+                foreach (var item in page._data)
+                {
+                    var itemAsOverflowPointer = item as OverflowPointer;
+                    if (itemAsOverflowPointer != null)
+                    {
+                        // overflow data
+                        var overflowData = GetOverflowData(itemAsOverflowPointer);
+                        var overflowObj = Serializer.DeserializeDictionary(this.Columns, overflowData);
+                        var pd = new DictionaryPageData(overflowObj.Result);
+                        yield return (TRow)(object)pd;
+                    }
+                    else
+                    {
+                        // normal data
+                        yield return (TRow)item;
+                    }
+                }
+            }
+        } while (page != null);
     }
 
     public DataRowLocation? SearchSingle(Func<TRow, bool> predicate)
@@ -189,11 +236,11 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
                 overflow.Headers().PrevPageId = prevPage.Headers().PageId;
             }
             prevPage = overflow;
-            remainder = bufferLength = i;
             maxChunkSize = overflow.GetFreeRowSpace();
-            var chunkSize = maxChunkSize > remainder ? maxChunkSize : remainder;
+            var chunkSize = maxChunkSize > remainder ? remainder : maxChunkSize;
             var chunk = buffer.Slice(i, chunkSize);
-            overflow.AddDataRow(chunk, chunk);
+            overflow.AddDataRow(new BufferPageData(chunk), chunk);
+            //overflow.Headers().BytesUsed = chunkSize;
             i += chunkSize;
             remainder -= chunkSize;
         }
@@ -219,7 +266,7 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
             // update last page ids
             UpdateLastPageId(page.Headers().PageId);
         }
-        return page.AddDataRow(row, buffer);
+        return page.AddOverflowPointerDataRow(row, buffer);
     }
 
     public void AddRow(TRow row)

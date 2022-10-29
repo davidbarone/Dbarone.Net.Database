@@ -39,6 +39,16 @@ public class Serializer
         return new DeserializationResult<object>(obj, result.RowStatus);
     }
 
+    /// <summary>
+    /// Inspects a buffer, and extracts the row status.
+    /// </summary>
+    /// <param name="buffer"></param>
+    public static RowStatus GetRowStatus(byte[] buffer) {
+        IBuffer bb = new BufferBase(buffer);
+        var rowStatus = (RowStatus)bb.ReadByte(6);
+        return rowStatus;
+    }
+
     public static DeserializationResult<IDictionary<string, object?>> DeserializeDictionary(IEnumerable<ColumnInfo> columns, byte[] buffer, TextEncoding textEncoding = TextEncoding.UTF8)
     {
         Dictionary<string, object?> obj = new Dictionary<string, object?>();

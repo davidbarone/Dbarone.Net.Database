@@ -10,7 +10,6 @@ public class SystemTablePage : Page
     public override Type PageDataType { get { return typeof(SystemTablePageData); } }
     public override Type PageHeaderType { get { return typeof(PageHeader); } }
     public override IPageHeader Headers() { return (IPageHeader)this._headers; }
-    public override IEnumerable<SystemTablePageData> Data() { return (this._data.Select(d => (SystemTablePageData)d)); }
     public SystemTablePage(int pageId) : base(pageId, null, PageType.SystemTable)
     {
         Assert.Equals(this._headers.PageType, PageType.SystemTable);

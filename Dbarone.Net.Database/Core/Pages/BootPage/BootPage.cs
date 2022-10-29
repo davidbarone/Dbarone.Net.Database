@@ -10,7 +10,6 @@ public class BootPage : Page
     public override Type PageDataType { get { return typeof(BootPageData); } }
     public override Type PageHeaderType { get { return typeof(BootPageHeader); } }
     public override IBootPageHeader Headers() { return (IBootPageHeader)this._headers; }
-    public override IEnumerable<BootPageData> Data() { return (this._data.Select(d => (BootPageData)d)); }
 
     public BootPage(int pageId) : base(pageId, null, PageType.Boot)
     {

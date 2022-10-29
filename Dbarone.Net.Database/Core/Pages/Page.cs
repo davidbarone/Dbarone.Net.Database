@@ -8,12 +8,16 @@ using Dbarone.Net.Proxy;
 public class Page
 {
     public IPageHeader _headers;
+    
+    /// <summary>
+    /// Data row physically on page. Can be PageDataType, or OverflowPointer. 
+    /// </summary>
     public IList<IPageData> _data;
     public virtual Type PageHeaderType { get { throw new NotImplementedException("Not implemented."); } }
     public virtual Type PageDataType { get { throw new NotImplementedException("Not implemented."); } }
     public IList<ushort> Slots { get; set; }
     public IList<RowStatus> Statuses { get; set; }
-
+    
     /// <summary>
     /// Creates a new page.
     /// </summary>
@@ -24,6 +28,7 @@ public class Page
         this._data = new List<IPageData>();
         this.Slots = new List<ushort>();
         this.Statuses = new List<RowStatus>();
+
         this._headers = (IPageHeader)Activator.CreateInstance(this.PageHeaderType)!;
         //this.DataColumns = GetDefaultDataColumns();
         this.Headers().PageId = pageId;
@@ -46,11 +51,6 @@ public class Page
     /// Returns the header structure. Subclasses can provide the specific type.
     /// </summary>
     public virtual IPageHeader Headers() { throw new NotImplementedException("Not implemented."); }
-
-    /// <summary>
-    /// Returns the data within the page. The data is indexed using the slots array.
-    /// </summary>
-    public virtual IEnumerable<IPageData> Data() { throw new NotImplementedException("Not implemented."); }
 
     /// <summary>
     /// Must be implemented in a subclass to create the header proxy.
@@ -109,6 +109,29 @@ public class Page
         this.Headers().SlotsUsed++;
         this.Slots.Add(this.Headers().FreeOffset);
         this.Statuses.Add(RowStatus.None);
+        this.Headers().FreeOffset += (ushort)buffer.Length;
+        this._data.Add((row as IPageData)!);
+        return this.Headers().SlotsUsed;
+    }
+
+    /// <summary>
+    /// Similar to AddDataRow(), but used to add the overflow pointer record in the main data page.
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="buffer"></param>
+    /// <returns></returns>
+    /// <exception cref="Exception"></exception>
+    public int AddOverflowPointerDataRow(object row, byte[] buffer) {
+        Assert.IsType(row, typeof(OverflowPointer));
+        
+        if (buffer.Length>GetFreeRowSpace()){
+            throw new Exception("Insufficient room on page.");
+        }
+
+        // Update page
+        this.Headers().SlotsUsed++;
+        this.Slots.Add(this.Headers().FreeOffset);
+        this.Statuses.Add(RowStatus.Overflow);
         this.Headers().FreeOffset += (ushort)buffer.Length;
         this._data.Add((row as IPageData)!);
         return this.Headers().SlotsUsed;

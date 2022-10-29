@@ -10,7 +10,6 @@ public class SystemColumnPage : Page
     public override Type PageDataType { get { return typeof(SystemColumnPageData); } }
     public override Type PageHeaderType { get { return typeof(PageHeader); } }
     public override IPageHeader Headers() { return (IPageHeader)this._headers; }
-    public override IEnumerable<SystemColumnPageData> Data() { return (this._data.Select(d => (SystemColumnPageData)d)); }
 
     public SystemColumnPage(int pageId) : base(pageId, null, PageType.SystemColumn)
     {

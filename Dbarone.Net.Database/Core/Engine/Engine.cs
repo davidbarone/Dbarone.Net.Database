@@ -1,6 +1,7 @@
 namespace Dbarone.Net.Database;
 using Dbarone.Net.Mapper;
 using System.Linq;
+using Dbarone.Net.Extensions.Object;
 
 /// <summary>
 /// The internal (private) database implementation.
@@ -126,8 +127,8 @@ public class Engine : IEngine
     {
         var systemTablePage = this.GetPage<SystemTablePage>(1);
         var mapper = ObjectMapper<SystemTablePageData, TableInfo>.Create();
-        var data = systemTablePage.Data();
-        var mapped = mapper.MapMany(data);
+        var data = systemTablePage._data.Select(r=>(r as SystemTablePageData)!);
+        var mapped = mapper.MapMany(data!);
         return mapped;
     }
 
@@ -173,11 +174,16 @@ public class Engine : IEngine
     public int Insert<T>(string table, T data)
     {
         var dataDict = data as IDictionary<string, object?>;
+        if (dataDict == null)
+        {
+            dataDict = data.ToDictionary();
+        }
         if (dataDict != null)
         {
             return InsertRaw(table, dataDict);
+        } else {
+            throw new Exception("Should not get here.");
         }
-        return 0;
     }
 
     public int BulkInsert<T>(string tableName, IEnumerable<T> data)

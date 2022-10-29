@@ -10,7 +10,6 @@ public class DataPage : Page
     public override Type PageDataType { get { return typeof(DictionaryPageData); } }
     public override Type PageHeaderType { get { return typeof(DataPageHeader); } }
     public override IDataPageHeader Headers() { return (IDataPageHeader)this._headers; }
-    public override IEnumerable<DictionaryPageData> Data() { return (this._data.Select(d => (DictionaryPageData)d)); }
 
     public DataPage(int pageId, int? parentObjectId) : base(pageId, parentObjectId, PageType.Data)
     {

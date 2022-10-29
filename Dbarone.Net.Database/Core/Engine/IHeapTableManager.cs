@@ -16,7 +16,7 @@ public interface IHeapTableManager<TRow> {
     /// Performs full table scan.
     /// </summary>
     /// <returns></returns>
-    TRow[] Scan();
+    IEnumerable<TRow> Scan();
 
     /// <summary>
     /// Searches for a single row based on a predicate. Returns as soon as first match is found.

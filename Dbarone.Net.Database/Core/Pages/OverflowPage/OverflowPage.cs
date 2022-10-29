@@ -10,7 +10,6 @@ public class OverflowPage : Page
     public override Type PageDataType { get { return typeof(BufferPageData); } }
     public override Type PageHeaderType { get { return typeof(OverflowPageHeader); } }
     public override IOverflowPageHeader Headers() { return (IOverflowPageHeader)this._headers; }
-    public override IEnumerable<BufferPageData> Data() { return (this._data.Select(d => (BufferPageData)d)); }
 
     public OverflowPage(int pageId) : base(pageId, null, PageType.Overflow)
     {
@@ -19,6 +18,10 @@ public class OverflowPage : Page
 
     public OverflowPage() { }
     
+    public byte[] GetOverflowData() {
+        return (this._data[0] as BufferPageData)!.Buffer;
+    }
+
     public override void CreateHeaderProxy()
     {
         // Decorate the header with IsDirtyInterceptor
