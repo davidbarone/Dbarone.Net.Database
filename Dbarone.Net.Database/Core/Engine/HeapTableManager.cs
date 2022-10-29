@@ -240,7 +240,6 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
             var chunkSize = maxChunkSize > remainder ? remainder : maxChunkSize;
             var chunk = buffer.Slice(i, chunkSize);
             overflow.AddDataRow(new BufferPageData(chunk), chunk);
-            //overflow.Headers().BytesUsed = chunkSize;
             i += chunkSize;
             remainder -= chunkSize;
         }

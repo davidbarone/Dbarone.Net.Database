@@ -2,7 +2,6 @@ namespace Dbarone.Net.Database;
 
 public interface IOverflowPageHeader : IPageHeader
 {
-    int BytesUsed { get; set; }
 }
 
 /// <summary>
@@ -10,5 +9,4 @@ public interface IOverflowPageHeader : IPageHeader
 /// </summary>
 public class OverflowPageHeader : PageHeader, IOverflowPageHeader
 {
-    public int BytesUsed { get; set; }
 }
