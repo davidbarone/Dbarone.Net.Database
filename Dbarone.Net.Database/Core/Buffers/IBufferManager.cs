@@ -26,4 +26,12 @@ public interface IBufferManager
     T CreatePage<T>(int? parentObjectId = null, Page? linkedPage = null) where T : Page;
 
     byte[] SerialiseRow(object row, RowStatus rowStatus, IEnumerable<ColumnInfo> columns);
+
+    #region Debugging
+
+    string DebugPages();
+
+    string DebugPage(int pageId);
+
+    #endregion
 }

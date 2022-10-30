@@ -5,7 +5,6 @@ namespace Dbarone.Net.Database;
 /// </summary>
 public class PageHeader : IPageHeader
 {
-    public PageType PageType { get; set; }
     public int PageId { get; set; }
     public int? PrevPageId { get; set; }
     public int? NextPageId { get; set; }
@@ -22,7 +21,6 @@ public class PageHeader : IPageHeader
 
 public interface IPageHeader
 {
-    PageType PageType { get; set; }
     int PageId { get; set; }
     int? PrevPageId { get; set; }
     int? NextPageId { get; set; }

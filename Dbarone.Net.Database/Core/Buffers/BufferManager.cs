@@ -1,6 +1,7 @@
 namespace Dbarone.Net.Database;
 using Dbarone.Net.Assertions;
 using Dbarone.Net.Mapper;
+using Dbarone.Net.Extensions.String;
 
 /// <summary>
 /// In memory cache of pages as they are modified or read from disk. Dirty pages are written back to disk with a CHECKPOINT command.
@@ -30,31 +31,56 @@ public class BufferManager : IBufferManager
     private DiskService _diskService;
     private Dictionary<int, Page> _pages = new Dictionary<int, Page>();
 
+    private PageType GetPageType(PageBuffer pageBuffer)
+    {
+        // Page type (starting at offset: 0)
+        return (PageType)pageBuffer.ReadByte(0);
+    }
+
+    public string DebugPages()
+    {
+        var output = $"{"PageId".Justify(8, Justification.RIGHT)} {"PageType".Justify(8, Justification.RIGHT)} {"Prev".Justify(8, Justification.RIGHT)} {"Next".Justify(8, Justification.RIGHT)} {"Parent".Justify(8, Justification.RIGHT)} {"Slots".Justify(8, Justification.RIGHT)} {"Tran".Justify(8, Justification.RIGHT)} {"Dirty".Justify(8, Justification.RIGHT)} {"Free".Justify(8, Justification.RIGHT)}{Environment.NewLine}";
+        output += $"{"------".Justify(8, Justification.RIGHT)} {"--------".Justify(8, Justification.RIGHT)} {"----".Justify(8, Justification.RIGHT)} {"----".Justify(8, Justification.RIGHT)} {"------".Justify(8, Justification.RIGHT)} {"-----".Justify(8, Justification.RIGHT)} {"----".Justify(8, Justification.RIGHT)} {"-----".Justify(8, Justification.RIGHT)} {"----".Justify(8, Justification.RIGHT)}{Environment.NewLine}";
+
+        var pageCount = this._diskService.PageCount;
+        for (int i = 0; i < pageCount; i++)
+        {
+            var page = GetPage(i);
+            output += $"{page.Headers().PageId.ToString().Justify(8, Justification.RIGHT)} {page.PageType.ToString().Justify(8, Justification.RIGHT)} {page.Headers().PrevPageId.ToString().Justify(8, Justification.RIGHT)}  {page.Headers().NextPageId} {page.Headers().ParentObjectId} {page.Headers().SlotsUsed}  {page.Headers().TransactionId}  {page.Headers().IsDirty}    {page.Headers().FreeOffset}\n";
+        }
+        return output;
+    }
+
+    public string DebugPage(int pageId){
+        return "";
+    }
+
     /// <summary>
-    /// Gets a page from the buffer cache. If page not present, reads from disk
+    /// Gets a page.
     /// </summary>
     /// <param name="pageId"></param>
     /// <returns></returns>
-    public T GetPage<T>(int pageId) where T : Page
+    public Page GetPage(int pageId)
     {
         if (_pages.ContainsKey(pageId))
         {
             // cache hit
             var page = _pages[pageId];
             Assert.AssignableFrom(page, typeof(Page));
-            return (T)_pages[pageId];
+            return _pages[pageId];
         }
         else
         {
             // cache miss - read from disk + add to buffer cache
             var buffer = _diskService.ReadPage(pageId);
+            var pageType = GetPageType(buffer);
 
-            T? page = null;
-            if (typeof(T) == typeof(BootPage)) page = (T)(object)new BootPage();
-            else if (typeof(T) == typeof(SystemTablePage)) page = (T)(object)new SystemTablePage();
-            else if (typeof(T) == typeof(SystemColumnPage)) page = (T)(object)new SystemColumnPage();
-            else if (typeof(T) == typeof(DataPage)) page = (T)(object)new DataPage();
-            else if (typeof(T) == typeof(OverflowPage)) page = (T)(object)new OverflowPage();
+            Page? page = null;
+            if (pageType == PageType.Boot) page = new BootPage();
+            else if (pageType == PageType.SystemTable) page = new SystemTablePage();
+            else if (pageType == PageType.SystemColumn) page = new SystemColumnPage();
+            else if (pageType == PageType.Data) page = new DataPage();
+            else if (pageType == PageType.Overflow) page = new OverflowPage();
             else throw new Exception("Unable to create a new page.");
 
             // Hydrate the page from the buffer
@@ -68,13 +94,23 @@ public class BufferManager : IBufferManager
 
             // If Boot page, we set the text encoding for subsequent pages
             // Page0 is always read using default encoding of UTF-8.
-            if (typeof(T) == typeof(BootPage) && pageId == 0)
+            if (pageType == PageType.Boot && pageId == 0)
             {
                 this.textEncoding = (page as BootPage)!.Headers().TextEncoding;
             }
 
-            return (T)page;
+            return page;
         }
+    }
+
+    /// <summary>
+    /// Gets a page from the buffer cache. If page not present, reads from disk
+    /// </summary>
+    /// <param name="pageId"></param>
+    /// <returns></returns>
+    public T GetPage<T>(int pageId) where T : Page
+    {
+        return (T)GetPage(pageId);
     }
 
     /// <summary>
@@ -160,9 +196,12 @@ public class BufferManager : IBufferManager
     /// <param name="buffer">The buffer to deserialise.</param>
     private void HydratePage(Page page, PageBuffer buffer)
     {
-        // Hydrate Headers
-        var headerLength = buffer.ReadUInt16(0);    // first 2 bytes of buffer are total length.
-        var headerBuf = buffer.Slice(0, headerLength);
+        // Page type (starting at offset: 0)
+        page.PageType = (PageType)buffer.ReadByte(0);
+
+        // Hydrate Headers (starting at offset: 1)
+        var headerLength = buffer.ReadUInt16(1);    // first 2 bytes of buffer are total length.
+        var headerBuf = buffer.Slice(1, headerLength);
         page._headers = (PageHeader)Serializer.Deserialize(page.PageHeaderType, headerBuf, textEncoding).Result!;
 
         // Hydrate slots
@@ -173,14 +212,16 @@ public class BufferManager : IBufferManager
             page.Slots.Add(dataIndex);
 
             // add data
-            if (page.PageDataType==typeof(BufferPageData)) {
+            if (page.PageDataType == typeof(BufferPageData))
+            {
                 // for overflow page, page stores single cell - length of buffer available from headers
                 var totalLength = page.Headers().FreeOffset;
                 var b = buffer.Slice(dataIndex + Global.PageHeaderSize, totalLength);
                 page._data.Add(new BufferPageData(b));
                 page.Statuses.Add(RowStatus.None);
                 slotIndex = slotIndex - 2;
-            } else
+            }
+            else
             {
                 var totalLength = buffer.ReadUInt16(Global.PageHeaderSize + dataIndex); // First 2 bytes of each record store the record total length.
                 var b = buffer.Slice(dataIndex + Global.PageHeaderSize, totalLength);
@@ -227,7 +268,11 @@ public class BufferManager : IBufferManager
         byte[] b = new byte[8192];
         PageBuffer buffer = new PageBuffer(b, page.Headers().PageId);
 
+        // Page Type (offset 0)
+        buffer.Write(page.PageType, 0);
+
         // Headers - we need to serialise the original header, not the proxy
+        // Offset 1
         var headerType = page.Headers().GetType();
         var pi = headerType.GetProperty("Target");
         var h = page.Headers();
@@ -236,8 +281,9 @@ public class BufferManager : IBufferManager
             h = (IPageHeader)pi.GetValue(page.Headers())!;
         }
         var headerBytes = Serializer.Serialize(h, RowStatus.None, textEncoding);
-        Assert.NotGreaterThan(headerBytes.Length, Global.PageHeaderSize);
-        buffer.Write(headerBytes, 0);
+        // Header must be less than 50 (PageType occupies 1 byte at start)
+        Assert.LessThan(headerBytes.Length, Global.PageHeaderSize);
+        buffer.Write(headerBytes, 1);
 
         // Serialize slots
         var data = page._data.ToList();
@@ -256,7 +302,9 @@ public class BufferManager : IBufferManager
                 // For buffer page data (used in overflow pages), data already byte[].
                 // Just write out.
                 buffer.Write(bufferPageData.Buffer, dataIndex + Global.PageHeaderSize);
-            } else if (overflowPointer!=null) {
+            }
+            else if (overflowPointer != null)
+            {
                 // cell is an overflow pointer
                 var columns = Serializer.GetColumnsForType(typeof(OverflowPointer));
                 var dataBytes = SerialiseRow(data[slot], RowStatus.Overflow, columns);
@@ -294,7 +342,7 @@ public class BufferManager : IBufferManager
         else
         {
             // The columns are configured at the parent object.
-            if (page.Headers().PageType == PageType.Data)
+            if (page.PageType == PageType.Data)
             {
                 if (page.GetType() == typeof(DataPage))
                 {

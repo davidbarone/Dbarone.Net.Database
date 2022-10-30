@@ -13,7 +13,7 @@ public class OverflowPage : Page
 
     public OverflowPage(int pageId) : base(pageId, null, PageType.Overflow)
     {
-        Assert.Equals(this._headers.PageType, PageType.Overflow);
+        Assert.Equals(this.PageType, PageType.Overflow);
     }
 
     public OverflowPage() { }

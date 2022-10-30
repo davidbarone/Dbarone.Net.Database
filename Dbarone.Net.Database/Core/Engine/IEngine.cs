@@ -87,4 +87,11 @@ public interface IEngine : IDisposable
     /// <returns></returns>
     T GetPage<T>(int pageId) where T : Page;
 
+    #region Debugging
+
+    string DebugPages();
+
+    string DebugPage(int pageId);
+    
+    #endregion
 }

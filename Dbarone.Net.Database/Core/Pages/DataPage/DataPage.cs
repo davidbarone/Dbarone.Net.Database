@@ -14,7 +14,7 @@ public class DataPage : Page
     public DataPage(int pageId, int? parentObjectId) : base(pageId, parentObjectId, PageType.Data)
     {
         Assert.NotNull(parentObjectId);
-        Assert.Equals(this._headers.PageType, PageType.Data);
+        Assert.Equals(this.PageType, PageType.Data);
     }
 
     public DataPage() { }

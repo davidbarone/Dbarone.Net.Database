@@ -13,7 +13,7 @@ public class SystemColumnPage : Page
 
     public SystemColumnPage(int pageId) : base(pageId, null, PageType.SystemColumn)
     {
-        Assert.Equals(this._headers.PageType, PageType.SystemColumn);
+        Assert.Equals(this.PageType, PageType.SystemColumn);
     }
 
     public SystemColumnPage() { }

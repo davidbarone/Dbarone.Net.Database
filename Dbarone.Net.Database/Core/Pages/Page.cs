@@ -7,6 +7,7 @@ using Dbarone.Net.Proxy;
 /// </summary>
 public class Page
 {
+    public PageType PageType { get; set; }
     public IPageHeader _headers;
     
     /// <summary>
@@ -31,8 +32,8 @@ public class Page
 
         this._headers = (IPageHeader)Activator.CreateInstance(this.PageHeaderType)!;
         //this.DataColumns = GetDefaultDataColumns();
+        this.PageType = pageType;
         this.Headers().PageId = pageId;
-        this.Headers().PageType = pageType;
         this.Headers().ParentObjectId = parentObjectId;
         Assert.Equals(pageId, this.Headers().PageId);
     }

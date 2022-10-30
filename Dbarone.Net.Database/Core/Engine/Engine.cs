@@ -339,4 +339,17 @@ public class Engine : IEngine
     public int delete<T>(string table, IEnumerable<T> data) { throw new NotSupportedException("Not supported."); }
 
     #endregion    
+
+    #region Debugging
+
+    public string DebugPages() {
+        return this._bufferManager.DebugPages();
+    }
+
+    public string DebugPage(int pageId) {
+        return this._bufferManager.DebugPage(pageId);
+    }
+
+    #endregion
+
 }

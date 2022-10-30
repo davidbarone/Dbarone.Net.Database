@@ -97,7 +97,7 @@ public class DataTests1 : TestBase
     }
 
     [Fact]
-    public void TestWriteAndRead10000Row()
+    public void TestWriteAndRead1000Row()
     {
         // Arrange
         var dbName = GetDatabaseFileNameFromMethod();
@@ -120,7 +120,7 @@ public class DataTests1 : TestBase
             db.CreateTable(tableName, columns);
             
             List<IDictionary<string, object?>> data = new List<IDictionary<string, object?>>();
-            for (int i = 0; i < 100000; i++)
+            for (int i = 0; i < 10000; i++)
             {
                 data.Add(new Dictionary<string, object?>(){
                     {"AddressId", i},
@@ -143,7 +143,7 @@ public class DataTests1 : TestBase
 
             // Read table
             var data = db.ReadRaw(tableName);
-            Assert.Equal(100000, data.Count());
+            Assert.Equal(10000, data.Count());
             Assert.Equal(0, data.First()["AddressId"]);
             Assert.Equal("4 Acacia Drive", data.First()["Address1"]);
         }

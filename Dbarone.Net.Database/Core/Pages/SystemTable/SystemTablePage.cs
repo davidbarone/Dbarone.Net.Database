@@ -12,7 +12,7 @@ public class SystemTablePage : Page
     public override IPageHeader Headers() { return (IPageHeader)this._headers; }
     public SystemTablePage(int pageId) : base(pageId, null, PageType.SystemTable)
     {
-        Assert.Equals(this._headers.PageType, PageType.SystemTable);
+        Assert.Equals(this.PageType, PageType.SystemTable);
     }
 
     public SystemTablePage() { }

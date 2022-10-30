@@ -1,7 +1,7 @@
 /// <summary>
 /// The page type.
 /// </summary>
-public enum PageType : int
+public enum PageType : Byte
 {
     /// <summary>
     /// A page type that stores raw leaf level data.

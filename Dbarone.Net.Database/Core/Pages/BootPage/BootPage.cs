@@ -13,7 +13,7 @@ public class BootPage : Page
 
     public BootPage(int pageId) : base(pageId, null, PageType.Boot)
     {
-        Assert.Equals(this._headers.PageType, PageType.Boot);
+        Assert.Equals(this.PageType, PageType.Boot);
     }
 
     public BootPage() { }
