@@ -36,7 +36,17 @@ public class DebugTests : TestBase
         {
             // Assert
             var str = db.DebugPages();
-            Assert.Equal("", str);
+            Assert.Equal(@"  PageId         PageType     Prev     Next   Parent    Slots     Tran    Dirty     Free
+  ------         --------     ----     ----   ------    -----     ----    -----     ----
+       0             Boot                                   0        0     True        0
+       1      SystemTable                                   1        0     True       43
+       2     SystemColumn                                   3        0     True       87
+       3             Data                          0        0        0     True        0
+", str);
         }
     }
 }
+
+
+
+

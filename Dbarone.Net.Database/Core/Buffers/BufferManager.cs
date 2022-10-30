@@ -39,14 +39,14 @@ public class BufferManager : IBufferManager
 
     public string DebugPages()
     {
-        var output = $"{"PageId".Justify(8, Justification.RIGHT)} {"PageType".Justify(8, Justification.RIGHT)} {"Prev".Justify(8, Justification.RIGHT)} {"Next".Justify(8, Justification.RIGHT)} {"Parent".Justify(8, Justification.RIGHT)} {"Slots".Justify(8, Justification.RIGHT)} {"Tran".Justify(8, Justification.RIGHT)} {"Dirty".Justify(8, Justification.RIGHT)} {"Free".Justify(8, Justification.RIGHT)}{Environment.NewLine}";
-        output += $"{"------".Justify(8, Justification.RIGHT)} {"--------".Justify(8, Justification.RIGHT)} {"----".Justify(8, Justification.RIGHT)} {"----".Justify(8, Justification.RIGHT)} {"------".Justify(8, Justification.RIGHT)} {"-----".Justify(8, Justification.RIGHT)} {"----".Justify(8, Justification.RIGHT)} {"-----".Justify(8, Justification.RIGHT)} {"----".Justify(8, Justification.RIGHT)}{Environment.NewLine}";
+        var output = $"{"PageId".Justify(8, Justification.RIGHT)} {"PageType".Justify(16, Justification.RIGHT)} {"Prev".Justify(8, Justification.RIGHT)} {"Next".Justify(8, Justification.RIGHT)} {"Parent".Justify(8, Justification.RIGHT)} {"Slots".Justify(8, Justification.RIGHT)} {"Tran".Justify(8, Justification.RIGHT)} {"Dirty".Justify(8, Justification.RIGHT)} {"Free".Justify(8, Justification.RIGHT)}{Environment.NewLine}";
+        output += $"{"------".Justify(8, Justification.RIGHT)} {"--------".Justify(16, Justification.RIGHT)} {"----".Justify(8, Justification.RIGHT)} {"----".Justify(8, Justification.RIGHT)} {"------".Justify(8, Justification.RIGHT)} {"-----".Justify(8, Justification.RIGHT)} {"----".Justify(8, Justification.RIGHT)} {"-----".Justify(8, Justification.RIGHT)} {"----".Justify(8, Justification.RIGHT)}{Environment.NewLine}";
 
         var pageCount = this._diskService.PageCount;
         for (int i = 0; i < pageCount; i++)
         {
             var page = GetPage(i);
-            output += $"{page.Headers().PageId.ToString().Justify(8, Justification.RIGHT)} {page.PageType.ToString().Justify(8, Justification.RIGHT)} {page.Headers().PrevPageId.ToString().Justify(8, Justification.RIGHT)}  {page.Headers().NextPageId} {page.Headers().ParentObjectId} {page.Headers().SlotsUsed}  {page.Headers().TransactionId}  {page.Headers().IsDirty}    {page.Headers().FreeOffset}\n";
+            output += $"{page.Headers().PageId.ToString().Justify(8, Justification.RIGHT)} {page.PageType.ToString().Justify(16, Justification.RIGHT)} {page.Headers().PrevPageId.ToString().Justify(8, Justification.RIGHT)} {page.Headers().NextPageId.ToString().Justify(8, Justification.RIGHT)} {page.Headers().ParentObjectId.ToString().Justify(8, Justification.RIGHT)} {page.Headers().SlotsUsed.ToString().Justify(8, Justification.RIGHT)} {page.Headers().TransactionId.ToString().Justify(8, Justification.RIGHT)} {page.Headers().IsDirty.ToString().Justify(8, Justification.RIGHT)} {page.Headers().FreeOffset.ToString().Justify(8, Justification.RIGHT)}{Environment.NewLine}";
         }
         return output;
     }
