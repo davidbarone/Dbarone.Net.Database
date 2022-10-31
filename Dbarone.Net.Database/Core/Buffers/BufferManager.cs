@@ -19,11 +19,11 @@ public class BufferManager : IBufferManager
         foreach (var key in _pages.Keys)
         {
             var page = _pages[key];
-            if (page.Headers().IsDirty)
+            if (page.IsDirty)
             {
                 var pageBuffer = SerialisePage(page)!;
                 _diskService.WritePage(key, pageBuffer);
-                page.Headers().IsDirty = false;
+                page.IsDirty = false;
             }
         }
     }
@@ -46,7 +46,7 @@ public class BufferManager : IBufferManager
         for (int i = 0; i < pageCount; i++)
         {
             var page = GetPage(i);
-            output += $"{page.Headers().PageId.ToString().Justify(8, Justification.RIGHT)} {page.PageType.ToString().Justify(16, Justification.RIGHT)} {page.Headers().PrevPageId.ToString().Justify(8, Justification.RIGHT)} {page.Headers().NextPageId.ToString().Justify(8, Justification.RIGHT)} {page.Headers().ParentObjectId.ToString().Justify(8, Justification.RIGHT)} {page.Headers().SlotsUsed.ToString().Justify(8, Justification.RIGHT)} {page.Headers().TransactionId.ToString().Justify(8, Justification.RIGHT)} {page.Headers().IsDirty.ToString().Justify(8, Justification.RIGHT)} {page.Headers().FreeOffset.ToString().Justify(8, Justification.RIGHT)}{Environment.NewLine}";
+            output += $"{page.Headers().PageId.ToString().Justify(8, Justification.RIGHT)} {page.PageType.ToString().Justify(16, Justification.RIGHT)} {page.Headers().PrevPageId.ToString().Justify(8, Justification.RIGHT)} {page.Headers().NextPageId.ToString().Justify(8, Justification.RIGHT)} {page.Headers().ParentObjectId.ToString().Justify(8, Justification.RIGHT)} {page.Headers().SlotsUsed.ToString().Justify(8, Justification.RIGHT)} {page.Headers().TransactionId.ToString().Justify(8, Justification.RIGHT)} {page.IsDirty.ToString().Justify(8, Justification.RIGHT)} {page.Headers().FreeOffset.ToString().Justify(8, Justification.RIGHT)}{Environment.NewLine}";
         }
         return output;
     }

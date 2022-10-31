@@ -24,7 +24,7 @@ public class DataPage : Page
         // Decorate the header with IsDirtyInterceptor
         // This interceptor will set the IsDirty flag whenever any header property changes.
         var generator = new ProxyGenerator<IDataPageHeader>();
-        generator.Interceptor = Page.IsDirtyInterceptor;
+        generator.Interceptor = IsDirtyInterceptor;
         this._headers = generator.Decorate((IDataPageHeader)this._headers!);
     }
 }

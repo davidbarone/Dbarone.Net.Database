@@ -8,6 +8,8 @@ using Dbarone.Net.Proxy;
 public class Page
 {
     public PageType PageType { get; set; }
+    public bool IsDirty { get; set; }
+
     public IPageHeader _headers;
     
     /// <summary>
@@ -65,7 +67,7 @@ public class Page
     /// </summary>
     public void SetDirty()
     {
-        this.Headers().IsDirty = true;
+        this.IsDirty = true;
     }
 
     #region Row Methods
@@ -226,7 +228,7 @@ public class Page
     /// Sets the IsDirty to true if any setter is called.
     /// </summary>
     /// <param name="interceptorArgs"></param>
-    public static void IsDirtyInterceptor<TPageHeaderInterface>(InterceptorArgs<TPageHeaderInterface> interceptorArgs) where TPageHeaderInterface : IPageHeader
+    public void IsDirtyInterceptor<TPageHeaderInterface>(InterceptorArgs<TPageHeaderInterface> interceptorArgs) where TPageHeaderInterface : IPageHeader
     {
         // Sets the IsDirty flag if any setter on header object is called.
         if (
@@ -234,7 +236,7 @@ public class Page
             interceptorArgs.Target != null &&
             interceptorArgs.TargetMethod.Name.Substring(0, 4) == "set_")
         {
-            interceptorArgs.Target.IsDirty = true;
+            this.IsDirty = true;
         }
     }
 

@@ -15,7 +15,6 @@ public class PageHeader : IPageHeader
     public int? ParentObjectId { get; set; }
     public int SlotsUsed { get; set; }
     public int TransactionId { get; set; }
-    public bool IsDirty { get; set; }
     public ushort FreeOffset { get; set; } = 0!;
 }
 
@@ -27,7 +26,6 @@ public interface IPageHeader
     int? ParentObjectId { get; set; }
     int SlotsUsed { get; set; }
     int TransactionId { get; set; }
-    bool IsDirty { get; set; }
 
     /// <summary>
     /// Offset of the next free area on the data part of the page (excluding header)

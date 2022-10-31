@@ -27,7 +27,7 @@ public class OverflowPage : Page
         // Decorate the header with IsDirtyInterceptor
         // This interceptor will set the IsDirty flag whenever any header property changes.
         var generator = new ProxyGenerator<IOverflowPageHeader>();
-        generator.Interceptor = Page.IsDirtyInterceptor;
+        generator.Interceptor = IsDirtyInterceptor;
         this._headers = generator.Decorate((IOverflowPageHeader)this._headers!);
     }
 }
