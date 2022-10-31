@@ -51,8 +51,24 @@ public class BufferManager : IBufferManager
         return output;
     }
 
-    public string DebugPage(int pageId){
-        return "";
+    public string DebugPage(int pageId)
+    {
+        var page = GetPage(pageId);
+
+        var output = @$"PageType: {page.PageType.ToString()}
+IsDirty: {page.IsDirty}{Environment.NewLine}";
+
+        var properties = page.Headers().GetType().GetProperties().Where(p=>p.PropertyType.IsValueType || p.PropertyType==typeof(string));
+        foreach (var property in properties) {
+            output += $"Headers.{property.Name}: {property.GetValue(page.Headers())}{Environment.NewLine}";
+        }
+        output += $"{Environment.NewLine}";
+        for (int i = 0; i < page.Headers().SlotsUsed; i++){
+            var status = page.Statuses[i];
+            var statusString = $"[{(status.HasFlag(RowStatus.Deleted) ? 'D' : ' ')}{(status.HasFlag(RowStatus.Overflow) ? 'O' : ' ')}{(status.HasFlag(RowStatus.Null) ? 'N' : ' ')}]";
+            output += $"Slot #{i}: Offset: {page.Slots[i]}, Status Flags: {statusString}{Environment.NewLine}";
+        }
+            return output;
     }
 
     /// <summary>

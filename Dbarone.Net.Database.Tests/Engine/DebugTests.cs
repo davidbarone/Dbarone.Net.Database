@@ -45,6 +45,52 @@ public class DebugTests : TestBase
 ", str);
         }
     }
+
+    [Fact]
+    public void TestDebugPage()
+    {
+        // Arrange
+        var dbName = GetDatabaseFileNameFromMethod();
+        if (File.Exists(dbName))
+        {
+            File.Delete(dbName);
+        }
+        var tableName = "Table1";
+
+        // Act
+        using (var db = Engine.Create(dbName))
+        {
+            ColumnInfo[] columns = {
+                new ColumnInfo("Col1", DataType.Int32, false),
+                new ColumnInfo("Col2", DataType.String, false),
+                new ColumnInfo("Col3", DataType.String, false),
+            };
+
+            db.CreateTable(tableName, columns);
+            db.CheckPoint();    // Save pages to disk
+        }
+
+        // Assert
+        using (var db = Engine.Open(dbName, false))
+        {
+            // Assert
+            var str = db.DebugPage(2);
+            Assert.Equal(@"PageType: SystemColumn
+IsDirty: False
+Headers.PageId: 2
+Headers.PrevPageId: 
+Headers.NextPageId: 
+Headers.ParentObjectId: 
+Headers.SlotsUsed: 3
+Headers.TransactionId: 0
+Headers.FreeOffset: 87
+
+Slot #0: Offset: 0, Status Flags: [   ]
+Slot #1: Offset: 29, Status Flags: [   ]
+Slot #2: Offset: 58, Status Flags: [   ]
+", str);
+        }
+    }
 }
 
 

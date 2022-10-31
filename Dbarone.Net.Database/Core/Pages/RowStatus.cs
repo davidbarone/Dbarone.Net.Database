@@ -7,5 +7,6 @@ using Dbarone.Net.Database;
 public enum RowStatus : Byte {
     None = 0,
     Deleted = 1,
-    Overflow = 2
+    Overflow = 2,
+    Null = 4
 }
