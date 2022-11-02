@@ -42,13 +42,15 @@ public interface IEngine : IDisposable
 
     #endregion
 
-    #region Queries
+    #region DQL
 
     IEnumerable<T> Read<T>(string tableName);
 
+    IEnumerable<IDictionary<string, object?>> ReadRaw(string tableName);
+
     #endregion
 
-    #region Transactions
+    #region TCL
 
     bool BeginTransaction();
     bool CommitTransaction();
@@ -58,8 +60,6 @@ public interface IEngine : IDisposable
     #endregion
 
     #region DML
-
-    IEnumerable<IDictionary<string, object?>> ReadRaw(string tableName);
 
     int Insert<T>(string table, T row);
     

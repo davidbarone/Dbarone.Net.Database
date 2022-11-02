@@ -85,9 +85,26 @@ Headers.SlotsUsed: 3
 Headers.TransactionId: 0
 Headers.FreeOffset: 87
 
-Slot #0: Offset: 0, Status Flags: [   ]
-Slot #1: Offset: 29, Status Flags: [   ]
-Slot #2: Offset: 58, Status Flags: [   ]
+Slot #0: Offset: 0, Status Flags: [   ], Type: SystemColumnPageData
+Slot #0 Values:
+ - ObjectId: 0
+ - Name: Col1
+ - DataType: Int32
+ - IsNullable: False
+
+Slot #1: Offset: 29, Status Flags: [   ], Type: SystemColumnPageData
+Slot #1 Values:
+ - ObjectId: 0
+ - Name: Col2
+ - DataType: String
+ - IsNullable: False
+
+Slot #2: Offset: 58, Status Flags: [   ], Type: SystemColumnPageData
+Slot #2 Values:
+ - ObjectId: 0
+ - Name: Col3
+ - DataType: String
+ - IsNullable: False
 ", str);
         }
     }

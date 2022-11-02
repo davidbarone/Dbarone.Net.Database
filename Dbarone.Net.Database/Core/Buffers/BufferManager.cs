@@ -2,6 +2,7 @@ namespace Dbarone.Net.Database;
 using Dbarone.Net.Assertions;
 using Dbarone.Net.Mapper;
 using Dbarone.Net.Extensions.String;
+using Dbarone.Net.Extensions.Object;
 
 /// <summary>
 /// In memory cache of pages as they are modified or read from disk. Dirty pages are written back to disk with a CHECKPOINT command.
@@ -58,17 +59,23 @@ public class BufferManager : IBufferManager
         var output = @$"PageType: {page.PageType.ToString()}
 IsDirty: {page.IsDirty}{Environment.NewLine}";
 
-        var properties = page.Headers().GetType().GetProperties().Where(p=>p.PropertyType.IsValueType || p.PropertyType==typeof(string));
-        foreach (var property in properties) {
+        var properties = page.Headers().GetType().GetProperties().Where(p => p.PropertyType.IsValueType || p.PropertyType == typeof(string));
+        foreach (var property in properties)
+        {
             output += $"Headers.{property.Name}: {property.GetValue(page.Headers())}{Environment.NewLine}";
         }
-        output += $"{Environment.NewLine}";
-        for (int i = 0; i < page.Headers().SlotsUsed; i++){
+        for (int i = 0; i < page.Headers().SlotsUsed; i++)
+        {
+            output += $"{Environment.NewLine}";
             var status = page.Statuses[i];
             var statusString = $"[{(status.HasFlag(RowStatus.Deleted) ? 'D' : ' ')}{(status.HasFlag(RowStatus.Overflow) ? 'O' : ' ')}{(status.HasFlag(RowStatus.Null) ? 'N' : ' ')}]";
-            output += $"Slot #{i}: Offset: {page.Slots[i]}, Status Flags: {statusString}{Environment.NewLine}";
+            output += $"Slot #{i}: Offset: {page.Slots[i]}, Status Flags: {statusString}, Type: {page._data[i].GetType().Name}{Environment.NewLine}";
+            output += $"Slot #{i} Values:{Environment.NewLine}";
+            var dict = page._data[i].ToDictionary();
+            output += string.Join(Environment.NewLine, dict.Keys.Select(k => $" - {k}: {dict[k]}"));
+            output += Environment.NewLine;
         }
-            return output;
+        return output;
     }
 
     /// <summary>
@@ -205,6 +212,45 @@ IsDirty: {page.IsDirty}{Environment.NewLine}";
         return buffer;
     }
 
+    private DeserializationResult<IPageData> DeserialiseRow(Page page, PageBuffer buffer, int dataIndex)
+    {
+        // add data
+        if (page.PageDataType == typeof(BufferPageData))
+        {
+            // for overflow page, page stores single cell - length of buffer available from headers
+            var totalLength = page.Headers().FreeOffset;
+            var b = buffer.Slice(dataIndex + Global.PageHeaderSize, totalLength);
+            return new DeserializationResult<IPageData>(new BufferPageData(b), RowStatus.None);
+        }
+        else
+        {
+            var totalLength = buffer.ReadUInt16(Global.PageHeaderSize + dataIndex); // First 2 bytes of each record store the record total length.
+            var b = buffer.Slice(dataIndex + Global.PageHeaderSize, totalLength);
+            if (page.PageDataType == typeof(DictionaryPageData))
+            {
+                if (Serializer.GetRowStatus(b).HasFlag(RowStatus.Overflow))
+                {
+                    // overflow data
+                    var result = Serializer.Deserialize<OverflowPointer>(b, textEncoding);
+                    return new DeserializationResult<IPageData>(result.Result, result.RowStatus);
+                }
+                else
+                {
+                    // dictionary data
+                    var columnMeta = this.GetColumnsForPage(page);
+                    var result = Serializer.DeserializeDictionary(columnMeta, b, textEncoding);
+                    return new DeserializationResult<IPageData>(new DictionaryPageData(result.Result!), result.RowStatus);
+                }
+            }
+            else
+            {
+                // POCO data
+                var result = Serializer.Deserialize(page.PageDataType, b, textEncoding);
+                return new DeserializationResult<IPageData>((IPageData)result.Result!, result.RowStatus);
+            }
+        }
+    }
+
     /// <summary>
     /// Deserialises a buffer into an existing page.
     /// </summary>
@@ -226,51 +272,10 @@ IsDirty: {page.IsDirty}{Environment.NewLine}";
         {
             var dataIndex = buffer.ReadUInt16(slotIndex);
             page.Slots.Add(dataIndex);
-
-            // add data
-            if (page.PageDataType == typeof(BufferPageData))
-            {
-                // for overflow page, page stores single cell - length of buffer available from headers
-                var totalLength = page.Headers().FreeOffset;
-                var b = buffer.Slice(dataIndex + Global.PageHeaderSize, totalLength);
-                page._data.Add(new BufferPageData(b));
-                page.Statuses.Add(RowStatus.None);
-                slotIndex = slotIndex - 2;
-            }
-            else
-            {
-                var totalLength = buffer.ReadUInt16(Global.PageHeaderSize + dataIndex); // First 2 bytes of each record store the record total length.
-                var b = buffer.Slice(dataIndex + Global.PageHeaderSize, totalLength);
-
-                if (page.PageDataType == typeof(DictionaryPageData))
-                {
-                    if (Serializer.GetRowStatus(b).HasFlag(RowStatus.Overflow))
-                    {
-                        // overflow data
-                        DeserializationResult<object> item = Serializer.Deserialize(typeof(OverflowPointer), b, textEncoding);
-                        page._data.Add((OverflowPointer)item.Result!);
-                        page.Statuses.Add(item.RowStatus);
-                        slotIndex = slotIndex - 2;
-                    }
-                    else
-                    {
-                        // dictionary data
-                        var columnMeta = this.GetColumnsForPage(page);
-                        var item = Serializer.DeserializeDictionary(columnMeta, b, textEncoding);
-                        page._data.Add(new DictionaryPageData(item.Result!));
-                        page.Statuses.Add(item.RowStatus);
-                        slotIndex = slotIndex - 2;
-                    }
-                }
-                else
-                {
-                    // POCO data
-                    var item = Serializer.Deserialize(page.PageDataType, b, textEncoding);
-                    page._data.Add((PageData)item.Result!);
-                    page.Statuses.Add(item.RowStatus);
-                    slotIndex = slotIndex - 2;
-                }
-            }
+            var deserialisationResult = DeserialiseRow(page, buffer, dataIndex);
+            page._data.Add(deserialisationResult.Result!);
+            page.Statuses.Add(deserialisationResult.RowStatus);
+            slotIndex = slotIndex - 2;
         }
     }
 

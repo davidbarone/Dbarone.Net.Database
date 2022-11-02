@@ -11,7 +11,7 @@ public class Serializer
     public static DeserializationResult<T> Deserialize<T>(byte[] buffer, TextEncoding textEncoding = TextEncoding.UTF8)
     {
         var result = Deserialize(typeof(T), buffer, textEncoding);
-        return new DeserializationResult<T>((T)result.Result, result.RowStatus);
+        return new DeserializationResult<T>((T)result.Result!, result.RowStatus);
     }
 
     public static DeserializationResult<object> Deserialize(Type type, byte[] buffer, TextEncoding textEncoding = TextEncoding.UTF8)
@@ -20,6 +20,11 @@ public class Serializer
         return Deserialize(type, columns, buffer, textEncoding);
     }
 
+    public static DeserializationResult<T> Deserialize<T>(IEnumerable<ColumnInfo> columns, byte[] buffer, TextEncoding textEncoding = TextEncoding.UTF8) where T : IPageData {
+        var result = Deserialize(typeof(T), columns, buffer, textEncoding);
+        return new DeserializationResult<T>((T)result.Result!, result.RowStatus);
+    }
+    
     public static DeserializationResult<object> Deserialize(Type type, IEnumerable<ColumnInfo> columns, byte[] buffer, TextEncoding textEncoding = TextEncoding.UTF8)
     {
 
