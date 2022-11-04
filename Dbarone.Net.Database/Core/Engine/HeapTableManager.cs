@@ -96,21 +96,26 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
             }
             if (page != null)
             {
-                foreach (var item in page._data)
+                for (var i = 0; i < page.Headers().SlotsUsed; i++)
                 {
-                    var itemAsOverflowPointer = item as OverflowPointer;
-                    if (itemAsOverflowPointer != null)
+                    var item = page._data[i];
+                    var status = page.Statuses[i];
+                    if (!status.HasFlag(RowStatus.Deleted))
                     {
-                        // overflow data
-                        var overflowData = GetOverflowData(itemAsOverflowPointer);
-                        var overflowObj = Serializer.DeserializeDictionary(this.Columns, overflowData);
-                        var pd = new DictionaryPageData(overflowObj.Result);
-                        yield return (TRow)(object)pd;
-                    }
-                    else
-                    {
-                        // normal data
-                        yield return (TRow)item;
+                        var itemAsOverflowPointer = item as OverflowPointer;
+                        if (itemAsOverflowPointer != null)
+                        {
+                            // overflow data
+                            var overflowData = GetOverflowData(itemAsOverflowPointer);
+                            var overflowObj = Serializer.DeserializeDictionary(this.Columns, overflowData);
+                            var pd = new DictionaryPageData(overflowObj.Result);
+                            yield return (TRow)(object)pd;
+                        }
+                        else
+                        {
+                            // normal data
+                            yield return (TRow)item;
+                        }
                     }
                 }
             }
@@ -314,8 +319,58 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
         }
     }
 
-    public void DeleteRows(Func<TRow, bool> predicate)
+    public int DeleteRows(Func<TRow, bool> predicate)
     {
-        throw new NotSupportedException();
+        int rowsAffected = 0;
+        TPageType? page = null;
+        do
+        {
+            if (page == null)
+            {
+                page = this.BufferManager.GetPage<TPageType>(FirstPageId);
+            }
+            else
+            {
+                int? nextPageId = page.Headers().NextPageId;
+                if (nextPageId != null)
+                {
+                    page = this.BufferManager.GetPage<TPageType>(nextPageId.Value);
+                }
+                else
+                {
+                    page = null;
+                }
+            }
+            if (page != null)
+            {
+                for (ushort i = 0; i < page.Headers().SlotsUsed; i++)
+                {
+                    var item = page._data[i];
+                    var itemAsOverflowPointer = item as OverflowPointer;
+                    if (itemAsOverflowPointer != null)
+                    {
+                        // overflow data
+                        var overflowData = GetOverflowData(itemAsOverflowPointer);
+                        var overflowObj = Serializer.DeserializeDictionary(this.Columns, overflowData);
+                        var pd = new DictionaryPageData(overflowObj.Result);
+                        if (predicate.Invoke((TRow)(object)pd))
+                        {
+                            page.SetRowStatus(i, RowStatus.Deleted);
+                            rowsAffected++;
+                        }
+                    }
+                    else
+                    {
+                        // normal data
+                        if (predicate.Invoke((TRow)item))
+                        {
+                            page.SetRowStatus(i, RowStatus.Deleted);
+                            rowsAffected++;
+                        }
+                    }
+                }
+            }
+        } while (page != null);
+        return rowsAffected;
     }
 }

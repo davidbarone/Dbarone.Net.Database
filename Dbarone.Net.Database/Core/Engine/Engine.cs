@@ -162,6 +162,12 @@ public class Engine : IEngine
         return heap.Scan().Select(r => r.Row);
     }
 
+    public int delete<T>(string tableName, Func<IDictionary<string, object?>?, bool> predicate) {
+        var table = Table(tableName);
+        HeapTableManager<DictionaryPageData, DataPage> heap = new HeapTableManager<DictionaryPageData, DataPage>(this._bufferManager, table.ObjectId);
+        return heap.DeleteRows((dictionaryPageData) => predicate.Invoke(dictionaryPageData.Row));
+    }
+
     public int InsertRaw(string tableName, IDictionary<string, object?> row)
     {
         var table = Table(tableName);
@@ -335,8 +341,6 @@ public class Engine : IEngine
     public int update<T>(string table, IEnumerable<T> data) { throw new NotSupportedException("Not supported."); }
     public int upsert<T>(string table, T data) { throw new NotSupportedException("Not supported."); }
     public int upsert<T>(string table, IEnumerable<T> data) { throw new NotSupportedException("Not supported."); }
-    public int delete<T>(string table, T data) { throw new NotSupportedException("Not supported."); }
-    public int delete<T>(string table, IEnumerable<T> data) { throw new NotSupportedException("Not supported."); }
 
     #endregion    
 

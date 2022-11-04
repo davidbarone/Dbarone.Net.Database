@@ -64,5 +64,5 @@ public interface IHeapTableManager<TRow> {
     /// Deletes zero or more rows on the heap table.
     /// </summary>
     /// <param name="predicate"></param>
-    void DeleteRows(Func<TRow, bool> predicate);
+    int DeleteRows(Func<TRow, bool> predicate);
 }

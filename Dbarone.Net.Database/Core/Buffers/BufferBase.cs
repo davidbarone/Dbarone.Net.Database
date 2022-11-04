@@ -221,7 +221,10 @@ public class BufferBase : IBuffer
 
     public void Write(byte value, int index)
     {
-        var bytes = BitConverter.GetBytes(value);
+        // BitConverter.GetBytes(Byte) treats the byte value as a ushort, so returns 2 bytes.
+        // Section 6.1.2 of the C# language spec
+        // Take 1st byte only.
+        var bytes = BitConverter.GetBytes(value).Take(1).ToArray();
         this.Stream.Position = index;
         this.Stream.Write(bytes, 0, bytes.Length);
     }

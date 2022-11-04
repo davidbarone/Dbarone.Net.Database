@@ -47,6 +47,7 @@ public class OverflowPageTests : TestBase
             db.CheckPoint();    // Save pages to disk
         }
 
+
         // Assert
         using (var db = Engine.Open(dbName, false))
         {

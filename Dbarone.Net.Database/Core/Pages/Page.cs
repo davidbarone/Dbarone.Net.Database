@@ -9,7 +9,6 @@ public class Page
 {
     public PageType PageType { get; set; }
     public bool IsDirty { get; set; }
-
     public IPageHeader _headers;
     
     /// <summary>
@@ -89,7 +88,13 @@ public class Page
     }
 
     public void SetRowStatus(ushort slot, RowStatus status) {
-        this.Statuses[slot] = status;
+        this.Statuses[slot] = this.Statuses[slot] | status;
+        this.IsDirty = true;
+    }
+
+    public void ClearRowStatus(ushort slot, RowStatus status) {
+        this.Statuses[slot] = this.Statuses[slot] & (~status);
+        this.IsDirty = true;
     }
 
     /// <summary>

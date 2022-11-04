@@ -75,8 +75,7 @@ public interface IEngine : IDisposable
     int update<T>(string table, IEnumerable<T> data);
     int upsert<T>(string table, T data);
     int upsert<T>(string table, IEnumerable<T> data);
-    int delete<T>(string table, T data);
-    int delete<T>(string table, IEnumerable<T> data);
+    int delete<T>(string tableName, Func<IDictionary<string, object?>?, bool> predicate);
 
     #endregion
 
