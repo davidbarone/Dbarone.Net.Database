@@ -12,14 +12,14 @@ public interface IEngine : IDisposable
     /// </summary>
     /// <returns></returns>
     DatabaseInfo Database();
-    
+
     /// <summary>
     /// Gets table information for a single table.
     /// </summary>
     /// <param name="tableName">The table name.</param>
     /// <returns>returns table information</returns>
     TableInfo Table(string tableName);
-    
+
     /// <summary>
     /// Gets table information for all tables in the database.
     /// </summary>
@@ -61,21 +61,11 @@ public interface IEngine : IDisposable
 
     #region DML
 
-    int Insert<T>(string table, T row);
+    int Insert<T>(string tableName, T row);
+    int BulkInsert<T>(string tableName, IEnumerable<T> rows);
     
-    /// <summary>
-    /// Inserts a row into a table using a dictionary of values.
-    /// </summary>
-    /// <param name="tableName">The name of the table to insert the row into.</param>
-    /// <param name="row">The row data to insert.</param>
-    /// <returns></returns>
-    int InsertRaw(string tableName, IDictionary<string, object?> row);
-    int BulkInsert<T>(string table, IEnumerable<T> data);
-    int update<T>(string table, T data);
-    int update<T>(string table, IEnumerable<T> data);
-    int upsert<T>(string table, T data);
-    int upsert<T>(string table, IEnumerable<T> data);
-    int delete<T>(string tableName, Func<IDictionary<string, object?>?, bool> predicate);
+    int UpdateRaw(string tableName, Func<IDictionary<string, object?>?, IDictionary<string, object?>?> transformation, Func<IDictionary<string, object?>?, bool> predicate);
+    int DeleteRaw(string tableName, Func<IDictionary<string, object?>?, bool> predicate);
 
     #endregion
 
@@ -91,6 +81,6 @@ public interface IEngine : IDisposable
     string DebugPages();
 
     string DebugPage(int pageId);
-    
+
     #endregion
 }

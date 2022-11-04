@@ -36,7 +36,7 @@ public class DeleteTests : TestBase
                 {"PostTitle", "Second Post"}
             });
             // Delete post #2
-            db.delete<IDictionary<string, object?>?>("Post", (row) => { return (int?)(row!["PostId"])==2 ? true : false; });
+            db.DeleteRaw("Post", (row) => { return (int?)(row!["PostId"])==2 ? true : false; });
             db.CheckPoint();    // Save pages to disk
         }
 

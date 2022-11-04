@@ -153,7 +153,7 @@ public class Engine : IEngine
 
     #endregion
 
-    #region DML
+    #region DQL
 
     public IEnumerable<IDictionary<string, object?>> ReadRaw(string tableName)
     {
@@ -162,27 +162,25 @@ public class Engine : IEngine
         return heap.Scan().Select(r => r.Row);
     }
 
-    public int delete<T>(string tableName, Func<IDictionary<string, object?>?, bool> predicate) {
-        var table = Table(tableName);
-        HeapTableManager<DictionaryPageData, DataPage> heap = new HeapTableManager<DictionaryPageData, DataPage>(this._bufferManager, table.ObjectId);
-        return heap.DeleteRows((dictionaryPageData) => predicate.Invoke(dictionaryPageData.Row));
-    }
+    #endregion
 
-    public int InsertRaw(string tableName, IDictionary<string, object?> row)
+    #region DML
+
+    public int BulkInsert<T>(string tableName, IEnumerable<T> rows)
     {
         var table = Table(tableName);
-        var dict = new DictionaryPageData(row);
+        var _rows = rows.Select(d => new DictionaryPageData((d as IDictionary<string, object?>)!)).ToArray();
         var heap = new HeapTableManager<DictionaryPageData, DataPage>(this._bufferManager, table.ObjectId);
-        heap.AddRow(dict);
+        heap.AddRows(_rows);
         return 0;
     }
 
-    public int Insert<T>(string table, T data)
+    public int Insert<T>(string table, T row)
     {
-        var dataDict = data as IDictionary<string, object?>;
+        var dataDict = row as IDictionary<string, object?>;
         if (dataDict == null)
         {
-            dataDict = data.ToDictionary();
+            dataDict = row.ToDictionary();
         }
         if (dataDict != null)
         {
@@ -192,13 +190,21 @@ public class Engine : IEngine
         }
     }
 
-    public int BulkInsert<T>(string tableName, IEnumerable<T> data)
+    private int InsertRaw(string tableName, IDictionary<string, object?> row)
     {
         var table = Table(tableName);
-        var rows = data.Select(d => new DictionaryPageData((d as IDictionary<string, object?>)!)).ToArray();
+        var dict = new DictionaryPageData(row);
         var heap = new HeapTableManager<DictionaryPageData, DataPage>(this._bufferManager, table.ObjectId);
-        heap.AddRows(rows);
+        heap.AddRow(dict);
         return 0;
+    }
+
+    public int UpdateRaw(string tableName, Func<IDictionary<string, object?>?, IDictionary<string, object?>?> transformation, Func<IDictionary<string, object?>?, bool> predicate) { throw new NotSupportedException("Not supported."); }
+
+    public int DeleteRaw(string tableName, Func<IDictionary<string, object?>?, bool> predicate) {
+        var table = Table(tableName);
+        HeapTableManager<DictionaryPageData, DataPage> heap = new HeapTableManager<DictionaryPageData, DataPage>(this._bufferManager, table.ObjectId);
+        return heap.DeleteRows((dictionaryPageData) => predicate.Invoke(dictionaryPageData.Row));
     }
 
     #endregion
@@ -336,11 +342,6 @@ public class Engine : IEngine
     public bool BeginTransaction() { throw new NotSupportedException("Not supported."); }
     public bool CommitTransaction() { throw new NotSupportedException("Not supported."); }
     public bool RollbackTransaction() { throw new NotSupportedException("Not supported."); }
-
-    public int update<T>(string table, T data) { throw new NotSupportedException("Not supported."); }
-    public int update<T>(string table, IEnumerable<T> data) { throw new NotSupportedException("Not supported."); }
-    public int upsert<T>(string table, T data) { throw new NotSupportedException("Not supported."); }
-    public int upsert<T>(string table, IEnumerable<T> data) { throw new NotSupportedException("Not supported."); }
 
     #endregion    
 
