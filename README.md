@@ -11,7 +11,7 @@ Data is stored in a single file. There are no rules about the naming of the file
 
 ## Data Page
 
-A data page is the foundation of Dbarone.Net.Database and each data page is 8KB (8192 bytes) in size. This default page size can be changed if required. For example, the .NET FileRead buffer default size is 4K. All data pages have a similar structure:
+A data page is the foundation unit of the database - a database file comprises of a number of data pages, and each data page is 8KB (8192 bytes) in size. This default page size can be changed if required. For example, the .NET FileRead buffer default size is 4K. All data pages have a similar structure:
 
 | Section     | Size       | Purpose                                        |
 | ----------- | ---------- | ---------------------------------------------- |
@@ -19,7 +19,7 @@ A data page is the foundation of Dbarone.Net.Database and each data page is 8KB 
 | Page Data   | 8096 bytes | Data contained in the page (multiple records). |
 
 
-Disk IO is performed at a data page level. Disk IO is also buffered to improve performance.
+Disk IO is performed at a data page level. Disk IO is also buffered to improve performance. If the database engine needs to read a single row from a table, it will read the entire page that the row is stored in.
 
 ### Header
 
@@ -70,10 +70,32 @@ Rules around adding data rows to page data section:
 
 ### Buffering
 
-Disk IO is buffered using the `BufferManager` class:
+Performing disk IO for every read and write operation on a database would result in incredibly poor performance. For this reason, page buffering is performed. Basically, when any data is read or written, the database engine will read in page chunks. Once a page is read it will be cached so that subsequent reads will happen from memory. When a write operation (insert, updated, delete) occurs, it is done to the page in memory first. The data is periodically flushed to the disk via a `CheckPoint` operation, which can be executed manually, and also occurs periodically and automatically from within the engine.
+
+Disk IO buffering is managed using the `BufferManager` class:
 - When a page is read from disk, it is cached. Subsequent accesses of the page are read from the memory cache.
 - When a page is modified in memory, an 'IsDirty' flag is set on the page.
 - Periodically, and when the `CheckPoint` command is manually executed, all dirty pages are written back to disk.
+
+## Serialisation
+
+In order to move data from disk to memory and vice versa, it must be serialised and deserialised. Serialisation is the process of converting data structures and objects to byte streams. Deserialisation is the opposite process. A custom serialiser has been implemented to perform both tasks. The serialiser is able to serialise any object, and stores the serialised output in the following format:
+
+| Field                 | Size (bytes)              | Row Overhead | Description                                                             |
+| --------------------- | ------------------------- | ------------ | ----------------------------------------------------------------------- |
+| Buffer Length         | 2                         | Yes          | The total size of the serialised output including row overhead.         |
+| Row Status            | 1                         | Yes          | Various row status flags                                                |
+| Data Length           | 2                         | Yes          | The size of the serialised data excluding row overhead.                 |
+| Column Count          | 2                         | Yes          | The total number of columns in the object.                              |
+| Null Bitmap           | ColumnCount / 8           | Yes          | Stores 1 bit for every column. bit set to true if column value is null. |
+| Fixed Column Count    | 2                         | Yes          | The number of fixed length columns in the object.                       |
+| Fixed Data Length     | 2                         | Yes          | The size of fixed length data.                                          |
+| Fixed Data            | n                         | No           | The fixed length data.                                                  |
+| Variable Column Count | 2                         | Yes          | The number of variable length columns in the object.                    |
+| Variable Length Table | 2 * variable column count | Yes          | Table of Int16 values denoting length of each variable length field.    |
+| Variable Data         | n                         | No           | The variable length data                                                |
+
+In order to serialise or deserialise, the column information (`IEnumerable<ColumnInfo>`) must also be provided to the Serialiser class. The serialised data does not include column names, so this must be stored and provided separated in order for the serialisation and deserialisation to occur.
 
 ## Data Types
 
@@ -106,22 +128,9 @@ The following data types are supported in Dbarone.Net.Database, each mapping to 
 | string | string         |
 | Blob   | byte[]         |
 
-## Serialisation
+## LOB Data
 
-In order to move data from disk to memory and vice versa, it must be serialised. A custom serialiser has been implemented to do this. The serialiser is able to serialise any object, and stores the serialised output in the following format:
-
-| Field                 | Size (bytes)              | Row Overhead | Description                                                             |
-| --------------------- | ------------------------- | ------------ | ----------------------------------------------------------------------- |
-| Buffer Length         | 2                         | Yes          | The total size of the serialised output including row overhead.         |
-| Data Length           | 2                         | Yes          | The size of the serialised data excluding row overhead.                 |
-| Column Count          | 2                         | Yes          | The total number of columns in the object.                              |
-| Null Bitmap           | ColumnCount / 8           | Yes          | Stores 1 bit for every column. bit set to true if column value is null. |
-| Fixed Column Count    | 2                         | Yes          | The number of fixed length columns in the object.                       |
-| Fixed Data Length     | 2                         | Yes          | The size of fixed length data.                                          |
-| Fixed Data            | n                         | No           | The fixed length data.                                                  |
-| Variable Column Count | 2                         | Yes          | The number of variable length columns in the object.                    |
-| Variable Length Table | 2 * variable column count | Yes          | Table of Int16 values denoting length of each variable length field.    |
-| Variable Data         | n                         | No           | The variable length data                                                |
+In most cases, a row must fit inside a single page (TODO: what are specific row limits?). However, a special page type called an `OverFlowPage` allows for large string data to be stored. If a large string value is stored, then the original page stores a special `OverflowPointer` record to the starting page number where the actual data is stored. From there multiple pages can be doubly-linked to store the entire large string value.
 
 ## Database Rebuild
 

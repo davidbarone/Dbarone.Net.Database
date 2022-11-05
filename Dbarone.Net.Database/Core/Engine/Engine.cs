@@ -162,6 +162,12 @@ public class Engine : IEngine
         return heap.Scan().Select(r => r.Row);
     }
 
+    public IEnumerable<T?> Read<T>(string tableName) where T : class { 
+        foreach(var item in ReadRaw(tableName)) {
+            yield return item.ToObject<T>();
+        }
+    }
+
     #endregion
 
     #region DML
@@ -337,7 +343,7 @@ public class Engine : IEngine
 
     public TableInfo GetTableInfo(string tableName) { throw new NotSupportedException("Not supported."); }
     public IEnumerable<ColumnInfo> GetColumnInfo(string tableName) { throw new NotSupportedException("Not supported."); }
-    public IEnumerable<T> Read<T>(string tableName) { throw new NotSupportedException("Not supported."); }
+
 
     public bool BeginTransaction() { throw new NotSupportedException("Not supported."); }
     public bool CommitTransaction() { throw new NotSupportedException("Not supported."); }

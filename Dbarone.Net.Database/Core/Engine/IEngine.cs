@@ -44,7 +44,7 @@ public interface IEngine : IDisposable
 
     #region DQL
 
-    IEnumerable<T> Read<T>(string tableName);
+    IEnumerable<T?> Read<T>(string tableName) where T : class;
 
     IEnumerable<IDictionary<string, object?>> ReadRaw(string tableName);
 
