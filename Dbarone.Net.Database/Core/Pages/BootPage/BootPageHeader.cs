@@ -9,6 +9,7 @@ public interface IBootPageHeader : IPageHeader {
     int FirstTablesPageId { get; set; }
     int LastTablesPageId { get; set; }
     TextEncoding TextEncoding { get; set; }
+    int? FirstFreePageId { get; set; }
 }
 
 /// <summary>
@@ -55,4 +56,9 @@ public class BootPageHeader : PageHeader , IBootPageHeader
     /// Sets the text encoding for the database.
     /// </summary>
     public TextEncoding TextEncoding { get; set; }
+    
+    /// <summary>
+    /// Pointer to single-linked list of free pages.
+    /// </summary>
+    public int? FirstFreePageId { get; set; }
 }

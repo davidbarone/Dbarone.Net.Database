@@ -1,5 +1,6 @@
 using Dbarone.Net.Database;
 using System.Linq;
+using Dbarone.Net.Assertions;
 
 public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where TPageType : Page
 {
@@ -215,7 +216,54 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
         }
     }
 
-    private void AddOverflowDataRow(TRow row, byte[] bytes)
+    /// <summary>
+    /// Checks whether the row requires overflow processing. Processing steps are:
+    /// 1. Checks whether buffer.Length > page.GetOverflowThresholdSize()
+    /// 2. If #1 is yes, then:
+    /// 2a. Frees up all the existing overflow pages
+    /// 2b. Writes the LOB to new overflow pages
+    /// 2c. Creates a new OverflowPointer object that references the overflow data.
+    /// 2d. Returns the overflow object, serialised as a buffer.
+    /// 3. If #1 is no then returns null
+    /// </summary>
+    /// <param name="row">The row to check check/process overflow logic for.</param>
+    /// <returns>Returns an OverflowPointer record if overflow required. Otherwise, returns null.</returns>
+    private OverflowPointer? ProcessOverflowIfRequired(TRow row, byte[] buffer, DataRowLocation? existingLocation)
+    {
+        // Get last page (insert) or existing page (update)
+        var page = this.BufferManager.GetPage<TPageType>(existingLocation != null ? existingLocation.PageId : this.LastPageId);
+        if (buffer.Length > page.GetOverflowThresholdSize())
+        {
+            if (existingLocation != null)
+            {
+                FreeOverflow(existingLocation.PageId);
+            }
+            var pageId = AddOverflowData(buffer);
+            return new OverflowPointer(pageId, buffer.Length);
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    private void FreeOverflow(int firstOverflowPageId)
+    {
+        int? nextId = firstOverflowPageId;
+        while (nextId != null)
+        {
+            var page = this.BufferManager.GetPage(nextId.Value);
+            page.MarkFree();
+            nextId = page.Headers().NextPageId;
+        }
+    }
+
+    /// <summary>
+    /// Adds LOB data to overflow pages.
+    /// </summary>
+    /// <param name="bytes">Byte stream of overflow data.</param>
+    /// <returns>The first page id of the overflow data.</returns>
+    private int AddOverflowData(byte[] bytes)
     {
         var i = 0;
         BufferBase buffer = new BufferBase(bytes);
@@ -224,6 +272,7 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
         int maxChunkSize;
         OverflowPage? overflow = null;
         OverflowPage? prevPage = null;
+        int firstPageId = 0;
 
         do
         {
@@ -232,7 +281,7 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
             if (prevPage == null)
             {
                 // On first iteration, save pointer in main page.
-                AddOverflowPointer(overflow.Headers().PageId, buffer.Size);
+                firstPageId = overflow.Headers().PageId;
             }
             else
             {
@@ -244,47 +293,44 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
             maxChunkSize = overflow.GetFreeRowSpace();
             var chunkSize = maxChunkSize > remainder ? remainder : maxChunkSize;
             var chunk = buffer.Slice(i, chunkSize);
-            overflow.AddDataRow(new BufferPageData(chunk), chunk);
+            overflow.AddDataRow(new BufferPageData(chunk), chunk, false);
             i += chunkSize;
             remainder -= chunkSize;
         }
         while (remainder > 0);
+        return firstPageId;
     }
 
-    /// <summary>
-    /// Adds overflow header record in main data page.
-    /// </summary>
-    /// <param name="firstOverflowPageId">The page id of the first overflow page.</param>
-    /// <param name="bufferSize">The total buffer size of the actual serialized data.</param>
-    public int AddOverflowPointer(int firstOverflowPageId, int bufferSize)
+    private void UpsertRow(TRow row, DataRowLocation? existingLocation)
     {
-        var page = this.BufferManager.GetPage<TPageType>(this.LastPageId);
-        var row = new OverflowPointer(firstOverflowPageId, bufferSize);
-        var buffer = this.BufferManager.SerialiseRow(row, RowStatus.Overflow, Serializer.GetColumnsForType(typeof(OverflowPointer)));
+        object _row = row;
+        var page = this.BufferManager.GetPage<TPageType>(existingLocation!=null ? existingLocation.PageId : this.LastPageId);
+        var buffer = this.BufferManager.SerialiseRow(_row!, RowStatus.None, this.Columns);
+        bool isOverflowPointer = false;
 
-        // Room on page? - if not, create new page.
-        if (buffer.Length > page.GetFreeRowSpace())
+        // Overflow processing 
+        var overflowPointer = ProcessOverflowIfRequired(row, buffer, null);
+        if (overflowPointer != null)
         {
-            page = this.BufferManager.CreatePage<TPageType>(page.Headers().ParentObjectId, page);
-
-            // update last page ids
-            UpdateLastPageId(page.Headers().PageId);
+            isOverflowPointer = true;
+            _row = overflowPointer;
+            buffer = this.BufferManager.SerialiseRow(_row, RowStatus.Overflow, Serializer.GetColumnsForType(typeof(OverflowPointer)));
         }
-        return page.AddOverflowPointerDataRow(row, buffer);
-    }
 
-    public void AddRow(TRow row)
-    {
-        var page = this.BufferManager.GetPage<TPageType>(this.LastPageId);
-        var buffer = this.BufferManager.SerialiseRow(row!, RowStatus.None, this.Columns);
+        if (existingLocation!=null){
+            // update
+            // Room on page? - if not, create new page.
+            if (buffer.Length > page.GetAvailableSpaceForSlot(existingLocation.Slot))
+            {
+                page = this.BufferManager.CreatePage<TPageType>(page.Headers().ParentObjectId, page);
+                // update last page ids
+                UpdateLastPageId(page.Headers().PageId);
+            }
+            page.UpdateDataRow(existingLocation.Slot, _row!, buffer, isOverflowPointer);
 
-        if (buffer.Length > page.GetOverflowThresholdSize())
+        } else
         {
-            // Overflow storage
-            AddOverflowDataRow(row, buffer);
-        }
-        else
-        {
+            // insert
             // Room on page? - if not, create new page.
             if (buffer.Length > page.GetFreeRowSpace())
             {
@@ -293,7 +339,7 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
                 // update last page ids
                 UpdateLastPageId(page.Headers().PageId);
             }
-            page.AddDataRow(row!, buffer);
+            page.AddDataRow(_row!, buffer, isOverflowPointer);
         }
     }
 
@@ -305,6 +351,10 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
         }
     }
 
+    public void AddRow(TRow row) {
+        UpsertRow(row, null);
+    }
+
     public void UpdateRows(Func<TRow, TRow> transform, Func<TRow, bool> predicate)
     {
         var locations = SearchMany(predicate);
@@ -312,10 +362,8 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
         {
             var page = this.BufferManager.GetPage<TPageType>(location.PageId);
             var currentStatus = page.Statuses[location.Slot];
-            var currentRowSize = page.GetAvailableSpaceForSlot(location.Slot);
             var updatedRow = transform((TRow)page.GetRowAtSlot(location.Slot))!;
-            var buffer = this.BufferManager.SerialiseRow(updatedRow, currentStatus, this.Columns);
-            page.UpdateDataRow(location.Slot, updatedRow, buffer);
+            this.UpsertRow(updatedRow, location);
         }
     }
 

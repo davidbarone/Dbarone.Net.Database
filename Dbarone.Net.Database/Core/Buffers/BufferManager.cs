@@ -29,6 +29,31 @@ public class BufferManager : IBufferManager
         }
     }
 
+    /// <summary>
+    /// Marks a page as free
+    /// </summary>
+    /// <param name="page"></param>
+    public void MarkFree(Page page)
+    {
+        page.MarkFree();
+        page.Headers().PrevPageId = null;
+
+        // Add to the start of the single-linked free page chain
+        var boot = this.GetPage<BootPage>(0);
+        boot.Headers().FirstFreePageId = page.Headers().PageId;
+        int? nextId = boot.Headers().FirstFreePageId;
+        if (nextId == null)
+        {
+            page.Headers().NextPageId = null;
+        }
+        else
+        {
+            var nextPage = GetPage(nextId.Value);
+            nextPage.Headers().PrevPageId = page.Headers().PageId;
+            page.Headers().NextPageId = nextId;
+        }
+    }
+
     private DiskService _diskService;
     private Dictionary<int, Page> _pages = new Dictionary<int, Page>();
 

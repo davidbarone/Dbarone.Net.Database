@@ -10,7 +10,7 @@ public class Page
     public PageType PageType { get; set; }
     public bool IsDirty { get; set; }
     public IPageHeader _headers;
-    
+
     /// <summary>
     /// Data row physically on page. Can be PageDataType, or OverflowPointer. 
     /// </summary>
@@ -19,7 +19,7 @@ public class Page
     public virtual Type PageDataType { get { throw new NotImplementedException("Not implemented."); } }
     public IList<ushort> Slots { get; set; }
     public IList<RowStatus> Statuses { get; set; }
-    
+
     /// <summary>
     /// Creates a new page.
     /// </summary>
@@ -42,12 +42,13 @@ public class Page
     /// <summary>
     /// Default constructor.
     /// </summary>
-    public Page() {
+    public Page()
+    {
         this._data = new List<IPageData>();
         this.Slots = new List<ushort>();
         this.Statuses = new List<RowStatus>();
         this._headers = (IPageHeader)Activator.CreateInstance(this.PageHeaderType)!;
-     }
+    }
 
     /// <summary>
     /// Returns the header structure. Subclasses can provide the specific type.
@@ -83,17 +84,26 @@ public class Page
         return this._data[slot];
     }
 
-    public RowStatus GetRowStatus(ushort slot) {
+    public RowStatus GetRowStatus(ushort slot)
+    {
         return this.Statuses[slot];
     }
 
-    public void SetRowStatus(ushort slot, RowStatus status) {
+    public void SetRowStatus(ushort slot, RowStatus status)
+    {
         this.Statuses[slot] = this.Statuses[slot] | status;
         this.IsDirty = true;
     }
 
-    public void ClearRowStatus(ushort slot, RowStatus status) {
+    public void ClearRowStatus(ushort slot, RowStatus status)
+    {
         this.Statuses[slot] = this.Statuses[slot] & (~status);
+        this.IsDirty = true;
+    }
+
+    public void MarkFree()
+    {
+        this.PageType = PageType.Free;
         this.IsDirty = true;
     }
 
@@ -105,11 +115,19 @@ public class Page
     /// <param name="buffer">The buffer representation of the row.</param>
     /// <returns>The slot id of the new row.</returns>
     /// <exception cref="Exception">Throws exception if insufficient room on page for row.</exception>
-    public int AddDataRow(object row, byte[] buffer)
+    public int AddDataRow(object row, byte[] buffer, bool isOverflowPointer)
     {
-        Assert.IsType(row, this.PageDataType);
-        
-        if (buffer.Length>GetFreeRowSpace()){
+        if (isOverflowPointer)
+        {
+            Assert.IsType(row, typeof(OverflowPointer));
+        }
+        else
+        {
+            Assert.IsType(row, this.PageDataType);
+        }
+
+        if (buffer.Length > GetFreeRowSpace())
+        {
             throw new Exception("Insufficient room on page.");
         }
 
@@ -117,29 +135,10 @@ public class Page
         this.Headers().SlotsUsed++;
         this.Slots.Add(this.Headers().FreeOffset);
         this.Statuses.Add(RowStatus.None);
-        this.Headers().FreeOffset += (ushort)buffer.Length;
-        this._data.Add((row as IPageData)!);
-        return this.Headers().SlotsUsed;
-    }
-
-    /// <summary>
-    /// Similar to AddDataRow(), but used to add the overflow pointer record in the main data page.
-    /// </summary>
-    /// <param name="row"></param>
-    /// <param name="buffer"></param>
-    /// <returns></returns>
-    /// <exception cref="Exception"></exception>
-    public int AddOverflowPointerDataRow(object row, byte[] buffer) {
-        Assert.IsType(row, typeof(OverflowPointer));
-        
-        if (buffer.Length>GetFreeRowSpace()){
-            throw new Exception("Insufficient room on page.");
+        if (isOverflowPointer)
+        {
+            this.Statuses.Add(RowStatus.Overflow);
         }
-
-        // Update page
-        this.Headers().SlotsUsed++;
-        this.Slots.Add(this.Headers().FreeOffset);
-        this.Statuses.Add(RowStatus.Overflow);
         this.Headers().FreeOffset += (ushort)buffer.Length;
         this._data.Add((row as IPageData)!);
         return this.Headers().SlotsUsed;
@@ -154,29 +153,49 @@ public class Page
     /// <param name="row">The updated value.</param>
     /// <param name="buffer">The buffer representation of the updated value.</param>
     /// <exception cref="Exception">Throws an exception if the updated value does not fit into the existing slot space.</exception>
-    public void UpdateDataRow(ushort slot, object row, byte[] buffer){
-        Assert.IsType(row, this.PageDataType);
+    public void UpdateDataRow(ushort slot, object row, byte[] buffer, bool isOverflowPointer)
+    {
+        if (isOverflowPointer)
+        {
+            Assert.IsType(row, typeof(OverflowPointer));
+        }
+        else
+        {
+            Assert.IsType(row, this.PageDataType);
+        }
+
         Assert.Between(slot, 0, this.Headers().SlotsUsed - 1);
 
-        if (buffer.Length>GetAvailableSpaceForSlot(slot)){
+        if (buffer.Length > GetAvailableSpaceForSlot(slot))
+        {
             throw new Exception($"Insufficient room in slot {slot}.");
         }
 
         // Update page
-        if (slot<this.Headers().SlotsUsed-1) {
+        if (slot < this.Headers().SlotsUsed - 1)
+        {
             // not the last slot - nothing required - updated into existing slot that fits
             // There may be some unused space though - will need to add compaction function later.
-        } else {
+        }
+        else
+        {
             // Get previous slot, and add updated size
-            if (this.Slots.Count()==1){
+            if (this.Slots.Count() == 1)
+            {
                 this.Headers().FreeOffset = (ushort)buffer.Length;
-            } else
+            }
+            else
             {
                 this.Headers().FreeOffset = (ushort)(this.Slots[slot - 1] + buffer.Length);
             }
         }
 
         this._data[slot] = (row as IPageData)!;
+        this.ClearRowStatus(slot, RowStatus.Deleted);
+        this.ClearRowStatus(slot, RowStatus.Overflow);
+        if (isOverflowPointer) {
+            this.SetRowStatus(slot, RowStatus.Overflow);
+        }
 
         // Set page dirty
         this.SetDirty();
@@ -222,7 +241,8 @@ public class Page
     /// Row is considered as requiring overflow storage if > 1/4 free space on new page.
     /// </summary>
     /// <returns></returns>
-    public int GetOverflowThresholdSize() {
+    public int GetOverflowThresholdSize()
+    {
         return (Global.PageSize - Global.PageHeaderSize - (4 * Types.GetByDataType(DataType.UInt16).Size)) / 4;
     }
     #endregion

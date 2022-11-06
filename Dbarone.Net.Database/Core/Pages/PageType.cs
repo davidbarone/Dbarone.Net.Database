@@ -30,5 +30,11 @@ public enum PageType : Byte
     /// <summary>
     /// Stores large data which spills over 1 page in size.
     /// </summary>
-    Overflow = 6
+    Overflow = 6,
+
+    /// <summary>
+    /// A page that no longer holds any data. An unused page. Pages may become unused if all data is deleted from the page.
+    /// </summary>
+    Free
+
 }

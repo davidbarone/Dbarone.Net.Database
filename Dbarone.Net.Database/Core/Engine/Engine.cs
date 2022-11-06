@@ -249,7 +249,7 @@ public class Engine : IEngine
             var obj = new SystemColumnPageData(parentObjectId, column.Name, column.DataType, column.IsNullable);
             var columnMeta = Serializer.GetColumnsForType(systemColumnPage.PageDataType);
             var buffer = this._bufferManager.SerialiseRow(obj, RowStatus.None, columnMeta);
-            systemColumnPage.AddDataRow(obj, buffer);
+            systemColumnPage.AddDataRow(obj, buffer, false);
         }
 
         // Create data page
@@ -295,7 +295,7 @@ public class Engine : IEngine
             var obj = new SystemColumnPageData(parentObjectId, column.Name, column.DataType, column.IsNullable);
             var columnMeta = Serializer.GetColumnsForType(systemColumnPage.PageDataType);
             var buffer = this._bufferManager.SerialiseRow(obj, RowStatus.None, columnMeta);
-            systemColumnPage.AddDataRow(obj, buffer);
+            systemColumnPage.AddDataRow(obj, buffer, false);
         }
 
         // Create data page
