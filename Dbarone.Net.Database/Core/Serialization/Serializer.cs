@@ -31,6 +31,10 @@ public class Serializer
 
         var result = DeserializeDictionary(columns, buffer, textEncoding);
 
+        if (result.RowStatus.HasFlag(RowStatus.Deleted) | result.RowStatus.HasFlag(RowStatus.Null)) {
+            return new DeserializationResult<object>((object?)null, result.RowStatus);
+        }
+
         object? obj = Activator.CreateInstance(type);
         if (obj == null)
         {

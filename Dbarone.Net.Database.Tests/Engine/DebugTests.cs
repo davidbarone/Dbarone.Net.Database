@@ -39,7 +39,7 @@ public class DebugTests : TestBase
             Assert.Equal(@"  PageId         PageType     Prev     Next   Parent    Slots     Tran    Dirty     Free
   ------         --------     ----     ----   ------    -----     ----    -----     ----
        0             Boot                                   0        0    False        0
-       1      SystemTable                                   1        0    False       43
+       1      SystemTable                                   1        0    False       35
        2     SystemColumn                                   3        0    False       87
        3             Data                          0        0        0    False        0
 ", str);

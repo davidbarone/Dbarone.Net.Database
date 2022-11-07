@@ -7,8 +7,7 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
     private int? ParentObjectId { get; set; }
     private BufferManager BufferManager { get; set; }
     IEnumerable<ColumnInfo> Columns { get; set; } = default!;
-    private int FirstPageId { get; set; }
-    private int LastPageId { get; set; }
+    private int TailPageId { get; set; }
 
     public HeapTableManager(BufferManager bufferManager, int? parentObjectId = null)
     {
@@ -22,25 +21,22 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
             var tablesHeap = new HeapTableManager<SystemTablePageData, SystemTablePage>(bufferManager);
             var loc = tablesHeap.SearchSingle(d => d.ObjectId == parentObjectId);
             var row = tablesHeap.GetRow(loc);
-            this.FirstPageId = row.FirstDataPageId;
-            this.LastPageId = row.LastDataPageId;
+            this.TailPageId = row.DataPageId;
         }
         else if (typeof(TPageType) == typeof(SystemTablePage))
         {
-            this.FirstPageId = 1;
-            this.LastPageId = 1;
+            this.TailPageId = 1;
         }
         else if (typeof(TPageType) == typeof(SystemColumnPage))
         {
             var tablesHeap = new HeapTableManager<SystemTablePageData, SystemTablePage>(bufferManager);
             var loc = tablesHeap.SearchSingle(d => d.ObjectId == parentObjectId);
             var row = tablesHeap.GetRow(loc);
-            this.FirstPageId = row.FirstColumnPageId;
-            this.LastPageId = row.LastColumnPageId;
+            this.TailPageId = row.ColumnPageId;
         }
         else
         {
-            throw new Exception("Unexpeected data type for new HeapTableManager instance.");
+            throw new Exception("Unexpected data type for new HeapTableManager instance.");
         }
 
         // Get column information
@@ -64,7 +60,7 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
 
     private IEnumerable<ColumnInfo> GetColumnInformation()
     {
-        var page = this.BufferManager.GetPage<TPageType>(this.LastPageId);
+        var page = this.BufferManager.GetPage<TPageType>(this.TailPageId);
         var columns = this.BufferManager.GetColumnsForPage(page);
         return columns;
     }
@@ -81,14 +77,14 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
         {
             if (page == null)
             {
-                page = this.BufferManager.GetPage<TPageType>(FirstPageId);
+                page = this.BufferManager.GetPage<TPageType>(TailPageId);
             }
             else
             {
-                int? nextPageId = page.Headers().NextPageId;
-                if (nextPageId != null)
+                int? prevPageId = page.Headers().PrevPageId;
+                if (prevPageId != null)
                 {
-                    page = this.BufferManager.GetPage<TPageType>(nextPageId.Value);
+                    page = this.BufferManager.GetPage<TPageType>(prevPageId.Value);
                 }
                 else
                 {
@@ -125,42 +121,62 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
 
     public DataRowLocation? SearchSingle(Func<TRow, bool> predicate)
     {
-        int? nextId = FirstPageId;
+        int? prevId = TailPageId;
         do
         {
-            var page = this.BufferManager.GetPage<TPageType>(FirstPageId);
+            var page = this.BufferManager.GetPage<TPageType>(prevId.Value);
             for (ushort i = 0; i < page.Headers().SlotsUsed; i++)
             {
-                var row = (TRow)page.GetRowAtSlot(i);
-                if (predicate(row))
+                if (!page.GetRowStatus(i).HasFlag(RowStatus.Deleted))
                 {
-                    return new DataRowLocation(page.Headers().PageId, i);
+                    var row = page.GetRowAtSlot(i);
+                    if (page.GetRowStatus(i).HasFlag(RowStatus.Overflow))
+                    {
+                        // data is in overflow
+                        // TODO: For time being, assume all overflow data comes from data pages, so is Dictionary data.
+                        var buffer = GetOverflowData((row as OverflowPointer)!);
+                        row = (IPageData)new DictionaryPageData(Serializer.DeserializeDictionary(this.Columns, buffer).Result!);
+                    }
+                    if (predicate((TRow)row))
+                    {
+                        return new DataRowLocation(page.Headers().PageId, i);
+                    }
                 }
             }
-            nextId = page.Headers().NextPageId;
+            prevId = page.Headers().PrevPageId;
         }
-        while (nextId != null);
+        while (prevId != null);
         return null;
     }
 
     public DataRowLocation[] SearchMany(Func<TRow, bool> predicate)
     {
         List<DataRowLocation> locations = new List<DataRowLocation>();
-        int? nextId = FirstPageId;
+        int? prevId = TailPageId;
         do
         {
-            var page = this.BufferManager.GetPage<TPageType>(FirstPageId);
+            var page = this.BufferManager.GetPage<TPageType>(prevId.Value);
             for (ushort i = 0; i < page.Headers().SlotsUsed; i++)
             {
-                var row = (TRow)page.GetRowAtSlot(i);
-                if (predicate(row))
+                if (!page.GetRowStatus(i).HasFlag(RowStatus.Deleted))
                 {
-                    locations.Add(new DataRowLocation(page.Headers().PageId, i));
+                    var row = page.GetRowAtSlot(i);
+                    if (page.GetRowStatus(i).HasFlag(RowStatus.Overflow))
+                    {
+                        // data is in overflow
+                        // TODO: For time being, assume all overflow data comes from data pages, so is Dictionary data.
+                        var buffer = GetOverflowData((row as OverflowPointer)!);
+                        row = (IPageData)new DictionaryPageData(Serializer.DeserializeDictionary(this.Columns, buffer).Result!);
+                    }
+                    if (predicate((TRow)row))
+                    {
+                        locations.Add(new DataRowLocation(page.Headers().PageId, i));
+                    }
                 }
             }
-            nextId = page.Headers().NextPageId;
+            prevId = page.Headers().PrevPageId;
         }
-        while (nextId != null);
+        while (prevId != null);
         return locations.ToArray();
     }
 
@@ -170,9 +186,15 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
         return (TRow)page.GetRowAtSlot(location.Slot);
     }
 
-    private void UpdateLastPageId(int lastPageId)
+    /// <summary>
+    /// Heap is arranged in singly-linked list. When adding new pages, we insert at the start of the linked list.
+    /// </summary>
+    /// <param name="firstPage"></param>
+    /// <exception cref="Exception"></exception>
+    private void SetTailPage(Page page)
     {
-        this.LastPageId = lastPageId;
+        //page.Headers().PrevPageId = this.TailPageId;
+        this.TailPageId = page.Headers().PageId;
 
         // Calculate first/last page ids
         if (typeof(TPageType) == typeof(DataPage))
@@ -184,16 +206,9 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
                 ObjectId = r.ObjectId,
                 TableName = r.TableName,
                 IsSystemTable = r.IsSystemTable,
-                FirstDataPageId = r.FirstDataPageId,
-                LastDataPageId = lastPageId,
-                FirstColumnPageId = r.FirstColumnPageId,
-                LastColumnPageId = r.LastColumnPageId
+                DataPageId = page.Headers().PageId,
+                ColumnPageId = r.ColumnPageId
             }, r => r.ObjectId == this.ParentObjectId);
-        }
-        else if (typeof(TPageType) == typeof(SystemTablePage))
-        {
-            var bootPage = this.BufferManager.GetPage<BootPage>(0);
-            bootPage.Headers().LastTablesPageId = lastPageId;
         }
         else if (typeof(TPageType) == typeof(SystemColumnPage))
         {
@@ -204,10 +219,8 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
                 ObjectId = r.ObjectId,
                 TableName = r.TableName,
                 IsSystemTable = r.IsSystemTable,
-                FirstDataPageId = r.FirstDataPageId,
-                LastDataPageId = r.LastDataPageId,
-                FirstColumnPageId = r.FirstColumnPageId,
-                LastColumnPageId = lastPageId
+                DataPageId = r.DataPageId,
+                ColumnPageId = page.Headers().PageId
             }, r => r.ObjectId == this.ParentObjectId);
         }
         else
@@ -231,7 +244,7 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
     private OverflowPointer? ProcessOverflowIfRequired(TRow row, byte[] buffer, DataRowLocation? existingLocation)
     {
         // Get last page (insert) or existing page (update)
-        var page = this.BufferManager.GetPage<TPageType>(existingLocation != null ? existingLocation.PageId : this.LastPageId);
+        var page = this.BufferManager.GetPage<TPageType>(existingLocation != null ? existingLocation.PageId : this.TailPageId);
         if (buffer.Length > page.GetOverflowThresholdSize())
         {
             if (existingLocation != null)
@@ -304,7 +317,8 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
     private void UpsertRow(TRow row, DataRowLocation? existingLocation)
     {
         object _row = row;
-        var page = this.BufferManager.GetPage<TPageType>(existingLocation!=null ? existingLocation.PageId : this.LastPageId);
+        var page = this.BufferManager.GetPage<TPageType>(existingLocation != null ? existingLocation.PageId : this.TailPageId);
+        var tail = this.BufferManager.GetPage<TPageType>(this.TailPageId);   // TODO: avoid creating page here - just use TailId?
         var buffer = this.BufferManager.SerialiseRow(_row!, RowStatus.None, this.Columns);
         bool isOverflowPointer = false;
 
@@ -317,54 +331,67 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
             buffer = this.BufferManager.SerialiseRow(_row, RowStatus.Overflow, Serializer.GetColumnsForType(typeof(OverflowPointer)));
         }
 
-        if (existingLocation!=null){
+        if (existingLocation != null)
+        {
             // update
             // Room on page? - if not, create new page.
             if (buffer.Length > page.GetAvailableSpaceForSlot(existingLocation.Slot))
             {
-                page = this.BufferManager.CreatePage<TPageType>(page.Headers().ParentObjectId, page);
-                // update last page ids
-                UpdateLastPageId(page.Headers().PageId);
+                page.SetRowStatus(existingLocation.Slot, RowStatus.Deleted);
+                page = this.BufferManager.CreatePage<TPageType>(page.Headers().ParentObjectId, tail);
+                this.SetTailPage(page);
+                page.AddDataRow(_row!, buffer, isOverflowPointer);
             }
-            page.UpdateDataRow(existingLocation.Slot, _row!, buffer, isOverflowPointer);
-
-        } else
+            else
+            {
+                page.UpdateDataRow(existingLocation.Slot, _row!, buffer, isOverflowPointer);
+            }
+        }
+        else
         {
             // insert
             // Room on page? - if not, create new page.
             if (buffer.Length > page.GetFreeRowSpace())
             {
                 page = this.BufferManager.CreatePage<TPageType>(page.Headers().ParentObjectId, page);
-
-                // update last page ids
-                UpdateLastPageId(page.Headers().PageId);
+                this.SetTailPage(page);
             }
             page.AddDataRow(_row!, buffer, isOverflowPointer);
         }
     }
 
-    public void AddRows(TRow[] rows)
+    public int AddRows(TRow[] rows)
     {
         foreach (var row in rows)
         {
             AddRow(row);
         }
+        return rows.Length;
     }
 
-    public void AddRow(TRow row) {
+    public int AddRow(TRow row)
+    {
         UpsertRow(row, null);
+        return 1;
     }
 
-    public void UpdateRows(Func<TRow, TRow> transform, Func<TRow, bool> predicate)
+    public int UpdateRows(Func<TRow, TRow> transform, Func<TRow, bool> predicate)
     {
         var locations = SearchMany(predicate);
         foreach (var location in locations)
         {
             var page = this.BufferManager.GetPage<TPageType>(location.PageId);
             var currentStatus = page.Statuses[location.Slot];
-            var updatedRow = transform((TRow)page.GetRowAtSlot(location.Slot))!;
+            var currentRow = page.GetRowAtSlot(location.Slot);
+            if (page.GetRowStatus(location.Slot).HasFlag(RowStatus.Overflow))
+            {
+                var overflowPointer = currentRow as OverflowPointer;
+                currentRow = new DictionaryPageData(Serializer.DeserializeDictionary(this.Columns, GetOverflowData(overflowPointer!)).Result!);
+            }
+            var updatedRow = transform((TRow)currentRow)!;
             this.UpsertRow(updatedRow, location);
         }
+        return locations.Length;
     }
 
     public int DeleteRows(Func<TRow, bool> predicate)
@@ -375,14 +402,14 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
         {
             if (page == null)
             {
-                page = this.BufferManager.GetPage<TPageType>(FirstPageId);
+                page = this.BufferManager.GetPage<TPageType>(TailPageId);
             }
             else
             {
-                int? nextPageId = page.Headers().NextPageId;
-                if (nextPageId != null)
+                int? prevPageId = page.Headers().PrevPageId;
+                if (prevPageId != null)
                 {
-                    page = this.BufferManager.GetPage<TPageType>(nextPageId.Value);
+                    page = this.BufferManager.GetPage<TPageType>(prevPageId.Value);
                 }
                 else
                 {

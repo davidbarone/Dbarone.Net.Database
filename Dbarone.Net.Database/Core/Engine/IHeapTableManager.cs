@@ -45,20 +45,20 @@ public interface IHeapTableManager<TRow> {
     /// Adds a row to the heap table.
     /// </summary>
     /// <param name="row">The row to add.</param>
-    void AddRow(TRow row);
+    int AddRow(TRow row);
 
    /// <summary>
     /// Adds multiple rows to the heap table.
     /// </summary>
     /// <param name="row">The row to add.</param>
-    void AddRows(TRow[] row);
+    int AddRows(TRow[] row);
 
     /// <summary>
     /// Updates zero or more rows of the heap table.
     /// </summary>
     /// <param name="row">The new row to update.</param>
     /// <param name="predicate">Rows matching this predicate will be updated.</param>
-    void UpdateRows(Func<TRow, TRow> transform, Func<TRow, bool> predicate);
+    int UpdateRows(Func<TRow, TRow> transform, Func<TRow, bool> predicate);
 
     /// <summary>
     /// Deletes zero or more rows on the heap table.

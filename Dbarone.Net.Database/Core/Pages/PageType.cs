@@ -35,6 +35,6 @@ public enum PageType : Byte
     /// <summary>
     /// A page that no longer holds any data. An unused page. Pages may become unused if all data is deleted from the page.
     /// </summary>
-    Free
+    Free = 7
 
 }

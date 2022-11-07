@@ -191,6 +191,7 @@ public class Page
         }
 
         this._data[slot] = (row as IPageData)!;
+        Assert.NotFlag(this.GetRowStatus(slot), RowStatus.Deleted);
         this.ClearRowStatus(slot, RowStatus.Deleted);
         this.ClearRowStatus(slot, RowStatus.Overflow);
         if (isOverflowPointer) {

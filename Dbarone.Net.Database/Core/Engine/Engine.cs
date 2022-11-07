@@ -175,7 +175,18 @@ public class Engine : IEngine
     public int BulkInsert<T>(string tableName, IEnumerable<T> rows)
     {
         var table = Table(tableName);
-        var _rows = rows.Select(d => new DictionaryPageData((d as IDictionary<string, object?>)!)).ToArray();
+        var _rows = rows.Select(r =>
+        {
+            var dict = r as IDictionary<string, object?>;
+            if (dict == null)
+            {
+                dict = r.ToDictionary();
+            }
+
+            var dpd = new DictionaryPageData(dict!);
+            return dpd;
+        }).ToArray();
+
         var heap = new HeapTableManager<DictionaryPageData, DataPage>(this._bufferManager, table.ObjectId);
         heap.AddRows(_rows);
         return 0;
@@ -205,7 +216,14 @@ public class Engine : IEngine
         return 0;
     }
 
-    public int UpdateRaw(string tableName, Func<IDictionary<string, object?>?, IDictionary<string, object?>?> transformation, Func<IDictionary<string, object?>?, bool> predicate) { throw new NotSupportedException("Not supported."); }
+    public int UpdateRaw(string tableName, Func<IDictionary<string, object?>?, IDictionary<string, object?>?> transform, Func<IDictionary<string, object?>?, bool> predicate) {
+        var table = Table(tableName);
+        HeapTableManager<DictionaryPageData, DataPage> heap = new HeapTableManager<DictionaryPageData, DataPage>(this._bufferManager, table.ObjectId);
+        return heap.UpdateRows(
+            ((dictionaryPageData) => { return new DictionaryPageData(transform.Invoke(dictionaryPageData.Row)!); }),
+            ((dictionaryPageData) => predicate.Invoke(dictionaryPageData.Row))
+        );
+     }
 
     public int DeleteRaw(string tableName, Func<IDictionary<string, object?>?, bool> predicate) {
         var table = Table(tableName);
@@ -233,11 +251,9 @@ public class Engine : IEngine
         {
             TableName = tableName,
             ObjectId = parentObjectId,
-            FirstDataPageId = 0,
-            LastDataPageId = 0,
+            DataPageId = 0,
             IsSystemTable = false,
-            FirstColumnPageId = 0,
-            LastColumnPageId = 0
+            ColumnPageId = 0,
         });
 
         // Create columns
@@ -260,11 +276,9 @@ public class Engine : IEngine
         {
             ObjectId = parentObjectId,
             TableName = r.TableName,
-            FirstDataPageId = dataPage.Headers().PageId,
-            LastDataPageId = dataPage.Headers().PageId,
+            DataPageId = dataPage.Headers().PageId,
             IsSystemTable = r.IsSystemTable,
-            FirstColumnPageId = systemColumnPage.Headers().PageId,
-            LastColumnPageId = systemColumnPage.Headers().PageId
+            ColumnPageId = systemColumnPage.Headers().PageId,
         }, r => r.ObjectId == parentObjectId);
 
         // return
@@ -281,11 +295,9 @@ public class Engine : IEngine
         {
             TableName = tableName,
             ObjectId = parentObjectId,
-            FirstDataPageId = 0,
-            LastDataPageId = 0,
+            DataPageId = 0,
             IsSystemTable = false,
-            FirstColumnPageId = 0,
-            LastColumnPageId = 0
+            ColumnPageId = 0
         });
 
         // Create columns
@@ -306,11 +318,9 @@ public class Engine : IEngine
         {
             ObjectId = parentObjectId,
             TableName = r.TableName,
-            FirstDataPageId = dataPage.Headers().PageId,
-            LastDataPageId = dataPage.Headers().PageId,
+            DataPageId = dataPage.Headers().PageId,
             IsSystemTable = r.IsSystemTable,
-            FirstColumnPageId = systemColumnPage.Headers().PageId,
-            LastColumnPageId = systemColumnPage.Headers().PageId
+            ColumnPageId = systemColumnPage.Headers().PageId
         }, r => r.ObjectId == parentObjectId);
 
         // return

@@ -6,8 +6,7 @@ public interface IBootPageHeader : IPageHeader {
     int PageCount { get; set; }
     DateTime CreationTime { get; set; }
     int NextObjectId { get; set; }
-    int FirstTablesPageId { get; set; }
-    int LastTablesPageId { get; set; }
+    int TablesPageId { get; set; }
     TextEncoding TextEncoding { get; set; }
     int? FirstFreePageId { get; set; }
 }
@@ -45,12 +44,7 @@ public class BootPageHeader : PageHeader , IBootPageHeader
     /// <summary>
     /// First page id of system tables.
     /// </summary>
-    public int FirstTablesPageId { get; set; }
-
-    /// <summary>
-    /// Last page id of system tables.
-    /// </summary>
-    public int LastTablesPageId { get; set; }
+    public int TablesPageId { get; set; }
 
     /// <summary>
     /// Sets the text encoding for the database.

@@ -334,7 +334,7 @@ IsDirty: {page.IsDirty}{Environment.NewLine}";
         // Serialize slots
         var data = page._data.ToList();
         var slotIndex = Global.PageSize - 2;
-        for (int slot = 0; slot < page.Headers().SlotsUsed; slot++)
+        for (ushort slot = 0; slot < page.Headers().SlotsUsed; slot++)
         {
             var dataIndex = page.Slots[slot];
             buffer.Write(dataIndex, slotIndex);
@@ -353,7 +353,7 @@ IsDirty: {page.IsDirty}{Environment.NewLine}";
             {
                 // cell is an overflow pointer
                 var columns = Serializer.GetColumnsForType(typeof(OverflowPointer));
-                var dataBytes = SerialiseRow(data[slot], RowStatus.Overflow, columns);
+                var dataBytes = SerialiseRow(data[slot], page.Statuses[slot] | RowStatus.Overflow, columns);
                 buffer.Write(dataBytes, dataIndex + Global.PageHeaderSize);
             }
             else
