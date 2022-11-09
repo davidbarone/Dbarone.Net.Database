@@ -94,10 +94,12 @@ public class UpdateTests : TestBase
             var people = db.Read<Person>(tableName);
             Assert.Equal(10, people.Count());
 
-            // We only have 10 base records that are updated
-            // Approximate worst case is each record is in its own page, and is overflow requiring 2 overflow pages
-            // therefore 3 pages per record * 10 rows + 3 system pages (boot, table, column)
-            // This should be approximately true in all scenarios of this test.
+            // We only have 10 base records that are updated.
+            // Approximate worst case is each record is in its own page, and is overflow
+            // requiring 2 overflow pages (worst case scenario test is each row requiring
+            // approx 10000 bytes storage), therefore 3 pages per record * 10 rows + 3
+            // system pages (boot, table, column) This should be approximately true in all
+            // scenarios of this test so long as maxStringLength <= 10000.
             Assert.True(db.Database().PageCount < 33);
         }
     }
