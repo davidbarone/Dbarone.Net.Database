@@ -39,8 +39,8 @@ public class UpdateTests : TestBase
     }
 
     [Theory]
-    [InlineData(1000, 100)]     // No testing of overflows
-    [InlineData(1000, 1000)]    // include overflows
+    [InlineData(1000, 1000)]     // No testing of overflows
+    [InlineData(1000, 10000)]    // include overflows
     public void TestMultipleUpdates(int iterations, int maxStringLength)
     {
         // Arrange
@@ -84,6 +84,7 @@ public class UpdateTests : TestBase
                 );
                 db.CheckPoint(); // Must execute checkpoint after each update
             }
+            var a = db.DebugPages();
         }
 
         // Assert
@@ -92,7 +93,12 @@ public class UpdateTests : TestBase
             // Assert
             var people = db.Read<Person>(tableName);
             Assert.Equal(10, people.Count());
-            //Assert.Equal(5, db.Database().PageCount);
+
+            // We only have 10 base records that are updated
+            // Approximate worst case is each record is in its own page, and is overflow requiring 2 overflow pages
+            // therefore 3 pages per record * 10 rows + 3 system pages (boot, table, column)
+            // This should be approximately true in all scenarios of this test.
+            Assert.True(db.Database().PageCount < 33);
         }
     }
 }

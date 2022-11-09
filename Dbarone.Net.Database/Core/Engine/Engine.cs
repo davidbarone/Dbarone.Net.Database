@@ -340,11 +340,6 @@ public class Engine : IEngine
     private T CreatePage<T>(int? parentObjectId = null) where T : Page
     {
         var page = this._bufferManager.CreatePage<T>(parentObjectId);
-
-        // Update boot page PageCount
-        var bootPage = this.GetPage<BootPage>(0);
-        bootPage.Headers().PageCount++;
-
         return page;
     }
 

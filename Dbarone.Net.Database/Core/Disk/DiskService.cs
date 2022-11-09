@@ -36,6 +36,18 @@ public class DiskService
         return this._pageCount - 1; // zero-based
     }
 
+    /// <summary>
+    /// Clears all data on a page. Used for repurposing free pages.
+    /// </summary>
+    public void ClearPage(int pageId) {
+        int pageSize = Global.PageSize;
+        byte[] buffer = new byte[pageSize];
+        int start = (pageId * pageSize);
+        int length = pageSize;
+        this._stream.Position = start;
+        this._stream.Write(buffer, 0, length);
+    }
+
     public PageBuffer ReadPage(int pageId)
     {
         byte[] buffer = new byte[Global.PageSize];

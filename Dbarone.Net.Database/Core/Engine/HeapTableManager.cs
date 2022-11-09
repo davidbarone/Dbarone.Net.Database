@@ -231,13 +231,13 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
 
     /// <summary>
     /// Checks whether the row requires overflow processing. Processing steps are:
-    /// 1. Checks whether buffer.Length > page.GetOverflowThresholdSize()
-    /// 2. If #1 is yes, then:
-    /// 2a. Frees up all the existing overflow pages
-    /// 2b. Writes the LOB to new overflow pages
-    /// 2c. Creates a new OverflowPointer object that references the overflow data.
-    /// 2d. Returns the overflow object, serialised as a buffer.
-    /// 3. If #1 is no then returns null
+    /// 1. Remove existing overflow pages if current row uses overflow pages.
+    /// 2. Checks whether new buffer.Length > page.GetOverflowThresholdSize()
+    /// 3. If #2 is yes, then:
+    /// 3a. Writes the LOB to new overflow pages
+    /// 3b. Creates a new OverflowPointer object that references the overflow data.
+    /// 3c. Returns the overflow object, serialised as a buffer.
+    /// 4. If #2 is no then returns null
     /// </summary>
     /// <param name="row">The row to check check/process overflow logic for.</param>
     /// <returns>Returns an OverflowPointer record if overflow required. Otherwise, returns null.</returns>
@@ -245,12 +245,19 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
     {
         // Get last page (insert) or existing page (update)
         var page = this.BufferManager.GetPage<TPageType>(existingLocation != null ? existingLocation.PageId : this.TailPageId);
+
+        // Clear existing overflow data if present
+        if (existingLocation != null)
+        {
+            var existingRowAsOverflowPointer = page.GetRowAtSlot(existingLocation.Slot) as OverflowPointer;
+            if (existingRowAsOverflowPointer != null)
+            {
+                FreeOverflow(existingRowAsOverflowPointer.FirstOverflowPageId);
+            }
+        }
+
         if (buffer.Length > page.GetOverflowThresholdSize())
         {
-            if (existingLocation != null)
-            {
-                FreeOverflow(existingLocation.PageId);
-            }
             var pageId = AddOverflowData(buffer);
             return new OverflowPointer(pageId, buffer.Length);
         }
@@ -266,8 +273,8 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
         while (nextId != null)
         {
             var page = this.BufferManager.GetPage(nextId.Value);
-            page.MarkFree();
             nextId = page.Headers().NextPageId;
+            this.BufferManager.MarkFree(page);
         }
     }
 
@@ -323,7 +330,7 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
         bool isOverflowPointer = false;
 
         // Overflow processing 
-        var overflowPointer = ProcessOverflowIfRequired(row, buffer, null);
+        var overflowPointer = ProcessOverflowIfRequired(row, buffer, existingLocation);
         if (overflowPointer != null)
         {
             isOverflowPointer = true;

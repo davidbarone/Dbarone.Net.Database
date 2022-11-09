@@ -103,8 +103,7 @@ public class Page
 
     public void MarkFree()
     {
-        this.PageType = PageType.Free;
-        this.IsDirty = true;
+        this.Headers().IsUnused = true;
     }
 
     /// <summary>

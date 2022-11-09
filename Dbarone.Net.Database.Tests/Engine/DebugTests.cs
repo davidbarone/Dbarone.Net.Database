@@ -84,6 +84,7 @@ Headers.ParentObjectId:
 Headers.SlotsUsed: 3
 Headers.TransactionId: 0
 Headers.FreeOffset: 87
+Headers.IsUnused: False
 
 Slot #0: Offset: 0, Status Flags: [   ], Type: SystemColumnPageData
 Slot #0 Values:

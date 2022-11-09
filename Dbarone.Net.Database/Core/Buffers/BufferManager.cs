@@ -40,7 +40,6 @@ public class BufferManager : IBufferManager
 
         // Add to the start of the single-linked free page chain
         var boot = this.GetPage<BootPage>(0);
-        boot.Headers().FirstFreePageId = page.Headers().PageId;
         int? nextId = boot.Headers().FirstFreePageId;
         if (nextId == null)
         {
@@ -52,6 +51,7 @@ public class BufferManager : IBufferManager
             nextPage.Headers().PrevPageId = page.Headers().PageId;
             page.Headers().NextPageId = nextId;
         }
+        boot.Headers().FirstFreePageId = page.Headers().PageId;
     }
 
     private DiskService _diskService;
@@ -200,7 +200,33 @@ IsDirty: {page.IsDirty}{Environment.NewLine}";
 
     public T CreatePage<T>(int? parentObjectId = null, Page? linkedPage = null) where T : Page
     {
-        var pageId = _diskService.CreatePage();
+        // Check if any free pages we can serve up first?
+        int? firstFreePageId = null;
+        int pageId;
+        bool increasePageCount = false;
+        BootPage? bootPage = null;
+
+        if (typeof(T) != typeof(BootPage))
+        {
+            bootPage = this.GetPage<BootPage>(0);
+            firstFreePageId = bootPage.Headers().FirstFreePageId;
+        }
+
+        if (firstFreePageId != null && bootPage != null)
+        {
+            // reuse existing page
+            pageId = firstFreePageId.Value;
+            var free = this.GetPage(firstFreePageId.Value);
+            Assert.True(free.Headers().IsUnused);
+            bootPage.Headers().FirstFreePageId = free.Headers().NextPageId;
+            this._diskService.ClearPage(pageId);
+        }
+        else
+        {
+            // create new page
+            pageId = _diskService.CreatePage();
+            increasePageCount = true;
+        }
 
         // Updated linked page
         if (linkedPage != null)
@@ -209,7 +235,22 @@ IsDirty: {page.IsDirty}{Environment.NewLine}";
         }
 
         // Initialise page
-        return InitialisePage<T>(pageId, parentObjectId, (linkedPage != null) ? linkedPage.Headers().PageId : null);
+        var page = InitialisePage<T>(pageId, parentObjectId, (linkedPage != null) ? linkedPage.Headers().PageId : null);
+
+        // Update boot page PageCount
+        if (increasePageCount)
+        {
+            if (page.GetType() == typeof(BootPage))
+            {
+                (page as BootPage)!.Headers().PageCount++;
+            }
+            else if (bootPage != null)
+            {
+                bootPage.Headers().PageCount++;
+            }
+        }
+
+        return page;
     }
 
     #region Serialisation
