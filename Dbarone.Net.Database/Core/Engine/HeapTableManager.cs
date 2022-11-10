@@ -367,13 +367,13 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
         }
     }
 
-    public int AddRows(TRow[] rows)
+    public int AddRows(IEnumerable<TRow> rows)
     {
         foreach (var row in rows)
         {
             AddRow(row);
         }
-        return rows.Length;
+        return rows.Count();
     }
 
     public int AddRow(TRow row)

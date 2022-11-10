@@ -175,6 +175,11 @@ public class Engine : IEngine
     public int BulkInsert<T>(string tableName, IEnumerable<T> rows)
     {
         var table = Table(tableName);
+
+        if (!rows.Any()){
+            return 0;
+        }
+
         var _rows = rows.Select(r =>
         {
             var dict = r as IDictionary<string, object?>;
@@ -182,14 +187,20 @@ public class Engine : IEngine
             {
                 dict = r.ToDictionary();
             }
+            return dict;
+        });
+        return BulkInsertRaw(tableName, _rows!);
+    }
 
-            var dpd = new DictionaryPageData(dict!);
-            return dpd;
-        }).ToArray();
+    public int BulkInsertRaw(string tableName, IEnumerable<IDictionary<string, object?>> rows)
+    {
+        if (!rows.Any()){
+            return 0;
+        }
 
+        var table = Table(tableName);
         var heap = new HeapTableManager<DictionaryPageData, DataPage>(this._bufferManager, table.ObjectId);
-        heap.AddRows(_rows);
-        return 0;
+        return heap.AddRows(rows.Select(r => new DictionaryPageData(r)));
     }
 
     public int Insert<T>(string table, T row)
@@ -207,7 +218,7 @@ public class Engine : IEngine
         }
     }
 
-    private int InsertRaw(string tableName, IDictionary<string, object?> row)
+    public int InsertRaw(string tableName, IDictionary<string, object?> row)
     {
         var table = Table(tableName);
         var dict = new DictionaryPageData(row);

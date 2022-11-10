@@ -63,7 +63,8 @@ public interface IEngine : IDisposable
 
     int Insert<T>(string tableName, T row);
     int BulkInsert<T>(string tableName, IEnumerable<T> rows);
-    
+    int BulkInsertRaw(string tableName, IEnumerable<IDictionary<string, object?>> rows);
+    int InsertRaw(string tableName, IDictionary<string, object?> row);
     int UpdateRaw(string tableName, Func<IDictionary<string, object?>?, IDictionary<string, object?>?> transformation, Func<IDictionary<string, object?>?, bool> predicate);
     int DeleteRaw(string tableName, Func<IDictionary<string, object?>?, bool> predicate);
 

@@ -51,7 +51,7 @@ public interface IHeapTableManager<TRow> {
     /// Adds multiple rows to the heap table.
     /// </summary>
     /// <param name="row">The row to add.</param>
-    int AddRows(TRow[] row);
+    int AddRows(IEnumerable<TRow> row);
 
     /// <summary>
     /// Updates zero or more rows of the heap table.
