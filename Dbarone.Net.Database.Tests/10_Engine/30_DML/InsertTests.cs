@@ -38,6 +38,35 @@ public class DataTests1 : TestBase
     }
 
     [Fact]
+    public void TestWriteSingleEntity() {
+        // Arrange
+        var dbName = GetDatabaseFileNameFromMethod();
+        TableInfo? table = null;
+        int rowsAffected = 0;
+        using (var db = CreateDatabase(dbName))
+        {
+            table = CreateTable(db, typeof(AddressInfo));
+            AddressInfo address = new AddressInfo();
+            address.AddressId = 123;
+            address.Address1 = "4 Acacia Drive";
+            address.Address2 = "Summertown";
+            address.Country = "USA";
+            rowsAffected = db.Insert(table.TableName, address);
+            db.CheckPoint();    // Save pages to disk
+        }
+
+        // Assert
+        using (var db = Engine.Open(dbName, false))
+        {
+            // Assert
+            var tables = db.Tables();
+            Assert.Single(tables);
+            Assert.Equal(table.TableName, tables.First().TableName);
+            Assert.Equal(1, rowsAffected);
+        }
+    }   
+
+    [Fact]
     public void TestWriteAndReadSingleDataRow()
     {
 

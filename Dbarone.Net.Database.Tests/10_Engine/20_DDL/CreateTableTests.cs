@@ -55,7 +55,7 @@ public class CreateTableTests : TestBase
                 new ColumnInfo("Country", DataType.String, false)
             };
 
-            db.CreateTable<Customer>(tableName);
+            db.CreateTable<CustomerInfo>(tableName);
             db.CreateTable("Addresses", columns);
             db.CheckPoint();    // Save pages to disk
         }
