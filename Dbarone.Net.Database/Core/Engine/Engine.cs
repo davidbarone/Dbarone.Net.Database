@@ -212,8 +212,7 @@ public class Engine : IEngine
         var table = Table(tableName);
         var dict = new DictionaryPageData(row);
         var heap = new HeapTableManager<DictionaryPageData, DataPage>(this._bufferManager, table.ObjectId);
-        heap.AddRow(dict);
-        return 0;
+        return heap.AddRow(dict);
     }
 
     public int UpdateRaw(string tableName, Func<IDictionary<string, object?>?, IDictionary<string, object?>?> transform, Func<IDictionary<string, object?>?, bool> predicate) {

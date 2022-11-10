@@ -10,7 +10,7 @@ using Dbarone.Net.Extensions.Object;
 public class BufferManager : IBufferManager
 {
     private TextEncoding textEncoding = TextEncoding.UTF8;
-    public BufferManager(DiskService diskService)
+    public BufferManager(IDiskService diskService)
     {
         this._diskService = diskService;
     }
@@ -54,7 +54,7 @@ public class BufferManager : IBufferManager
         boot.Headers().FirstFreePageId = page.Headers().PageId;
     }
 
-    private DiskService _diskService;
+    private IDiskService _diskService;
     private Dictionary<int, Page> _pages = new Dictionary<int, Page>();
 
     private PageType GetPageType(PageBuffer pageBuffer)

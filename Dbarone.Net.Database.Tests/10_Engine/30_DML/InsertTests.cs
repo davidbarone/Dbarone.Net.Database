@@ -12,24 +12,12 @@ public class DataTests1 : TestBase
     {
         // Arrange
         var dbName = GetDatabaseFileNameFromMethod();
-        if (File.Exists(dbName))
+        TableInfo? table = null;
+        int rowsAffected = 0;
+        using (var db = CreateDatabase(dbName))
         {
-            File.Delete(dbName);
-        }
-        var tableName = "Addresses";
-
-        // Act
-        using (var db = Engine.Create(dbName))
-        {
-            ColumnInfo[] columns = {
-                new ColumnInfo("AddressId", DataType.Int32, false),
-                new ColumnInfo("Address1", DataType.String, false),
-                new ColumnInfo("Address2", DataType.String, false),
-                new ColumnInfo("Country", DataType.String, false)
-            };
-
-            db.CreateTable(tableName, columns);
-            db.Insert("Addresses", new Dictionary<string, object?>{
+            table = CreateTable(db, typeof(AddressInfo));
+            rowsAffected = db.Insert(table.TableName, new Dictionary<string, object?>{
                 {"AddressId", 123},
                 {"Address1", "4 Acacia Drive"},
                 {"Address2", "Summertown"},
@@ -44,7 +32,8 @@ public class DataTests1 : TestBase
             // Assert
             var tables = db.Tables();
             Assert.Single(tables);                    // 1 table
-            Assert.Equal(tableName, tables.First().TableName);
+            Assert.Equal(table.TableName, tables.First().TableName);
+            Assert.Equal(1, rowsAffected);
         }
     }
 
@@ -118,7 +107,7 @@ public class DataTests1 : TestBase
             };
 
             db.CreateTable(tableName, columns);
-            
+
             List<IDictionary<string, object?>> data = new List<IDictionary<string, object?>>();
             for (int i = 0; i < 1000; i++)
             {

@@ -7,7 +7,7 @@ using System.Linq;
 public class StaticMethodTests : TestBase
 {
     [Fact]
-    public void CreateDatabase()
+    public void CreateDatabaseTest()
     {
         // Arrange
         var dbName = GetDatabaseFileNameFromMethod();

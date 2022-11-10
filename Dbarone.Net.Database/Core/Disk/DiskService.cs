@@ -4,7 +4,7 @@ using Dbarone.Net.Assertions;
 /// <summary>
 /// Services for reading / writing to disk
 /// </summary>
-public class DiskService
+public class DiskService : IDiskService
 {
     private Stream _stream;
     private int _pageCount;

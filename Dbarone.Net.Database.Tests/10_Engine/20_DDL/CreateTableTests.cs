@@ -6,12 +6,6 @@ using System.Linq;
 
 public class CreateTableTests : TestBase
 {
-    class Customer
-    {
-        public string CustomerName { get; set; } = default!;
-        public int CustomerId { get; set; }
-    }
-
     [Fact]
     public void TestCreateTableFromEntity()
     {
