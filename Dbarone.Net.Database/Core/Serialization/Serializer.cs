@@ -56,7 +56,7 @@ public class Serializer
     public static RowStatus GetRowStatus(byte[] buffer)
     {
         IBuffer bb = new BufferBase(buffer);
-        var rowStatus = (RowStatus)bb.ReadByte(2);
+        var rowStatus = (RowStatus)bb.ReadByte(4);
         return rowStatus;
     }
 
@@ -68,8 +68,8 @@ public class Serializer
         var variableColumns = columns.Where(c => !Types.GetByDataType(c.DataType).IsFixedLength).ToList();
 
         IBuffer bb = new BufferBase(buffer);
-        var bufferLength = bb.ReadUInt16(0);
-        var rowStatus = (RowStatus)bb.ReadByte(2);
+        var bufferLength = bb.ReadUInt32(0);
+        var rowStatus = (RowStatus)bb.ReadByte(4);
 
         if (rowStatus.HasFlag(RowStatus.Deleted) || rowStatus.HasFlag(RowStatus.Null))
         {
@@ -78,22 +78,22 @@ public class Serializer
         else
         {
             obj = new Dictionary<string, object?>();
-            var totalLength = bb.ReadUInt16(3);
-            var totalColumns = bb.ReadUInt16(5);
+            var totalLength = bb.ReadUInt32(5);
+            var totalColumns = bb.ReadByte(9);
 
-            ushort columnIndex = 0;
+            byte columnIndex = 0;
 
             // Set up null bitmap
             var nullBitmap = new BitArray(totalColumns);
-            var nullBitmapBytes = (ushort)Math.Ceiling((double)totalColumns / 8);
-            nullBitmap = new BitArray(bb.ReadBytes(7, nullBitmapBytes));
+            var nullBitmapBytes = (byte)Math.Ceiling((double)totalColumns / 8);
+            nullBitmap = new BitArray(bb.ReadBytes(10, nullBitmapBytes));
 
-            Assert.Equals((ushort)buffer.Length, bufferLength);
+            Assert.Equals((uint)buffer.Length, bufferLength);
 
-            var fixedLengthColumns = bb.ReadUInt16(7 + nullBitmapBytes);
-            ushort fixedLength = bb.ReadUInt16(9 + nullBitmapBytes);
-            ushort startFixedLength = (ushort)(11 + nullBitmapBytes);
-            ushort index = startFixedLength;
+            var fixedLengthColumns = bb.ReadByte(10 + nullBitmapBytes);
+            ushort fixedLength = bb.ReadUInt16(11 + nullBitmapBytes);
+            ushort startFixedLength = (ushort)(13 + nullBitmapBytes);
+            int index = startFixedLength;
 
             foreach (var col in fixedColumns)
             {
@@ -112,16 +112,16 @@ public class Serializer
             }
 
             // Check fixed data length is correct
-            Assert.Equals((ushort)(index - startFixedLength), fixedLength);
+            Assert.Equals((int)(index - startFixedLength), (int)fixedLength);
 
             // number of variable length columns
-            var variableLengthCount = bb.ReadUInt16(index);
-            index += (Types.GetByDataType(DataType.UInt16).Size);
-            List<ushort> variableLengthLengths = new List<ushort>(variableLengthCount);
+            var variableLengthCount = bb.ReadByte(index);
+            index += (Types.GetByDataType(DataType.Byte).Size);
+            List<uint> variableLengthLengths = new List<uint>(variableLengthCount);
             for (var i = 0; i < variableLengthCount; i++)
             {
-                variableLengthLengths.Add(bb.ReadUInt16(index));
-                index += (Types.GetByDataType(DataType.UInt16).Size);
+                variableLengthLengths.Add(bb.ReadUInt32(index));
+                index += (Types.GetByDataType(DataType.UInt32).Size);
             }
 
             for (var i = 0; i < variableLengthCount; i++)
@@ -134,15 +134,15 @@ public class Serializer
                 }
                 else
                 {
-                    var value = bb.Read(col.DataType, index, variableLengthLengths[i], textEncoding);
+                    var value = bb.Read(col.DataType, index, (int)variableLengthLengths[i], textEncoding);
                     obj[col.Name] = value;
                 }
 
-                index += variableLengthLengths[i];
+                index += (int)variableLengthLengths[i];
                 columnIndex++;
             }
 
-            Assert.Equals(totalColumns, (ushort)(fixedLengthColumns + variableLengthCount));
+            Assert.Equals(totalColumns, (byte)(fixedLengthColumns + variableLengthCount));
             Assert.Equals(columnIndex, totalColumns);
         }
         return new DeserializationResult<IDictionary<string, object?>>(obj, rowStatus);
@@ -194,23 +194,24 @@ public class Serializer
         // Variable Length Columns (2 bytes)
         // Variable Length Table (2 bytes * variable columns)
 
+        var uintSize = Types.GetByDataType(DataType.UInt32).Size;
         var ushortSize = Types.GetByDataType(DataType.UInt16).Size;
         var byteSize = Types.GetByDataType(DataType.Byte).Size;
-        ushort columnIndex = 0;
-        ushort nullBitmapBytes;
-        ushort bufferSize;
+        byte columnIndex = 0;
+        byte nullBitmapBytes;
+        uint bufferSize;
         BufferBase buffer;
-        ushort index = 0;
+        int index = 0;
 
         BitArray nullBitmap;
         if (parms == null)
         {
-            // For null / deleted records, we just store the buffer length (2 bytes) + rowStatus (1 byte)
-            bufferSize = (ushort)(ushortSize + byteSize);
+            // For null / deleted records, we just store the buffer length (4 bytes) + rowStatus (1 byte)
+            bufferSize = (uint)(uintSize + byteSize);
             buffer = new BufferBase(new byte[bufferSize]);
             // Buffer size
             buffer.Write(bufferSize, 0);
-            index += (Types.GetByDataType(DataType.UInt16).Size);
+            index += (Types.GetByDataType(DataType.UInt32).Size);
 
             // Row status
             buffer.Write(rowStatus, index);
@@ -218,13 +219,13 @@ public class Serializer
         else
         {
             nullBitmap = new BitArray(parms.TotalCount);
-            nullBitmapBytes = (ushort)Math.Ceiling((double)parms.TotalCount / 8);
-            bufferSize = (ushort)(parms.TotalSize + (6 * ushortSize) + (ushortSize * parms.VariableCount) + nullBitmapBytes + byteSize);
+            nullBitmapBytes = (byte)Math.Ceiling((double)parms.TotalCount / 8);
+            bufferSize = (uint)(parms.TotalSize + (2 * uintSize) + (1 * ushortSize) + (4 * byteSize) + (parms.VariableCount * uintSize) + nullBitmapBytes + byteSize);
             buffer = new BufferBase(new byte[bufferSize]);
 
             // Buffer size
             buffer.Write(bufferSize, index);
-            index += (Types.GetByDataType(DataType.UInt16).Size);
+            index += (Types.GetByDataType(DataType.UInt32).Size);
 
             // Row status
             buffer.Write(rowStatus, index);
@@ -232,11 +233,11 @@ public class Serializer
 
             // Total size
             buffer.Write(parms.TotalSize, index);
-            index += (Types.GetByDataType(DataType.UInt16).Size);
+            index += (Types.GetByDataType(DataType.UInt32).Size);
 
             // Total columns
             buffer.Write(parms.TotalCount, index);
-            index += (Types.GetByDataType(DataType.UInt16).Size);
+            index += (Types.GetByDataType(DataType.Byte).Size);
 
             // Null Bitmap
             // Pad space - fill in later
@@ -244,7 +245,7 @@ public class Serializer
 
             // Fixed length columns
             buffer.Write(parms.FixedCount, index);
-            index += (Types.GetByDataType(DataType.UInt16).Size);
+            index += (Types.GetByDataType(DataType.Byte).Size);
 
             // Fixed data length
             buffer.Write(parms.FixedSize, index);
@@ -262,19 +263,19 @@ public class Serializer
                 {
                     buffer.Write(item.Value, index);
                 }
-                index += item.Size;
+                index += (int)item.Size;
                 columnIndex++;
             }
 
             // Number of variable length columns
             buffer.Write(parms.VariableCount, index);
-            index += (Types.GetByDataType(DataType.UInt16).Size);
+            index += (Types.GetByDataType(DataType.Byte).Size);
 
             // variable length offsets
             for (var i = 0; i < parms.VariableCount; i++)
             {
                 buffer.Write(parms.VariableColumns[i].Size, index);
-                index += (Types.GetByDataType(DataType.UInt16).Size);
+                index += (Types.GetByDataType(DataType.UInt32).Size);
             }
 
             // variable values
@@ -288,7 +289,7 @@ public class Serializer
                 {
                     buffer.Write(item.Value, index, textEncoding);
                 }
-                index += item.Size;
+                index += (int)item.Size;
                 columnIndex++;
             }
 
@@ -297,7 +298,7 @@ public class Serializer
             // Write null bitmap
             var nullBitmapByteArray = new byte[nullBitmapBytes];
             nullBitmap.CopyTo(nullBitmapByteArray, 0);
-            buffer.Write(nullBitmapByteArray, 7);   // bitmap array starts at offset 7
+            buffer.Write(nullBitmapByteArray, 10);   // bitmap array starts at offset 10
 
         }
         return buffer.ToArray();
@@ -333,9 +334,9 @@ public class Serializer
             var fixedColumns = columns.Where(c => Types.GetByDataType(c.DataType).IsFixedLength);
             var variableColumns = columns.Where(c => !Types.GetByDataType(c.DataType).IsFixedLength);
 
-            parms.TotalCount = (ushort)columns.Count();
-            parms.FixedCount = (ushort)fixedColumns.Count();
-            parms.VariableCount = (ushort)variableColumns.Count();
+            parms.TotalCount = (byte)columns.Count();
+            parms.FixedCount = (byte)fixedColumns.Count();
+            parms.VariableCount = (byte)variableColumns.Count();
             parms.FixedSize = (ushort)fixedColumns.Sum(f => Types.GetByDataType(f.DataType).Size);
             parms.FixedColumns = new List<ColumnSerializationInfo>();
             foreach (var item in fixedColumns)
@@ -358,8 +359,8 @@ public class Serializer
                 }
                 parms.VariableColumns.Add(csi);
             }
-            parms.VariableSize = (ushort)parms.VariableColumns.Sum(c => c.Size);
-            parms.TotalSize = (ushort)(parms.FixedSize + parms.VariableSize);
+            parms.VariableSize = (uint)parms.VariableColumns.Sum(c => c.Size);
+            parms.TotalSize = (uint)(parms.FixedSize + parms.VariableSize);
 
             return parms;
         }
