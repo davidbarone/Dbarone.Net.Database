@@ -14,7 +14,7 @@ public class DML_InsertTests : TestBase
         var dbName = GetDatabaseFileNameFromMethod();
         TableInfo? table = null;
         int rowsAffected = 0;
-        using (var db = CreateDatabase(dbName))
+        using (var db = CreateDatabaseWithOverwriteIfExists(dbName))
         {
             table = CreateTable(db, typeof(AddressInfo));
             rowsAffected = db.InsertRaw(table.TableName, new Dictionary<string, object?>{
@@ -44,7 +44,7 @@ public class DML_InsertTests : TestBase
         var dbName = GetDatabaseFileNameFromMethod();
         TableInfo? table = null;
         int rowsAffected = 0;
-        using (var db = CreateDatabase(dbName))
+        using (var db = CreateDatabaseWithOverwriteIfExists(dbName))
         {
             table = CreateTable(db, typeof(AddressInfo));
             AddressInfo address = new AddressInfo();
@@ -130,7 +130,7 @@ public class DML_InsertTests : TestBase
         int rowsAffected = 0;
 
         // Act
-        using (var db = CreateDatabase(dbName))
+        using (var db = CreateDatabaseWithOverwriteIfExists(dbName))
         {
             table = CreateTable(db, typeof(AddressInfo));
 

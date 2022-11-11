@@ -20,7 +20,7 @@ public class CreateTableTests : TestBase
         // Act
         using (var db = Engine.Create(dbName))
         {
-            db.CreateTable<Customer>(tableName);
+            db.CreateTable<CustomerExInfo>(tableName);
             db.CheckPoint();    // Save pages to disk
         }
 

@@ -61,12 +61,15 @@ public interface IEngine : IDisposable
 
     #region DML
 
+    int InsertRaw(string tableName, IDictionary<string, object?> row);
+    int BulkInsertRaw(string tableName, IEnumerable<IDictionary<string, object?>> rows);
+    int UpdateRaw(string tableName, Func<IDictionary<string, object?>, IDictionary<string, object?>> transformation, Func<IDictionary<string, object?>, bool> predicate);
+    int DeleteRaw(string tableName, Func<IDictionary<string, object?>, bool> predicate);
+
     int Insert<T>(string tableName, T row);
     int BulkInsert<T>(string tableName, IEnumerable<T> rows);
-    int BulkInsertRaw(string tableName, IEnumerable<IDictionary<string, object?>> rows);
-    int InsertRaw(string tableName, IDictionary<string, object?> row);
-    int UpdateRaw(string tableName, Func<IDictionary<string, object?>?, IDictionary<string, object?>?> transformation, Func<IDictionary<string, object?>?, bool> predicate);
-    int DeleteRaw(string tableName, Func<IDictionary<string, object?>?, bool> predicate);
+    int Update<T>(string tableName, Func<T, T> transformation, Func<T, bool> predicate) where T : class;
+    int Delete<T>(string tableName, Func<T, bool> predicate) where T : class;
 
     #endregion
 

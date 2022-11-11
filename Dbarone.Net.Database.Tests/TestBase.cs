@@ -24,7 +24,7 @@ public class TestBase
         throw new System.Exception("Unable to get database filename from calling method.");
     }
 
-    protected IEngine CreateDatabase(string filename)
+    protected IEngine CreateDatabaseWithOverwriteIfExists(string filename)
     {
         if (File.Exists(filename))
         {

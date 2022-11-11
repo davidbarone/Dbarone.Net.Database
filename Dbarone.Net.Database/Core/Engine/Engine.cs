@@ -127,7 +127,7 @@ public class Engine : IEngine
     {
         var systemTablePage = this.GetPage<SystemTablePage>(1);
         var mapper = ObjectMapper<SystemTablePageData, TableInfo>.Create();
-        var data = systemTablePage._data.Select(r=>(r as SystemTablePageData)!);
+        var data = systemTablePage._data.Select(r => (r as SystemTablePageData)!);
         var mapped = mapper.MapMany(data!);
         return mapped;
     }
@@ -162,8 +162,10 @@ public class Engine : IEngine
         return heap.Scan().Select(r => r.Row);
     }
 
-    public IEnumerable<T?> Read<T>(string tableName) where T : class { 
-        foreach(var item in ReadRaw(tableName)) {
+    public IEnumerable<T?> Read<T>(string tableName) where T : class
+    {
+        foreach (var item in ReadRaw(tableName))
+        {
             yield return item.ToObject<T>();
         }
     }
@@ -172,11 +174,66 @@ public class Engine : IEngine
 
     #region DML
 
+    public int InsertRaw(string tableName, IDictionary<string, object?> row)
+    {
+        var table = Table(tableName);
+        var dict = new DictionaryPageData(row);
+        var heap = new HeapTableManager<DictionaryPageData, DataPage>(this._bufferManager, table.ObjectId);
+        return heap.AddRow(dict);
+    }
+
+    public int BulkInsertRaw(string tableName, IEnumerable<IDictionary<string, object?>> rows)
+    {
+        if (!rows.Any())
+        {
+            return 0;
+        }
+
+        var table = Table(tableName);
+        var heap = new HeapTableManager<DictionaryPageData, DataPage>(this._bufferManager, table.ObjectId);
+        return heap.AddRows(rows.Select(r => new DictionaryPageData(r)));
+    }
+
+    public int UpdateRaw(string tableName, Func<IDictionary<string, object?>, IDictionary<string, object?>> transform, Func<IDictionary<string, object?>, bool> predicate)
+    {
+        var table = Table(tableName);
+        HeapTableManager<DictionaryPageData, DataPage> heap = new HeapTableManager<DictionaryPageData, DataPage>(this._bufferManager, table.ObjectId);
+        return heap.UpdateRows(
+            ((dictionaryPageData) => { return new DictionaryPageData(transform.Invoke(dictionaryPageData.Row)!); }),
+            ((dictionaryPageData) => predicate.Invoke(dictionaryPageData.Row))
+        );
+    }
+
+    public int DeleteRaw(string tableName, Func<IDictionary<string, object?>, bool> predicate)
+    {
+        var table = Table(tableName);
+        HeapTableManager<DictionaryPageData, DataPage> heap = new HeapTableManager<DictionaryPageData, DataPage>(this._bufferManager, table.ObjectId);
+        return heap.DeleteRows((dictionaryPageData) => predicate.Invoke(dictionaryPageData.Row));
+    }
+
+    public int Insert<T>(string table, T row)
+    {
+        var dataDict = row as IDictionary<string, object?>;
+        if (dataDict == null)
+        {
+            dataDict = row.ToDictionary();
+        }
+        if (dataDict != null)
+        {
+            return InsertRaw(table, dataDict);
+        }
+        else
+        {
+            throw new Exception("Should not get here.");
+        }
+    }
+
     public int BulkInsert<T>(string tableName, IEnumerable<T> rows)
     {
         var table = Table(tableName);
 
-        if (!rows.Any()){
+        if (!rows.Any())
+        {
             return 0;
         }
 
@@ -192,53 +249,21 @@ public class Engine : IEngine
         return BulkInsertRaw(tableName, _rows!);
     }
 
-    public int BulkInsertRaw(string tableName, IEnumerable<IDictionary<string, object?>> rows)
+    public int Update<T>(string tableName, Func<T, T> transform, Func<T, bool> predicate) where T : class
     {
-        if (!rows.Any()){
-            return 0;
-        }
-
-        var table = Table(tableName);
-        var heap = new HeapTableManager<DictionaryPageData, DataPage>(this._bufferManager, table.ObjectId);
-        return heap.AddRows(rows.Select(r => new DictionaryPageData(r)));
-    }
-
-    public int Insert<T>(string table, T row)
-    {
-        var dataDict = row as IDictionary<string, object?>;
-        if (dataDict == null)
-        {
-            dataDict = row.ToDictionary();
-        }
-        if (dataDict != null)
-        {
-            return InsertRaw(table, dataDict);
-        } else {
-            throw new Exception("Should not get here.");
-        }
-    }
-
-    public int InsertRaw(string tableName, IDictionary<string, object?> row)
-    {
-        var table = Table(tableName);
-        var dict = new DictionaryPageData(row);
-        var heap = new HeapTableManager<DictionaryPageData, DataPage>(this._bufferManager, table.ObjectId);
-        return heap.AddRow(dict);
-    }
-
-    public int UpdateRaw(string tableName, Func<IDictionary<string, object?>?, IDictionary<string, object?>?> transform, Func<IDictionary<string, object?>?, bool> predicate) {
         var table = Table(tableName);
         HeapTableManager<DictionaryPageData, DataPage> heap = new HeapTableManager<DictionaryPageData, DataPage>(this._bufferManager, table.ObjectId);
         return heap.UpdateRows(
-            ((dictionaryPageData) => { return new DictionaryPageData(transform.Invoke(dictionaryPageData.Row)!); }),
-            ((dictionaryPageData) => predicate.Invoke(dictionaryPageData.Row))
+            ((dictionaryPageData) => { return new DictionaryPageData(transform.Invoke(dictionaryPageData.Row.ToObject<T>()!).ToDictionary()!); }),
+            ((dictionaryPageData) => predicate.Invoke(dictionaryPageData.Row.ToObject<T>()!))
         );
-     }
+    }
 
-    public int DeleteRaw(string tableName, Func<IDictionary<string, object?>?, bool> predicate) {
+    public int Delete<T>(string tableName, Func<T, bool> predicate) where T : class
+    {
         var table = Table(tableName);
         HeapTableManager<DictionaryPageData, DataPage> heap = new HeapTableManager<DictionaryPageData, DataPage>(this._bufferManager, table.ObjectId);
-        return heap.DeleteRows((dictionaryPageData) => predicate.Invoke(dictionaryPageData.Row));
+        return heap.DeleteRows((dictionaryPageData) => predicate.Invoke(dictionaryPageData.Row.ToObject<T>()!));
     }
 
     #endregion
@@ -368,11 +393,13 @@ public class Engine : IEngine
 
     #region Debugging
 
-    public string DebugPages() {
+    public string DebugPages()
+    {
         return this._bufferManager.DebugPages();
     }
 
-    public string DebugPage(int pageId) {
+    public string DebugPage(int pageId)
+    {
         return this._bufferManager.DebugPage(pageId);
     }
 

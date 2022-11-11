@@ -7,52 +7,38 @@ using System.Collections.Generic;
 using System;
 using Dbarone.Net.Extensions.Object;
 
-public class Customer
-{
-    public int CustomerId { get; set; }
-    public DateTime DateOfBirth { get; set; }
-    public string CustomerName { get; set; } = default!;
-    public bool IsActive { get; set; }
-    public Customer(int customerId, DateTime dateOfBirth, string customerName, bool isActive)
-    {
-        this.CustomerId = customerId;
-        this.DateOfBirth = dateOfBirth;
-        this.CustomerName = customerName;
-        this.IsActive = isActive;
-    }
-    public Customer()
-    {
 
-    }
-}
 
 public class ReadTests : TestBase
 {
-    [Fact]
-    public void TestReadEntity()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void TestReadEntity(bool tableHasRow)
     {
         var dbName = GetDatabaseFileNameFromMethod();
+        TableInfo? table = null;
+        var customer = new CustomerExInfo(123, DateTime.Today, "FooBarBaz", true);
 
-        // Arrange
-        if (File.Exists(dbName))
+        using (var db = CreateDatabaseWithOverwriteIfExists(dbName))
         {
-            File.Delete(dbName);
-        }
-        var tableName = "Customers";
-        var customer = new Customer(123, DateTime.Today, "FooBarBaz", true);
-
-        using (var db = Engine.Create(dbName))
-        {
-            db.CreateTable<Customer>(tableName);
-            db.Insert(tableName, customer);
+            table = CreateTableFromEntity<CustomerExInfo>(db);
+            if (tableHasRow)
+            {
+                db.Insert(table.TableName, customer);
+            }
             db.CheckPoint();    // Save pages to disk
         }
 
         using (var db = Engine.Open(dbName, false))
         {
-            // Act
-            var data = db.Read<Customer>(tableName).First();
-            Assert.True(data.ValueEquals(customer));
+            var data = db.Read<CustomerExInfo>(table.TableName);
+            
+            if (tableHasRow) {
+                Assert.True(data.First().ValueEquals(customer));
+            } else {
+                Assert.Empty(data);
+            }
         }
     }
 }
