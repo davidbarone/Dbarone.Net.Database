@@ -27,17 +27,6 @@ public class Person
 
 public class UpdateTests : TestBase
 {
-    private string GetRandomString(int length)
-    {
-        StringBuilder sb = new StringBuilder();
-        System.Random random = new Random();
-        for (int i = 0; i < length; i++)
-        {
-            sb.Append(((char)(random.Next(1, 26) + 64)).ToString());
-        }
-        return sb.ToString();
-    }
-
     [Theory]
     [InlineData(1000, 1000)]     // No testing of overflows
     [InlineData(1000, 10000)]    // include overflows

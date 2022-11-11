@@ -8,52 +8,28 @@ using System.Text;
 
 public class OverflowPageTests : TestBase
 {
-    public class Comments {
-        public int CommentId { get; set; }
-        public string Comment { get; set; } = default!;
-    }
-
-    private string GetRandomString(int length) {
-        StringBuilder sb = new StringBuilder();
-        System.Random random = new Random();
-        for (int i = 0; i < length; i++){
-            sb.Append(((char)(random.Next(1, 26) + 64)).ToString());
-        }
-        return sb.ToString();
-    }   
-
-    [Fact]
-    public void TestWritingLargeStringValue()
+    [Theory]
+    //[InlineData(10000)]
+    [InlineData(100000)]    // Goes over short limit
+    [InlineData(1000000)]   // Goes over short limit
+    public void TestWritingLargeStringValue(int stringLength)
     {
-        // Arrange
         var dbName = GetDatabaseFileNameFromMethod();
-        if (File.Exists(dbName))
-        {
-            File.Delete(dbName);
-        }
-        var tableName = "Comments";
-        var commentStr = GetRandomString(10000);
+        TableInfo? table = null;
+        var commentStr = GetRandomString(stringLength);
 
-        // Act
-        using (var db = Engine.Create(dbName))
+        using (var db = CreateDatabaseWithOverwriteIfExists(dbName))
         {
-            db.CreateTable<Comments>(tableName);
-
-            // Create 1 record with long comment
-            Comments comment = new Comments();
-            comment.CommentId = 1;
-            comment.Comment = commentStr;
-            db.Insert("Comments", comment);
+            table = CreateTableFromEntity<CommentInfo>(db);
+            var comment = new CommentInfo(1, commentStr);
+            db.Insert(table.TableName, comment);
             db.CheckPoint();    // Save pages to disk
         }
 
-
-        // Assert
         using (var db = Engine.Open(dbName, false))
         {
-            // Assert
-            var comment = db.ReadRaw("Comments").First();
-            Assert.Equal(commentStr, comment["Comment"]);
+            var comment = db.Read<CommentInfo>(table.TableName).First();
+            Assert.Equal(commentStr, comment!.Comment);
         }
     }
 }

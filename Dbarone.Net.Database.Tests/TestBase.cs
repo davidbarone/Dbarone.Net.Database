@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System;
 using System.Collections.Generic;
+using System.Text;
 
 public class TestBase
 {
@@ -40,18 +41,33 @@ public class TestBase
         return db.CreateTable(tableName, columns);
     }
 
-    protected TableInfo CreateTableFromEntity<T>(IEngine db) {
+    protected TableInfo CreateTableFromEntity<T>(IEngine db)
+    {
         var tableName = typeof(T).Name;
         return db.CreateTable<T>(tableName);
     }
 
-    protected IEnumerable<ColumnInfo> GetColumnsForType(Type type){
+    protected IEnumerable<ColumnInfo> GetColumnsForType(Type type)
+    {
         var cols = new List<ColumnInfo>();
         var props = type.GetProperties();
-        foreach (var prop in props){
+        foreach (var prop in props)
+        {
             var col = new ColumnInfo(prop.Name, prop.PropertyType);
             cols.Add(col);
         }
         return cols;
     }
+
+    protected string GetRandomString(int length)
+    {
+        StringBuilder sb = new StringBuilder();
+        System.Random random = new Random();
+        for (int i = 0; i < length; i++)
+        {
+            sb.Append(((char)(random.Next(1, 26) + 64)).ToString());
+        }
+        return sb.ToString();
+    }
+
 }
