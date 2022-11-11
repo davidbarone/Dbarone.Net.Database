@@ -9,7 +9,7 @@ using System.Text;
 public class OverflowPageTests : TestBase
 {
     [Theory]
-    //[InlineData(10000)]
+    [InlineData(10000)]
     [InlineData(100000)]    // Goes over short limit
     [InlineData(1000000)]   // Goes over short limit
     public void TestWritingLargeStringValue(int stringLength)

@@ -83,16 +83,14 @@ In order to move data from disk to memory and vice versa, it must be serialised 
 
 | Field                 | Size (bytes)              | Row Overhead | Description                                                             |
 | --------------------- | ------------------------- | ------------ | ----------------------------------------------------------------------- |
-| Buffer Length         | 2                         | Yes          | The total size of the serialised output including row overhead.         |
+| Buffer Length         | 4                         | Yes          | The total size of the serialised output including row overhead.         |
 | Row Status            | 1                         | Yes          | Various row status flags                                                |
-| Data Length           | 2                         | Yes          | The size of the serialised data excluding row overhead.                 |
-| Column Count          | 2                         | Yes          | The total number of columns in the object.                              |
-| Null Bitmap           | ColumnCount / 8           | Yes          | Stores 1 bit for every column. bit set to true if column value is null. |
-| Fixed Column Count    | 2                         | Yes          | The number of fixed length columns in the object.                       |
+| Fixed Column Count    | 1                         | Yes          | The number of fixed length columns in the object.                       |
+| Variable Column Count | 1                         | Yes          | The number of variable length columns in the object.                    |
+| Null Bitmap           | Total Column Count / 8    | Yes          | Stores 1 bit for every column. bit set to true if column value is null. |
 | Fixed Data Length     | 2                         | Yes          | The size of fixed length data.                                          |
 | Fixed Data            | n                         | No           | The fixed length data.                                                  |
-| Variable Column Count | 2                         | Yes          | The number of variable length columns in the object.                    |
-| Variable Length Table | 2 * variable column count | Yes          | Table of Int16 values denoting length of each variable length field.    |
+| Variable Length Table | 4 * variable column count | Yes          | Table of Int16 values denoting length of each variable length field.    |
 | Variable Data         | n                         | No           | The variable length data                                                |
 
 In order to serialise or deserialise, the column information (`IEnumerable<ColumnInfo>`) must also be provided to the Serialiser class. The serialised data does not include column names, so this must be stored and provided separated in order for the serialisation and deserialisation to occur.

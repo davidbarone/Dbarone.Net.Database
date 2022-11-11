@@ -45,7 +45,7 @@ public class Types
     /// </summary>
     /// <param name="obj">The object to determine the size of.</param>
     /// <returns></returns>
-    public static uint SizeOf(object obj, TextEncoding textEncoding = TextEncoding.UTF8)
+    public static int SizeOf(object obj, TextEncoding textEncoding = TextEncoding.UTF8)
     {
         if (obj == null) { return 0; }
         var typeInfo = GetByType(obj.GetType());
@@ -56,9 +56,9 @@ public class Types
         else if (typeInfo.DataType == DataType.String)
         {
             if (textEncoding==TextEncoding.UTF8){
-                return (uint)Encoding.UTF8.GetBytes((string)obj).Length;
+                return (int)Encoding.UTF8.GetBytes((string)obj).Length;
             } else if (textEncoding==TextEncoding.Latin1) {
-                return (uint)Encoding.Latin1.GetBytes((string)obj).Length;
+                return (int)Encoding.Latin1.GetBytes((string)obj).Length;
             }
             else {
                 throw new Exception("Unable to get SizeOf due to invalid text encoding.");
@@ -66,7 +66,7 @@ public class Types
         }
         else if (typeInfo.DataType == DataType.Blob)
         {
-            return (uint)((byte[])obj).Length;
+            return (int)((byte[])obj).Length;
         }
         else
         {

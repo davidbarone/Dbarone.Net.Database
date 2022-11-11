@@ -39,8 +39,8 @@ public class DebugTests : TestBase
             Assert.Equal(@"  PageId         PageType     Prev     Next   Parent    Slots     Tran    Dirty     Free
   ------         --------     ----     ----   ------    -----     ----    -----     ----
        0             Boot                                   0        0    False        0
-       1      SystemTable                                   1        0    False       35
-       2     SystemColumn                                   3        0    False       87
+       1      SystemTable                                   1        0    False       39
+       2     SystemColumn                                   3        0    False       99
        3             Data                          0        0        0    False        0
 ", str);
         }
@@ -83,7 +83,7 @@ Headers.NextPageId:
 Headers.ParentObjectId: 
 Headers.SlotsUsed: 3
 Headers.TransactionId: 0
-Headers.FreeOffset: 87
+Headers.FreeOffset: 99
 Headers.IsUnused: False
 
 Slot #0: Offset: 0, Status Flags: [   ], Type: SystemColumnPageData
@@ -93,14 +93,14 @@ Slot #0 Values:
  - DataType: Int32
  - IsNullable: False
 
-Slot #1: Offset: 29, Status Flags: [   ], Type: SystemColumnPageData
+Slot #1: Offset: 33, Status Flags: [   ], Type: SystemColumnPageData
 Slot #1 Values:
  - ObjectId: 0
  - Name: Col2
  - DataType: String
  - IsNullable: False
 
-Slot #2: Offset: 58, Status Flags: [   ], Type: SystemColumnPageData
+Slot #2: Offset: 66, Status Flags: [   ], Type: SystemColumnPageData
 Slot #2 Values:
  - ObjectId: 0
  - Name: Col3
