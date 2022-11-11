@@ -93,6 +93,8 @@ In order to move data from disk to memory and vice versa, it must be serialised 
 | Variable Length Table | 4 * variable column count | Yes          | Table of Int16 values denoting length of each variable length field.    |
 | Variable Data         | n                         | No           | The variable length data                                                |
 
+In summary, each serialisation results in 10 bytes additional overhead, plus 1 byte for each 8 columns in the object, plus 4 bytes for each variable length column.
+
 In order to serialise or deserialise, the column information (`IEnumerable<ColumnInfo>`) must also be provided to the Serialiser class. The serialised data does not include column names, so this must be stored and provided separated in order for the serialisation and deserialisation to occur.
 
 ## Data Types
