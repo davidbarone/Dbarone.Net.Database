@@ -68,6 +68,25 @@ public class DML_InsertTests : TestBase
     }
 
     [Fact]
+    public void Test_InsertNull()
+    {
+        // Arrange
+        var dbName = GetDatabaseFileNameFromMethod();
+        TableInfo? table = null;
+        int rowsAffected = 0;
+        using (var db = CreateDatabaseWithOverwriteIfExists(dbName))
+        {
+            table = CreateTable(db, typeof(AddressInfo));
+            AddressInfo? address = null;
+            Assert.Throws<Dbarone.Net.Assertions.AssertionException>(() =>
+            {
+                rowsAffected = db.Insert(table.TableName, address); // should raise exception
+            });
+            db.CheckPoint();    // Save pages to disk
+        }
+    }
+
+    [Fact]
     public void Test_WriteAndReadSingleDataRow()
     {
 

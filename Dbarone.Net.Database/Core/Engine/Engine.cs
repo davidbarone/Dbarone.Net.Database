@@ -2,6 +2,7 @@ namespace Dbarone.Net.Database;
 using Dbarone.Net.Mapper;
 using System.Linq;
 using Dbarone.Net.Extensions.Object;
+using Dbarone.Net.Assertions;
 
 /// <summary>
 /// The internal (private) database implementation.
@@ -213,6 +214,8 @@ public class Engine : IEngine
 
     public int Insert<T>(string table, T row)
     {
+        Assert.NotNull(row);
+
         var dataDict = row as IDictionary<string, object?>;
         if (dataDict == null)
         {
