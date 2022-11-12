@@ -37,6 +37,7 @@ public class UpdateTests : TestBase
                     (dict) => dict!["PersonId"]!.Equals(id)
                 );
             }
+            db.CheckPoint();    // Save pages to disk            
         }
 
         using (var db = Engine.Open(dbName, false))
@@ -82,6 +83,7 @@ public class UpdateTests : TestBase
                     (person) => person.PersonId.Equals(id)
                 );
             }
+            db.CheckPoint();    // Save pages to disk
         }
 
         using (var db = Engine.Open(dbName, false))
@@ -97,6 +99,66 @@ public class UpdateTests : TestBase
             // system pages (boot, table, column) This should be approximately true in all
             // scenarios of this test so long as maxStringLength <= 10000.
             Assert.True(db.Database().PageCount < 33);
+        }
+    }
+
+    [Fact]
+    public void Test_UpdateMultipleRowsAffected()
+    {
+        // Arrange
+        var dbName = GetDatabaseFileNameFromMethod();
+        TableInfo? table = null;
+        int rowsAffected = 0;
+        using (var db = CreateDatabaseWithOverwriteIfExists(dbName))
+        {
+            table = CreateTableFromEntity<PersonInfo>(db);
+            var people = PersonInfo.CreateTestData();
+            db.BulkInsert(table.TableName, people);
+
+            /// This should update 4 rows
+            rowsAffected = db.Update<PersonInfo>(
+                table.TableName,
+                (person) => { person.Comments = "XXX"; return person; },
+                (person) => person.Comments == "ZZZ"
+            );
+            db.CheckPoint();    // Save pages to disk
+        }
+
+        using (var db = Engine.Open(dbName, false))
+        {
+            // Assert
+            var people = db.Read<PersonInfo>(table.TableName).Where(p => p.Comments == "XXX");
+            Assert.Equal(7, people.Count());    // original 3 + 4 ZZZ's replaced as XXX
+            Assert.Equal(4, rowsAffected);
+        }
+    }
+
+    [Fact]
+    public void Test_UpdateZeroRowsAffected()
+    {
+        // Arrange
+        var dbName = GetDatabaseFileNameFromMethod();
+        TableInfo? table = null;
+        int rowsAffected = 0;
+        using (var db = CreateDatabaseWithOverwriteIfExists(dbName))
+        {
+            table = CreateTableFromEntity<PersonInfo>(db);
+            var people = PersonInfo.CreateTestData();
+            db.BulkInsert(table.TableName, people);
+
+            /// This should update 4 rows
+            rowsAffected = db.Update<PersonInfo>(
+                table.TableName,
+                (person) => { person.Comments = "XXX"; return person; },
+                (person) => person.Comments == "AAA"
+            );
+            db.CheckPoint();    // Save pages to disk
+        }
+
+        using (var db = Engine.Open(dbName, false))
+        {
+            // Assert
+            Assert.Equal(0, rowsAffected);
         }
     }
 }
