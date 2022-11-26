@@ -2,6 +2,7 @@ namespace Dbarone.Net.Database;
 
 public enum DataType
 {
+    Null = 0,
     Boolean = 1,
     Byte,
     SByte,
@@ -9,6 +10,7 @@ public enum DataType
     Decimal,
     Double,
     Single,
+    VarInt,
     Int16,
     UInt16,
     Int32,
@@ -16,7 +18,7 @@ public enum DataType
     Int64,
     UInt64,
     DateTime,
-    String,
     Guid,
+    String,
     Blob
 }

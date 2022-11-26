@@ -56,8 +56,10 @@ public class BufferBase : IBuffer
         return buffer;
     }
 
-    public int Size {
-        get {
+    public int Size
+    {
+        get
+        {
             return this.InternalBuffer.Length;
         }
     }
@@ -83,6 +85,18 @@ public class BufferBase : IBuffer
     public char ReadChar(int index)
     {
         return BitConverter.ToChar(InternalBuffer, index);
+    }
+
+    public VarInt ReadVarInt(int index)
+    {
+        int i = 0;
+        byte[] bytes = new byte[4];
+        do
+        {
+            bytes[i] = InternalBuffer[index];
+            i++;
+        } while ((InternalBuffer[index] & 128) != 0);
+        return new VarInt(bytes[0..i]);
     }
 
     public Int16 ReadInt16(int index)
@@ -182,6 +196,8 @@ public class BufferBase : IBuffer
                 return ReadDouble(index);
             case DataType.Single:
                 return ReadSingle(index);
+            case DataType.VarInt:
+                return ReadVarInt(index);
             case DataType.Int16:
                 return ReadInt16(index);
             case DataType.UInt16:
@@ -241,6 +257,12 @@ public class BufferBase : IBuffer
         var bytes = BitConverter.GetBytes(value);
         this.Stream.Position = index;
         this.Stream.Write(bytes, 0, bytes.Length);
+    }
+
+    public void Write(VarInt value, int index)
+    {
+        this.Stream.Position = index;
+        this.Stream.Write(value.Bytes, 0, value.Length);
     }
 
     public void Write(Int16 value, int index)
@@ -334,7 +356,8 @@ public class BufferBase : IBuffer
         else if (textEncoding == TextEncoding.Latin1)
         {
             var bytes = Encoding.Latin1.GetBytes(value, 0, value.Length, this.InternalBuffer, index);
-        } else
+        }
+        else
         {
             throw new Exception("Unable to write string encoding.");
         }
@@ -374,6 +397,10 @@ public class BufferBase : IBuffer
         else if (type == typeof(Single))
         {
             Write((Single)value, index);
+        }
+        else if (type == typeof(VarInt))
+        {
+            Write((VarInt)value, index);
         }
         else if (type == typeof(Int16))
         {
