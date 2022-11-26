@@ -365,6 +365,15 @@ public class Engine : IEngine
         return Table(tableName);
     }
 
+    public IndexInfo CreateIndex(string tableName, string indexName, IList<string> columns, bool unique){
+        throw new Exception("xxx");
+    }
+
+    public void DropIndex(string indexName){
+
+    }
+
+
     public T GetPage<T>(int pageId) where T : Page
     {
         return this._bufferManager.GetPage<T>(pageId);

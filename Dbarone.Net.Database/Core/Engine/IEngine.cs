@@ -40,6 +40,9 @@ public interface IEngine : IDisposable
     TableInfo CreateTable<T>(string tableName);
     TableInfo CreateTable(string tableName, IEnumerable<ColumnInfo> columns);
 
+    IndexInfo CreateIndex(string tableName, string indexName, IList<string> columns, bool unique);
+    void DropIndex(string indexName);
+
     #endregion
 
     #region DQL
