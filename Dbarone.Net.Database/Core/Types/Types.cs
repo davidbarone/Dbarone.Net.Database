@@ -55,12 +55,16 @@ public class Types
         }
         else if (typeInfo.DataType == DataType.String)
         {
-            if (textEncoding==TextEncoding.UTF8){
+            if (textEncoding == TextEncoding.UTF8)
+            {
                 return (int)Encoding.UTF8.GetBytes((string)obj).Length;
-            } else if (textEncoding==TextEncoding.Latin1) {
+            }
+            else if (textEncoding == TextEncoding.Latin1)
+            {
                 return (int)Encoding.Latin1.GetBytes((string)obj).Length;
             }
-            else {
+            else
+            {
                 throw new Exception("Unable to get SizeOf due to invalid text encoding.");
             }
         }
@@ -95,5 +99,39 @@ public class Types
             {typeof(string), new TypeInfo(DataType.String, typeof(string), 0)},
             {typeof(byte[]), new TypeInfo(DataType.Blob, typeof(byte[]), 0)}
         };
+    }
+
+    /// <summary>
+    /// Gets the serial type of a value
+    /// </summary>
+    /// <param name="obj"></param>
+    /// <returns></returns>
+    public SerialType GetSerialType(object? obj, TextEncoding textEncoding = TextEncoding.UTF8)
+    {
+        if (obj == null)
+        {
+            return new SerialType(DataType.Null);
+        }
+
+        var objType = obj.GetType();
+
+        if (objType == typeof(string))
+        {
+            // Serial type for string values is (N-variableTypeStart)/2 and odd. 
+            var length = Types.SizeOf(obj, textEncoding);
+            return new SerialType(DataType.String, length);
+        }
+        else if (objType == typeof(byte[]))
+        {
+            // Serial type for byte[] values is (N-variableTypeStart)/2 and even. 
+            var length = Types.SizeOf(obj, textEncoding);
+            return new SerialType(DataType.Blob, length);
+        }
+        else
+        {
+            // For other types, return a VarInt of the DataType enum value.
+            var dataType = Types.GetByType(objType).DataType;
+            return new SerialType(dataType);
+        }
     }
 }

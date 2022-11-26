@@ -12,6 +12,7 @@ public class Engine : IEngine
     private string _filename;
     private Stream _stream;
     private BufferManager _bufferManager;
+    private ISerializer _serializer;
 
     HeapTableManager<SystemTablePageData, SystemTablePage>? _systemTablesHeap = null;
     private HeapTableManager<SystemTablePageData, SystemTablePage> SystemTablesHeap
@@ -53,7 +54,8 @@ public class Engine : IEngine
             FileShare.None,
             (int)Global.PageSize);
 
-        this._bufferManager = new BufferManager(new DiskService(this._stream));
+        this._serializer = new SerializerBase();
+        this._bufferManager = new BufferManager(new DiskService(this._stream), _serializer);
     }
 
     public void Dispose()
@@ -146,7 +148,7 @@ public class Engine : IEngine
     public IEnumerable<ColumnInfo> Columns(string tableName)
     {
         var table = Table(tableName);
-        var heap = new HeapTableManager<SystemColumnPageData, SystemColumnPage>(this._bufferManager, table.ObjectId);
+        var heap = new HeapTableManager<SystemColumnPageData, SystemColumnPage>(this._bufferManager, this._serializer, table.ObjectId);
         var mapper = ObjectMapper<SystemColumnPageData, ColumnInfo>.Create();
         var mapped = mapper.MapMany(heap.Scan());
         return mapped;
@@ -159,7 +161,7 @@ public class Engine : IEngine
     public IEnumerable<IDictionary<string, object?>> ReadRaw(string tableName)
     {
         var table = Table(tableName);
-        HeapTableManager<DictionaryPageData, DataPage> heap = new HeapTableManager<DictionaryPageData, DataPage>(this._bufferManager, table.ObjectId);
+        HeapTableManager<DictionaryPageData, DataPage> heap = new HeapTableManager<DictionaryPageData, DataPage>(this._bufferManager, this._serializer, table.ObjectId);
         return heap.Scan().Select(r => r.Row);
     }
 
@@ -179,7 +181,7 @@ public class Engine : IEngine
     {
         var table = Table(tableName);
         var dict = new DictionaryPageData(row);
-        var heap = new HeapTableManager<DictionaryPageData, DataPage>(this._bufferManager, table.ObjectId);
+        var heap = new HeapTableManager<DictionaryPageData, DataPage>(this._bufferManager, this._serializer, table.ObjectId);
         return heap.AddRow(dict);
     }
 
@@ -191,14 +193,14 @@ public class Engine : IEngine
         }
 
         var table = Table(tableName);
-        var heap = new HeapTableManager<DictionaryPageData, DataPage>(this._bufferManager, table.ObjectId);
+        var heap = new HeapTableManager<DictionaryPageData, DataPage>(this._bufferManager, this._serializer, table.ObjectId);
         return heap.AddRows(rows.Select(r => new DictionaryPageData(r)));
     }
 
     public int UpdateRaw(string tableName, Func<IDictionary<string, object?>, IDictionary<string, object?>> transform, Func<IDictionary<string, object?>, bool> predicate)
     {
         var table = Table(tableName);
-        HeapTableManager<DictionaryPageData, DataPage> heap = new HeapTableManager<DictionaryPageData, DataPage>(this._bufferManager, table.ObjectId);
+        HeapTableManager<DictionaryPageData, DataPage> heap = new HeapTableManager<DictionaryPageData, DataPage>(this._bufferManager, this._serializer, table.ObjectId);
         return heap.UpdateRows(
             ((dictionaryPageData) => { return new DictionaryPageData(transform.Invoke(dictionaryPageData.Row)!); }),
             ((dictionaryPageData) => predicate.Invoke(dictionaryPageData.Row))
@@ -208,7 +210,7 @@ public class Engine : IEngine
     public int DeleteRaw(string tableName, Func<IDictionary<string, object?>, bool> predicate)
     {
         var table = Table(tableName);
-        HeapTableManager<DictionaryPageData, DataPage> heap = new HeapTableManager<DictionaryPageData, DataPage>(this._bufferManager, table.ObjectId);
+        HeapTableManager<DictionaryPageData, DataPage> heap = new HeapTableManager<DictionaryPageData, DataPage>(this._bufferManager, this._serializer, table.ObjectId);
         return heap.DeleteRows((dictionaryPageData) => predicate.Invoke(dictionaryPageData.Row));
     }
 
@@ -255,7 +257,7 @@ public class Engine : IEngine
     public int Update<T>(string tableName, Func<T, T> transform, Func<T, bool> predicate) where T : class
     {
         var table = Table(tableName);
-        HeapTableManager<DictionaryPageData, DataPage> heap = new HeapTableManager<DictionaryPageData, DataPage>(this._bufferManager, table.ObjectId);
+        HeapTableManager<DictionaryPageData, DataPage> heap = new HeapTableManager<DictionaryPageData, DataPage>(this._bufferManager, this._serializer, table.ObjectId);
         return heap.UpdateRows(
             ((dictionaryPageData) => { return new DictionaryPageData(transform.Invoke(dictionaryPageData.Row.ToObject<T>()!).ToDictionary()!); }),
             ((dictionaryPageData) => predicate.Invoke(dictionaryPageData.Row.ToObject<T>()!))
@@ -265,7 +267,7 @@ public class Engine : IEngine
     public int Delete<T>(string tableName, Func<T, bool> predicate) where T : class
     {
         var table = Table(tableName);
-        HeapTableManager<DictionaryPageData, DataPage> heap = new HeapTableManager<DictionaryPageData, DataPage>(this._bufferManager, table.ObjectId);
+        HeapTableManager<DictionaryPageData, DataPage> heap = new HeapTableManager<DictionaryPageData, DataPage>(this._bufferManager, this._serializer, table.ObjectId);
         return heap.DeleteRows((dictionaryPageData) => predicate.Invoke(dictionaryPageData.Row.ToObject<T>()!));
     }
 
@@ -296,12 +298,12 @@ public class Engine : IEngine
 
         // Create columns
         var systemColumnPage = this.CreatePage<SystemColumnPage>();
-        var columns = Serializer.GetColumnsForType(typeof(T));
+        var columns = this._serializer.GetColumnsForType(typeof(T));
 
         foreach (var column in columns)
         {
             var obj = new SystemColumnPageData(parentObjectId, column.Name, column.DataType, column.IsNullable);
-            var columnMeta = Serializer.GetColumnsForType(systemColumnPage.PageDataType);
+            var columnMeta = this._serializer.GetColumnsForType(systemColumnPage.PageDataType);
             var buffer = this._bufferManager.SerialiseRow(obj, RowStatus.None, columnMeta);
             systemColumnPage.AddDataRow(obj, buffer, false);
         }
@@ -343,7 +345,7 @@ public class Engine : IEngine
         foreach (var column in columns)
         {
             var obj = new SystemColumnPageData(parentObjectId, column.Name, column.DataType, column.IsNullable);
-            var columnMeta = Serializer.GetColumnsForType(systemColumnPage.PageDataType);
+            var columnMeta = this._serializer.GetColumnsForType(systemColumnPage.PageDataType);
             var buffer = this._bufferManager.SerialiseRow(obj, RowStatus.None, columnMeta);
             systemColumnPage.AddDataRow(obj, buffer, false);
         }
@@ -365,11 +367,13 @@ public class Engine : IEngine
         return Table(tableName);
     }
 
-    public IndexInfo CreateIndex(string tableName, string indexName, IList<string> columns, bool unique){
+    public IndexInfo CreateIndex(string tableName, string indexName, IList<string> columns, bool unique)
+    {
         throw new Exception("xxx");
     }
 
-    public void DropIndex(string indexName){
+    public void DropIndex(string indexName)
+    {
 
     }
 

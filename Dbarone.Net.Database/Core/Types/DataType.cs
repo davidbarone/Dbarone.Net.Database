@@ -1,5 +1,8 @@
 namespace Dbarone.Net.Database;
 
+/// <summary>
+/// Represents data types allowed in Dbarone.Net.Database
+/// </summary>
 public enum DataType
 {
     Null = 0,
@@ -19,6 +22,7 @@ public enum DataType
     UInt64,
     DateTime,
     Guid,
-    String,
-    Blob
+    Array,
+    Blob,
+    String
 }

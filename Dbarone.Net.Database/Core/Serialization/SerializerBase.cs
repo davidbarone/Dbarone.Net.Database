@@ -6,151 +6,16 @@ using Dbarone.Net.Extensions.Object;
 /// <summary>
 /// Serializes and deserializes .NET objects to and from byte[] arrays.
 /// </summary>
-public class Serializer
+public class SerializerBase : ISerializer
 {
-    public static DeserializationResult<T> Deserialize<T>(byte[] buffer, TextEncoding textEncoding = TextEncoding.UTF8)
-    {
-        var result = Deserialize(typeof(T), buffer, textEncoding);
-        return new DeserializationResult<T>((T?)result.Result, result.RowStatus);
-    }
-
-    public static DeserializationResult<object> Deserialize(Type type, byte[] buffer, TextEncoding textEncoding = TextEncoding.UTF8)
-    {
-        var columns = GetColumnsForType(type);
-        return Deserialize(type, columns, buffer, textEncoding);
-    }
-
-    public static DeserializationResult<T> Deserialize<T>(IEnumerable<ColumnInfo> columns, byte[] buffer, TextEncoding textEncoding = TextEncoding.UTF8) where T : IPageData
-    {
-        var result = Deserialize(typeof(T), columns, buffer, textEncoding);
-        return new DeserializationResult<T>((T?)result.Result, result.RowStatus);
-    }
-
-    public static DeserializationResult<object> Deserialize(Type type, IEnumerable<ColumnInfo> columns, byte[] buffer, TextEncoding textEncoding = TextEncoding.UTF8)
-    {
-
-        var result = DeserializeDictionary(columns, buffer, textEncoding);
-
-        if (result.RowStatus.HasFlag(RowStatus.Deleted) | result.RowStatus.HasFlag(RowStatus.Null)) {
-            return new DeserializationResult<object>((object?)null, result.RowStatus);
-        }
-
-        object? obj = Activator.CreateInstance(type);
-        if (obj == null)
-        {
-            throw new Exception("Error creating object");
-        }
-        var props = obj.GetType().GetProperties();
-
-        foreach (var column in columns)
-        {
-            props.First(p => p.Name.Equals(column.Name)).SetValue(obj, result.Result[column.Name]);
-        }
-        return new DeserializationResult<object>(obj, result.RowStatus);
-    }
-
-    /// <summary>
-    /// Inspects a buffer, and extracts the row status.
-    /// </summary>
-    /// <param name="buffer"></param>
-    public static RowStatus GetRowStatus(byte[] buffer)
-    {
-        IBuffer bb = new BufferBase(buffer);
-        var rowStatus = (RowStatus)bb.ReadByte(4);
-        return rowStatus;
-    }
-
-    public static DeserializationResult<IDictionary<string, object?>> DeserializeDictionary(IEnumerable<ColumnInfo> columns, byte[] buffer, TextEncoding textEncoding = TextEncoding.UTF8)
-    {
-        Dictionary<string, object?>? obj = null;
-
-        var fixedColumns = columns.Where(c => Types.GetByDataType(c.DataType).IsFixedLength).ToList();
-        var variableColumns = columns.Where(c => !Types.GetByDataType(c.DataType).IsFixedLength).ToList();
-
-        IBuffer bb = new BufferBase(buffer);
-        var bufferLength = bb.ReadInt32(0);
-        Assert.Equals(buffer.Length, bufferLength);
-
-        var rowStatus = (RowStatus)bb.ReadByte(4);
-
-        if (rowStatus.HasFlag(RowStatus.Deleted) || rowStatus.HasFlag(RowStatus.Null))
-        {
-            // no need to deserialize anything.
-        }
-        else
-        {
-            obj = new Dictionary<string, object?>();
-            var fixedLengthCount = bb.ReadByte(5);
-            var variableLengthCount = bb.ReadByte(6);
-            var totalColumnCount = (byte)(fixedLengthCount + variableLengthCount);
-
-            // Set up null bitmap
-            var nullBitmap = new BitArray(totalColumnCount);
-            var nullBitmapBytes = (byte)Math.Ceiling((double)totalColumnCount / 8);
-            nullBitmap = new BitArray(bb.ReadBytes(7, nullBitmapBytes));
-
-            ushort fixedLength = bb.ReadUInt16(7 + nullBitmapBytes);
-            ushort startFixedLength = (ushort)(9 + nullBitmapBytes);
-            int index = startFixedLength;
-            byte columnIndex = 0;
-
-            // Fixed length columns
-            foreach (var col in fixedColumns)
-            {
-                if (nullBitmap[columnIndex] == true)
-                {
-                    obj[col.Name] = null;
-                }
-                else
-                {
-                    var value = bb.Read(col.DataType, index);
-                    obj[col.Name] = value;
-                }
-
-                index += Types.GetByDataType(col.DataType).Size;
-                columnIndex++;
-            }
-
-            Assert.Equals(index - startFixedLength, (int)fixedLength);
-
-            // Variable length columns
-            List<int> variableLengthLengths = new List<int>(variableLengthCount);
-            for (var i = 0; i < variableLengthCount; i++)
-            {
-                variableLengthLengths.Add(bb.ReadInt32(index));
-                index += (Types.GetByDataType(DataType.Int32).Size);
-            }
-
-            for (var i = 0; i < variableLengthCount; i++)
-            {
-                var col = variableColumns[i];
-
-                if (nullBitmap[columnIndex] == true)
-                {
-                    obj[col.Name] = null;
-                }
-                else
-                {
-                    var value = bb.Read(col.DataType, index, variableLengthLengths[i], textEncoding);
-                    obj[col.Name] = value;
-                }
-
-                index += variableLengthLengths[i];
-                columnIndex++;
-            }
-
-            Assert.Equals(totalColumnCount, (byte)(fixedLengthCount + variableLengthCount));
-            Assert.Equals(columnIndex, totalColumnCount);
-        }
-        return new DeserializationResult<IDictionary<string, object?>>(obj, rowStatus);
-    }
+    #region Serialisation
 
     /// <summary>
     /// Serialises an object to a byte array.
     /// </summary>
     /// <param name="obj">The object to serialize.</param>
     /// <returns>A byte array representing the object.</returns>
-    public static byte[] Serialize(object obj, RowStatus rowStatus, TextEncoding textEncoding = TextEncoding.UTF8)
+    public byte[] Serialize(object obj, RowStatus rowStatus, TextEncoding textEncoding = TextEncoding.UTF8)
     {
         var columnInfo = GetColumnsForType(obj.GetType());
         return Serialize(columnInfo, obj, rowStatus, textEncoding);
@@ -162,7 +27,7 @@ public class Serializer
     /// <param name="columns">The column metadata for the object to serialize.</param>
     /// <param name="obj">The object to serialize.</param>
     /// <returns>A byte array representing the object.</returns>
-    public static byte[] Serialize(IEnumerable<ColumnInfo> columns, object obj, RowStatus rowStatus, TextEncoding textEncoding = TextEncoding.UTF8)
+    public byte[] Serialize(IEnumerable<ColumnInfo> columns, object obj, RowStatus rowStatus, TextEncoding textEncoding = TextEncoding.UTF8)
     {
         var dict = obj.ToDictionary();
         return SerializeDictionary(columns, dict!, rowStatus, textEncoding);
@@ -174,7 +39,7 @@ public class Serializer
     /// <param name="columns">The column metadata.</param>
     /// <param name="obj">The object / dictionary to serialize.</param>
     /// <returns>A byte array of the serialized data.</returns>
-    public static byte[] SerializeDictionary(IEnumerable<ColumnInfo> columns, IDictionary<string, object?> obj, RowStatus rowStatus, TextEncoding textEncoding = TextEncoding.UTF8)
+    public virtual byte[] SerializeDictionary(IEnumerable<ColumnInfo> columns, IDictionary<string, object?> obj, RowStatus rowStatus, TextEncoding textEncoding = TextEncoding.UTF8)
     {
 
         // Get serialization parameters
@@ -291,15 +156,160 @@ public class Serializer
         return buffer.ToArray();
     }
 
+    #endregion
+
+    #region Deserialisation
+
+    public DeserializationResult<T> Deserialize<T>(byte[] buffer, TextEncoding textEncoding = TextEncoding.UTF8)
+    {
+        var result = Deserialize(typeof(T), buffer, textEncoding);
+        return new DeserializationResult<T>((T?)result.Result, result.RowStatus);
+    }
+
+    public DeserializationResult<object> Deserialize(Type type, byte[] buffer, TextEncoding textEncoding = TextEncoding.UTF8)
+    {
+        var columns = GetColumnsForType(type);
+        return Deserialize(type, columns, buffer, textEncoding);
+    }
+
+    public DeserializationResult<T> Deserialize<T>(IEnumerable<ColumnInfo> columns, byte[] buffer, TextEncoding textEncoding = TextEncoding.UTF8) where T : IPageData
+    {
+        var result = Deserialize(typeof(T), columns, buffer, textEncoding);
+        return new DeserializationResult<T>((T?)result.Result, result.RowStatus);
+    }
+
+    public DeserializationResult<object> Deserialize(Type type, IEnumerable<ColumnInfo> columns, byte[] buffer, TextEncoding textEncoding = TextEncoding.UTF8)
+    {
+        var result = DeserializeDictionary(columns, buffer, textEncoding);
+
+        if (result.RowStatus.HasFlag(RowStatus.Deleted) | result.RowStatus.HasFlag(RowStatus.Null))
+        {
+            return new DeserializationResult<object>((object?)null, result.RowStatus);
+        }
+
+        object? obj = Activator.CreateInstance(type);
+        if (obj == null)
+        {
+            throw new Exception("Error creating object");
+        }
+        var props = obj.GetType().GetProperties();
+
+        foreach (var column in columns)
+        {
+            props.First(p => p.Name.Equals(column.Name)).SetValue(obj, result.Result[column.Name]);
+        }
+        return new DeserializationResult<object>(obj, result.RowStatus);
+    }
+
+    public virtual DeserializationResult<IDictionary<string, object?>> DeserializeDictionary(IEnumerable<ColumnInfo> columns, byte[] buffer, TextEncoding textEncoding = TextEncoding.UTF8)
+    {
+        Dictionary<string, object?>? obj = null;
+
+        var fixedColumns = columns.Where(c => Types.GetByDataType(c.DataType).IsFixedLength).ToList();
+        var variableColumns = columns.Where(c => !Types.GetByDataType(c.DataType).IsFixedLength).ToList();
+
+        IBuffer bb = new BufferBase(buffer);
+        var bufferLength = bb.ReadInt32(0);
+        Assert.Equals(buffer.Length, bufferLength);
+
+        var rowStatus = (RowStatus)bb.ReadByte(4);
+
+        if (rowStatus.HasFlag(RowStatus.Deleted) || rowStatus.HasFlag(RowStatus.Null))
+        {
+            // no need to deserialize anything.
+        }
+        else
+        {
+            obj = new Dictionary<string, object?>();
+            var fixedLengthCount = bb.ReadByte(5);
+            var variableLengthCount = bb.ReadByte(6);
+            var totalColumnCount = (byte)(fixedLengthCount + variableLengthCount);
+
+            // Set up null bitmap
+            var nullBitmap = new BitArray(totalColumnCount);
+            var nullBitmapBytes = (byte)Math.Ceiling((double)totalColumnCount / 8);
+            nullBitmap = new BitArray(bb.ReadBytes(7, nullBitmapBytes));
+
+            ushort fixedLength = bb.ReadUInt16(7 + nullBitmapBytes);
+            ushort startFixedLength = (ushort)(9 + nullBitmapBytes);
+            int index = startFixedLength;
+            byte columnIndex = 0;
+
+            // Fixed length columns
+            foreach (var col in fixedColumns)
+            {
+                if (nullBitmap[columnIndex] == true)
+                {
+                    obj[col.Name] = null;
+                }
+                else
+                {
+                    var value = bb.Read(col.DataType, index);
+                    obj[col.Name] = value;
+                }
+
+                index += Types.GetByDataType(col.DataType).Size;
+                columnIndex++;
+            }
+
+            Assert.Equals(index - startFixedLength, (int)fixedLength);
+
+            // Variable length columns
+            List<int> variableLengthLengths = new List<int>(variableLengthCount);
+            for (var i = 0; i < variableLengthCount; i++)
+            {
+                variableLengthLengths.Add(bb.ReadInt32(index));
+                index += (Types.GetByDataType(DataType.Int32).Size);
+            }
+
+            for (var i = 0; i < variableLengthCount; i++)
+            {
+                var col = variableColumns[i];
+
+                if (nullBitmap[columnIndex] == true)
+                {
+                    obj[col.Name] = null;
+                }
+                else
+                {
+                    var value = bb.Read(col.DataType, index, variableLengthLengths[i], textEncoding);
+                    obj[col.Name] = value;
+                }
+
+                index += variableLengthLengths[i];
+                columnIndex++;
+            }
+
+            Assert.Equals(totalColumnCount, (byte)(fixedLengthCount + variableLengthCount));
+            Assert.Equals(columnIndex, totalColumnCount);
+        }
+        return new DeserializationResult<IDictionary<string, object?>>(obj, rowStatus);
+    }
+
+    #endregion
+
+    #region Other public methods
+
+    /// <summary>
+    /// Inspects a buffer, and extracts the row status.
+    /// </summary>
+    /// <param name="buffer"></param>
+    public RowStatus GetRowStatus(byte[] buffer)
+    {
+        IBuffer bb = new BufferBase(buffer);
+        var rowStatus = (RowStatus)bb.ReadByte(4);
+        return rowStatus;
+    }
+
     /// <summary>
     /// Returns the columns for a particular type based on the public properties.
     /// </summary>
     /// <param name="type">The type to return columns for.</param>
     /// <returns>A list of columns for the type.</returns>
-    public static IEnumerable<ColumnInfo> GetColumnsForType(Type type)
+    public IEnumerable<ColumnInfo> GetColumnsForType(Type type)
     {
         List<ColumnInfo> result = new List<ColumnInfo>();
-        var properties = type.GetProperties();
+        var properties = type.GetProperties().OrderBy(p => p.Name);
         foreach (var property in properties)
         {
             result.Add(new ColumnInfo(property.Name, property.PropertyType));
@@ -307,9 +317,11 @@ public class Serializer
         return result;
     }
 
-    #region Private Methods
+    #endregion
 
-    private static SerializationParams? GetParams(RowStatus rowStatus, IEnumerable<ColumnInfo> columns, IDictionary<string, object?> obj, TextEncoding textEncoding = TextEncoding.UTF8)
+    #region Protected Methods
+
+    protected SerializationParams? GetParams(RowStatus rowStatus, IEnumerable<ColumnInfo> columns, IDictionary<string, object?> obj, TextEncoding textEncoding = TextEncoding.UTF8)
     {
         SerializationParams parms = new SerializationParams();
         if (rowStatus.HasFlag(RowStatus.Deleted) || rowStatus.HasFlag(RowStatus.Null))

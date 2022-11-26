@@ -8,17 +8,19 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
     private BufferManager BufferManager { get; set; }
     IEnumerable<ColumnInfo> Columns { get; set; } = default!;
     private int TailPageId { get; set; }
+    ISerializer Serializer { get; set; }
 
-    public HeapTableManager(BufferManager bufferManager, int? parentObjectId = null)
+    public HeapTableManager(BufferManager bufferManager, ISerializer serializer, int? parentObjectId = null)
     {
         this.ParentObjectId = parentObjectId;
         this.BufferManager = bufferManager;
+        this.Serializer = serializer;
 
         // Calculate first/last page ids
         if (typeof(TPageType) == typeof(DataPage))
         {
             // Get from tableinfo
-            var tablesHeap = new HeapTableManager<SystemTablePageData, SystemTablePage>(bufferManager);
+            var tablesHeap = new HeapTableManager<SystemTablePageData, SystemTablePage>(bufferManager, serializer);
             var loc = tablesHeap.SearchSingle(d => d.ObjectId == parentObjectId);
             var row = tablesHeap.GetRow(loc);
             this.TailPageId = row.DataPageId;
@@ -29,7 +31,7 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
         }
         else if (typeof(TPageType) == typeof(SystemColumnPage))
         {
-            var tablesHeap = new HeapTableManager<SystemTablePageData, SystemTablePage>(bufferManager);
+            var tablesHeap = new HeapTableManager<SystemTablePageData, SystemTablePage>(bufferManager, serializer);
             var loc = tablesHeap.SearchSingle(d => d.ObjectId == parentObjectId);
             var row = tablesHeap.GetRow(loc);
             this.TailPageId = row.ColumnPageId;
@@ -200,7 +202,7 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
         if (typeof(TPageType) == typeof(DataPage))
         {
             // Get from tableinfo
-            var tablesHeap = new HeapTableManager<SystemTablePageData, SystemTablePage>(this.BufferManager);
+            var tablesHeap = new HeapTableManager<SystemTablePageData, SystemTablePage>(this.BufferManager, Serializer);
             tablesHeap.UpdateRows(r => new SystemTablePageData()
             {
                 ObjectId = r.ObjectId,
@@ -213,7 +215,7 @@ public class HeapTableManager<TRow, TPageType> : IHeapTableManager<TRow> where T
         else if (typeof(TPageType) == typeof(SystemColumnPage))
         {
             // Get from tableinfo
-            var tablesHeap = new HeapTableManager<SystemTablePageData, SystemTablePage>(this.BufferManager);
+            var tablesHeap = new HeapTableManager<SystemTablePageData, SystemTablePage>(this.BufferManager, Serializer);
             tablesHeap.UpdateRows(r => new SystemTablePageData()
             {
                 ObjectId = r.ObjectId,

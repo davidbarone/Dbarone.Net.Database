@@ -10,9 +10,11 @@ using Dbarone.Net.Extensions.Object;
 public class BufferManager : IBufferManager
 {
     private TextEncoding textEncoding = TextEncoding.UTF8;
-    public BufferManager(IDiskService diskService)
+    private ISerializer _serializer;
+    public BufferManager(IDiskService diskService, ISerializer serializer)
     {
         this._diskService = diskService;
+        this._serializer = serializer;
     }
 
     public void SaveDirtyPages()
@@ -269,11 +271,11 @@ IsDirty: {page.IsDirty}{Environment.NewLine}";
         byte[]? buffer = null;
         if (dictionaryRow != null)
         {
-            buffer = Serializer.SerializeDictionary(columns, dictionaryRow.Row, rowStatus, textEncoding);
+            buffer = _serializer.SerializeDictionary(columns, dictionaryRow.Row, rowStatus, textEncoding);
         }
         else
         {
-            buffer = Serializer.Serialize(columns, row, rowStatus, textEncoding);
+            buffer = _serializer.Serialize(columns, row, rowStatus, textEncoding);
         }
         return buffer;
     }
@@ -294,24 +296,24 @@ IsDirty: {page.IsDirty}{Environment.NewLine}";
             var b = buffer.Slice(dataIndex + Global.PageHeaderSize, totalLength);
             if (page.PageDataType == typeof(DictionaryPageData))
             {
-                if (Serializer.GetRowStatus(b).HasFlag(RowStatus.Overflow))
+                if (_serializer.GetRowStatus(b).HasFlag(RowStatus.Overflow))
                 {
                     // overflow data
-                    var result = Serializer.Deserialize<OverflowPointer>(b, textEncoding);
+                    var result = _serializer.Deserialize<OverflowPointer>(b, textEncoding);
                     return new DeserializationResult<IPageData>(result.Result, result.RowStatus);
                 }
                 else
                 {
                     // dictionary data
                     var columnMeta = this.GetColumnsForPage(page);
-                    var result = Serializer.DeserializeDictionary(columnMeta, b, textEncoding);
+                    var result = _serializer.DeserializeDictionary(columnMeta, b, textEncoding);
                     return new DeserializationResult<IPageData>(new DictionaryPageData(result.Result!), result.RowStatus);
                 }
             }
             else
             {
                 // POCO data
-                var result = Serializer.Deserialize(page.PageDataType, b, textEncoding);
+                var result = _serializer.Deserialize(page.PageDataType, b, textEncoding);
                 return new DeserializationResult<IPageData>((IPageData)result.Result!, result.RowStatus);
             }
         }
@@ -330,7 +332,7 @@ IsDirty: {page.IsDirty}{Environment.NewLine}";
         // Hydrate Headers (starting at offset: 1)
         var headerLength = buffer.ReadUInt16(1);    // first 2 bytes of buffer are total length.
         var headerBuf = buffer.Slice(1, headerLength);
-        page._headers = (PageHeader)Serializer.Deserialize(page.PageHeaderType, headerBuf, textEncoding).Result!;
+        page._headers = (PageHeader)_serializer.Deserialize(page.PageHeaderType, headerBuf, textEncoding).Result!;
 
         // Hydrate slots
         var slotIndex = Global.PageSize - 2;
@@ -367,7 +369,7 @@ IsDirty: {page.IsDirty}{Environment.NewLine}";
         {
             h = (IPageHeader)pi.GetValue(page.Headers())!;
         }
-        var headerBytes = Serializer.Serialize(h, RowStatus.None, textEncoding);
+        var headerBytes = _serializer.Serialize(h, RowStatus.None, textEncoding);
         // Header must be less than 50 (PageType occupies 1 byte at start)
         Assert.LessThan(headerBytes.Length, Global.PageHeaderSize);
         buffer.Write(headerBytes, 1);
@@ -393,7 +395,7 @@ IsDirty: {page.IsDirty}{Environment.NewLine}";
             else if (overflowPointer != null)
             {
                 // cell is an overflow pointer
-                var columns = Serializer.GetColumnsForType(typeof(OverflowPointer));
+                var columns = _serializer.GetColumnsForType(typeof(OverflowPointer));
                 var dataBytes = SerialiseRow(data[slot], page.Statuses[slot] | RowStatus.Overflow, columns);
                 buffer.Write(dataBytes, dataIndex + Global.PageHeaderSize);
             }
@@ -424,7 +426,7 @@ IsDirty: {page.IsDirty}{Environment.NewLine}";
         if (page.PageDataType != typeof(DictionaryPageData))
         {
             // pages that have static data row types
-            return Serializer.GetColumnsForType(page.PageDataType);
+            return _serializer.GetColumnsForType(page.PageDataType);
         }
         else
         {
@@ -434,7 +436,7 @@ IsDirty: {page.IsDirty}{Environment.NewLine}";
                 if (page.GetType() == typeof(DataPage))
                 {
                     var parentObjectId = page.Headers().ParentObjectId;
-                    var heap = new HeapTableManager<SystemColumnPageData, SystemColumnPage>(this, parentObjectId);
+                    var heap = new HeapTableManager<SystemColumnPageData, SystemColumnPage>(this, this._serializer, parentObjectId);
                     var mapper = Mapper.ObjectMapper<SystemColumnPageData, ColumnInfo>.Create();
                     return mapper.MapMany(heap.Scan());
                 }
