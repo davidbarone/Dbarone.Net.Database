@@ -106,7 +106,7 @@ public class Types
     /// </summary>
     /// <param name="obj"></param>
     /// <returns></returns>
-    public SerialType GetSerialType(object? obj, TextEncoding textEncoding = TextEncoding.UTF8)
+    public static SerialType GetSerialType(object? obj, TextEncoding textEncoding = TextEncoding.UTF8)
     {
         if (obj == null)
         {

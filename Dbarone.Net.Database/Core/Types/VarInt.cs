@@ -10,10 +10,46 @@ public struct VarInt
     public byte[] Bytes { get; set; }
     public int Length { get; set; }
 
+    /// <summary>
+    /// Adds an integer to the current VarInt. The method will return the overflow status of the operation (if the result of the operation increases the storage size).
+    /// </summary>
+    /// <param name="value"></param>
+    /// <returns></returns>
+    public bool Add(int value) {
+        var startLength = Length;
+        this.Value = this.Value + value;
+        byte[] bytes = new byte[4];
+        int index = 0;
+        int buffer = value & 0x7F;
+
+        while ((value >>= 7) > 0)
+        {
+            buffer <<= 8;
+            buffer |= 0x80;
+            buffer += (value & 0x7F);
+        }
+        while (true)
+        {
+            bytes[index] = (byte)buffer;
+            index++;
+            if ((buffer & 0x80) > 0)
+                buffer >>= 8;
+            else
+                break;
+        }
+
+        Length = index;
+        Bytes = new byte[index];
+        Array.Copy(bytes, 0, Bytes, 0, Length);
+        if (Length!=startLength){
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     public VarInt(int value)
     {
-        this.Value = value;
-
         Value = value;
         byte[] bytes = new byte[4];
         int index = 0;
@@ -42,8 +78,7 @@ public struct VarInt
 
     public VarInt(byte[] bytes)
     {
-        this.Bytes = bytes;
-
+        Bytes = bytes;
         int index = 0;
         int value = 0;
         byte b;
