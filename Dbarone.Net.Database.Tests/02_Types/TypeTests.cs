@@ -23,8 +23,8 @@ public class TypeTests
     [InlineData(typeof(ushort), 2)]
     [InlineData(typeof(Guid), 16)]
     [InlineData(typeof(DateTime), 8)]
-    [InlineData(typeof(string), 0)]
-    [InlineData(typeof(byte[]), 0)]
+    [InlineData(typeof(string), -1)]
+    [InlineData(typeof(byte[]), -1)]
     public void TestTypes_HaveCorrectSize(Type type, int expectedSize)
     {
 

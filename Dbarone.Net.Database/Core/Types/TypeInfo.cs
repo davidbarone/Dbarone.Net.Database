@@ -5,10 +5,10 @@ public class TypeInfo
 
     public DataType DataType { get; set; }
     public Type Type { get; set; }
-    public byte Size { get; set; }
-    public bool IsFixedLength => Size > 0;
+    public sbyte Size { get; set; }
+    public bool IsFixedLength => Size >= 0;
 
-    public TypeInfo(DataType dataType, Type type, byte size)
+    public TypeInfo(DataType dataType, Type type, sbyte size)
     {
         this.Size = size;
         this.Type = type;

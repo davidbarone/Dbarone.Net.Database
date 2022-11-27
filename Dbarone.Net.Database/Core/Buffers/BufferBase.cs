@@ -91,11 +91,13 @@ public class BufferBase : IBuffer
     {
         int i = 0;
         byte[] bytes = new byte[4];
+        Byte b;
         do
         {
-            bytes[i] = InternalBuffer[index];
+            b = InternalBuffer[index + i];
+            bytes[i] = b;
             i++;
-        } while ((InternalBuffer[index] & 128) != 0);
+        } while ((b & 128) != 0);
         return new VarInt(bytes[0..i]);
     }
 

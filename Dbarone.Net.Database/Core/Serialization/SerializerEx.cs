@@ -13,10 +13,10 @@ public class SerializerEx : SerializerBase, ISerializer
     /// <summary>
     /// Format as follows:
     /// VarInt: Total Serialised Size
-    /// VarInt: Header Size
+    /// Byte: RowStatus
     /// 
     /// Header:
-    /// - VarInt: bytes in the header
+    /// - VarInt: bytes in the header (including this VarInt)
     /// - VarInt[]: One or more VarInts (one per column)
     ///
     /// Body:
@@ -91,7 +91,7 @@ public class SerializerEx : SerializerBase, ISerializer
             }
             // Get size of data
             var bodySize = sizes.Sum();
-            var headerLength = new VarInt(serialTypes.Sum(s => s.Length)!.Value);
+            var headerLength = new VarInt(serialTypes.Sum(s => s.Value.Length));
             var headerVarInt = new VarInt(headerLength.Value);
             var overflow = headerVarInt.Add(headerVarInt.Length);
             if (overflow)
@@ -107,7 +107,7 @@ public class SerializerEx : SerializerBase, ISerializer
                     headerVarInt.Add(1);
                 }
             }
-            var totalBufferSize = new VarInt(headerVarInt.Value + bodySize);
+            var totalBufferSize = new VarInt(headerVarInt.Value + bodySize + Types.GetByDataType(DataType.Byte).Size /*RowStatus*/);
             var totalBufferVarInt = new VarInt(totalBufferSize.Value);
             overflow = totalBufferVarInt.Add(totalBufferVarInt.Length);
             if (overflow)
@@ -124,6 +124,9 @@ public class SerializerEx : SerializerBase, ISerializer
             buffer = new BufferBase(new byte[totalBufferVarInt.Value]);
             buffer.Write(totalBufferVarInt.Bytes, i);
             i = i + totalBufferVarInt.Length;
+
+            buffer.Write(rowStatus, i);
+            i = i + Types.GetByDataType(DataType.Byte).Size;
 
             buffer.Write(headerVarInt.Bytes, i);
             i = i + headerVarInt.Length;
@@ -167,11 +170,13 @@ public class SerializerEx : SerializerBase, ISerializer
         }
         else
         {
+            obj = new Dictionary<string, object?>();
+
             // headers
             List<VarInt> serialTypeInts = new List<VarInt>();
             var headerLength = bb.ReadVarInt(i);
             i = i + headerLength.Length;
-            while (i < headerLength.Value)
+            while (i < (headerLength.Value + bufferLength.Length + Types.GetByDataType(DataType.Byte).Size))
             {
                 var serialTypeInt = bb.ReadVarInt(i);
                 i = i + serialTypeInt.Length;
@@ -185,7 +190,14 @@ public class SerializerEx : SerializerBase, ISerializer
                 var column = columnList[j];
                 var serialType = new SerialType(serialTypeInt);
                 var typeInfo = Types.GetByDataType(serialType.DataType);
-                obj[column.Name] = bb.Read(serialType.DataType, i, serialType.Length);
+                if (typeInfo.DataType == DataType.Null)
+                {
+                    obj[column.Name] = null;
+                }
+                else
+                {
+                    obj[column.Name] = bb.Read(serialType.DataType, i, serialType.Length);
+                }
                 i = i + (typeInfo.IsFixedLength ? typeInfo.Size : serialType.Length!.Value);
             }
 

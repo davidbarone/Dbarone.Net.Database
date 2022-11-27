@@ -81,6 +81,7 @@ public class Types
     static Types()
     {
         _dict = new Dictionary<Type, TypeInfo> {
+            {typeof(void), new TypeInfo(DataType.Null, typeof(void), 0)},
             {typeof(bool), new TypeInfo(DataType.Boolean, typeof(bool), 1)},
             {typeof(byte), new TypeInfo(DataType.Byte, typeof(byte), 1)},
             {typeof(sbyte), new TypeInfo(DataType.SByte, typeof(sbyte), 1)},
@@ -96,8 +97,8 @@ public class Types
             {typeof(UInt64), new TypeInfo(DataType.UInt64, typeof(UInt64), 8)},
             {typeof(Guid), new TypeInfo(DataType.Guid, typeof(Guid), 16)},
             {typeof(DateTime), new TypeInfo(DataType.DateTime, typeof(DateTime), 8)},
-            {typeof(string), new TypeInfo(DataType.String, typeof(string), 0)},
-            {typeof(byte[]), new TypeInfo(DataType.Blob, typeof(byte[]), 0)}
+            {typeof(string), new TypeInfo(DataType.String, typeof(string), -1)},
+            {typeof(byte[]), new TypeInfo(DataType.Blob, typeof(byte[]), -1)}
         };
     }
 

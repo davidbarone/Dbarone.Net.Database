@@ -76,23 +76,22 @@ public class SerialType
         int evenStart = variableTypeStart % 2 == 1 ? variableTypeStart + 1 : variableTypeStart;
         int oddStart = evenStart + 1;
 
-        if (dataType == DataType.String)
+        if (dataType == DataType.Blob)
+        {
+            if (length == null)
+            {
+                throw new Exception("Length must be set.");
+            }
+            // Serial type for byte[] values is (N-variableTypeStart)/2 and even. 
+            this.Value = new VarInt((length.Value * 2) + evenStart);
+        }
+        else if (dataType == DataType.String)
         {
             if (length == null)
             {
                 throw new Exception("Length must be set.");
             }
             // Serial type for string values is (N-variableTypeStart)/2 and odd. 
-            this.Value = new VarInt((length.Value * 2) + evenStart);
-        }
-        else if (dataType == DataType.Blob)
-        {
-            if (length == null)
-            {
-                throw new Exception("Length must be set.");
-            }
-
-            // Serial type for byte[] values is (N-variableTypeStart)/2 and even. 
             this.Value = new VarInt((length.Value * 2) + oddStart);
         }
         else
