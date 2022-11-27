@@ -48,7 +48,8 @@ public class SerializerEx : SerializerBase, ISerializer
             if (overflow)
             {
                 overflow = bufferLength.Add(1);
-                if (overflow) {
+                if (overflow)
+                {
                     bufferLength.Add(1);
                 }
             }
@@ -101,7 +102,8 @@ public class SerializerEx : SerializerBase, ISerializer
             if (overflow)
             {
                 overflow = headerVarInt.Add(1);
-                if (overflow) {
+                if (overflow)
+                {
                     headerVarInt.Add(1);
                 }
             }
@@ -148,6 +150,48 @@ public class SerializerEx : SerializerBase, ISerializer
 
     public override DeserializationResult<IDictionary<string, object?>> DeserializeDictionary(IEnumerable<ColumnInfo> columns, byte[] buffer, TextEncoding textEncoding = TextEncoding.UTF8)
     {
-        return base.DeserializeDictionary(columns, buffer, textEncoding);
+        var i = 0;
+        List<ColumnInfo> columnList = new List<ColumnInfo>(columns);
+        Dictionary<string, object?>? obj = null;
+        IBuffer bb = new BufferBase(buffer);
+        var bufferLength = bb.ReadVarInt(i);
+        i = i + bufferLength.Length;
+        Assert.Equals(buffer.Length, bufferLength.Value);
+
+        var rowStatus = (RowStatus)bb.ReadByte(i);
+        i = i + Types.GetByDataType(DataType.Byte).Size;
+
+        if (rowStatus.HasFlag(RowStatus.Deleted) || rowStatus.HasFlag(RowStatus.Null))
+        {
+            // no need to deserialize anything.
+        }
+        else
+        {
+            // headers
+            List<VarInt> serialTypeInts = new List<VarInt>();
+            var headerLength = bb.ReadVarInt(i);
+            i = i + headerLength.Length;
+            while (i < headerLength.Value)
+            {
+                var serialTypeInt = bb.ReadVarInt(i);
+                i = i + serialTypeInt.Length;
+                serialTypeInts.Add(serialTypeInt);
+            }
+
+            // body
+            for (int j = 0; j < serialTypeInts.Count(); j++)
+            {
+                var serialTypeInt = serialTypeInts[j];
+                var column = columnList[j];
+                var serialType = new SerialType(serialTypeInt);
+                var typeInfo = Types.GetByDataType(serialType.DataType);
+                obj[column.Name] = bb.Read(serialType.DataType, i, serialType.Length);
+                i = i + (typeInfo.IsFixedLength ? typeInfo.Size : serialType.Length!.Value);
+            }
+
+            // check
+            Assert.Equals(bufferLength.Value, i);
+        }
+        return new DeserializationResult<IDictionary<string, object?>>(obj, rowStatus);
     }
 }

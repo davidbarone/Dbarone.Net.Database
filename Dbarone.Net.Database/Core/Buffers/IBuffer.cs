@@ -45,6 +45,7 @@ public interface IBuffer
     public Byte ReadByte(int index);
     public SByte ReadSByte(int index);
     public char ReadChar(int index);
+    public VarInt ReadVarInt(int index);
     public Int16 ReadInt16(int index);
     public UInt16 ReadUInt16(int index);
     public Int32 ReadInt32(int index);
@@ -68,6 +69,7 @@ public interface IBuffer
     public void Write(byte value, int index);
     public void Write(sbyte value, int index);
     public void Write(char value, int index);
+    public void Write(VarInt value, int index);
     public void Write(Int16 value, int index);
     public void Write(UInt16 value, int index);
     public void Write(Int32 value, int index);
