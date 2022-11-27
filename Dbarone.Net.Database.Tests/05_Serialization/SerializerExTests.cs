@@ -25,11 +25,11 @@ public class SerializerExTests
     [Fact]
     public void SerializerEx_CompletesIn()
     {
-        // Serialise / deserialise 10,000 objects in 10 seconds.
+        // Serialise / deserialise 50,000 objects in 10 seconds.
         DBAssert.Assert.CompletesIn(() =>
         {
             var entity = TestEntity.Create();
-            for (int i = 0; i < 10000; i++)
+            for (int i = 0; i < 50000; i++)
             {
                 var columns = Serializer.GetColumnsForType(typeof(TestEntity));
                 var bytes = Serializer.Serialize(entity, RowStatus.None);
