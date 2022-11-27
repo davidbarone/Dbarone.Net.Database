@@ -6,18 +6,12 @@ namespace Dbarone.Net.Database;
 /// </summary>
 public struct VarInt
 {
-    public int Value { get; set; }
-    public byte[] Bytes { get; set; }
-    public int Length { get; set; }
+    public int Value { get; set; } = 0;
+    public byte[] Bytes { get; set; } = new byte[0];
+    public int Length { get; set; } = 0;
 
-    /// <summary>
-    /// Adds an integer to the current VarInt. The method will return the overflow status of the operation (if the result of the operation increases the storage size).
-    /// </summary>
-    /// <param name="value"></param>
-    /// <returns></returns>
-    public bool Add(int value) {
-        var startLength = Length;
-        this.Value = this.Value + value;
+    private byte[] IntToByteArray(int value)
+    {
         byte[] bytes = new byte[4];
         int index = 0;
         int buffer = value & 0x7F;
@@ -38,12 +32,26 @@ public struct VarInt
                 break;
         }
 
-        Length = index;
-        Bytes = new byte[index];
-        Array.Copy(bytes, 0, Bytes, 0, Length);
-        if (Length!=startLength){
+        return bytes[0..index];
+    }
+
+    /// <summary>
+    /// Adds an integer to the current VarInt. The method will return the overflow status of the operation (if the result of the operation increases the storage size).
+    /// </summary>
+    /// <param name="value"></param>
+    /// <returns></returns>
+    public bool Add(int value)
+    {
+        var startLength = Length;
+        this.Value = this.Value + value;
+        this.Bytes = IntToByteArray(this.Value);
+        this.Length = this.Bytes.Length;
+        if (Length != startLength)
+        {
             return true;
-        } else {
+        }
+        else
+        {
             return false;
         }
     }
@@ -51,29 +59,8 @@ public struct VarInt
     public VarInt(int value)
     {
         Value = value;
-        byte[] bytes = new byte[4];
-        int index = 0;
-        int buffer = value & 0x7F;
-
-        while ((value >>= 7) > 0)
-        {
-            buffer <<= 8;
-            buffer |= 0x80;
-            buffer += (value & 0x7F);
-        }
-        while (true)
-        {
-            bytes[index] = (byte)buffer;
-            index++;
-            if ((buffer & 0x80) > 0)
-                buffer >>= 8;
-            else
-                break;
-        }
-
-        Length = index;
-        Bytes = new byte[index];
-        Array.Copy(bytes, 0, Bytes, 0, Length);
+        Bytes = this.IntToByteArray(value);
+        Length = Bytes.Length;
     }
 
     public VarInt(byte[] bytes)
