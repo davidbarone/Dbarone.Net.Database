@@ -3,24 +3,25 @@ using Dbarone.Net.Assertions;
 using System.Collections;
 using Dbarone.Net.Extensions.Object;
 using System.Collections.Generic;
-using Dbarone.Net.Assertions;
 
 /// <summary>
-/// An enhanced serialier, similar in function to the Sqlite serialiser.
+/// A serialier that uses a SerialType structure to encode values.
+/// 
+/// The serialised format is as follows:
+/// 
+/// SerialisedSize (VarInt):    Total Serialised Size including this field
+/// RowStatus (Byte):           RowStatus
+/// 
+/// Header Section:
+/// Header Size (VarInt):       Total bytes in the header section (including this field)
+/// SerialTypes (VarInt[]):     One or more VarInts (one per column) to define the column types and lengths
+///
+/// Body Section:
+/// Values (Byte[][]):          Array of byte[] values representing the serialised values
 /// </summary>
-public class SerializerEx : SerializerBase, ISerializer
+public class SerialTypeSerializer : BaseSerializer, ISerializer
 {
     /// <summary>
-    /// Format as follows:
-    /// VarInt: Total Serialised Size
-    /// Byte: RowStatus
-    /// 
-    /// Header:
-    /// - VarInt: bytes in the header (including this VarInt)
-    /// - VarInt[]: One or more VarInts (one per column)
-    ///
-    /// Body:
-    /// - Zero or more values
     /// 
     /// </summary>
     /// <param name="columns"></param>

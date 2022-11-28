@@ -5,7 +5,7 @@ using DBAssert = Dbarone.Net.Assertions;
 
 public class SerializerExTests
 {
-    public ISerializer Serializer = new SerializerEx();
+    public ISerializer Serializer = new SerialTypeSerializer();
     
     [Fact]
     public void SerializerEx_Serialize()

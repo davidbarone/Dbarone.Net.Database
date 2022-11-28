@@ -54,7 +54,7 @@ public class Engine : IEngine
             FileShare.None,
             (int)Global.PageSize);
 
-        this._serializer = new SerializerBase();
+        this._serializer = new DefaultSerializer();
         this._bufferManager = new BufferManager(new DiskService(this._stream), _serializer);
     }
 
