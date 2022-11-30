@@ -3,7 +3,7 @@ using Xunit;
 using Dbarone.Net.Extensions.Object;
 using DBAssert = Dbarone.Net.Assertions;
 
-public class SerializerExTests
+public class SerialTypeSerializerTests
 {
     public ISerializer Serializer = new SerialTypeSerializer();
     
