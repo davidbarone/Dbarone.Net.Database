@@ -23,6 +23,8 @@ public interface ISerializer
 
     #endregion
 
+    VarInt GetBufferLength(byte[] buffer);
     RowStatus GetRowStatus(byte[] buffer);
+    byte[] GetCellBuffer(PageBuffer buffer, int index);
     IEnumerable<ColumnInfo> GetColumnsForType(Type type);
 }

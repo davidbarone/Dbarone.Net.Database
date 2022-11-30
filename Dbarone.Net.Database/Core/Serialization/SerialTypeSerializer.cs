@@ -90,8 +90,14 @@ public class SerialTypeSerializer : BaseSerializer, ISerializer
                     sizes.Add(0);
                 }
             }
+
             // Get size of data
             var bodySize = sizes.Sum();
+
+            if (bodySize == 120)
+            {
+                var a = 1;
+            }
             var headerLength = new VarInt(serialTypes.Sum(s => s.Value.Length));
             var headerVarInt = new VarInt(headerLength.Value);
             var overflow = headerVarInt.Add(headerVarInt.Length);
@@ -111,11 +117,6 @@ public class SerialTypeSerializer : BaseSerializer, ISerializer
             var totalBufferSize = new VarInt(headerVarInt.Value + bodySize + Types.GetByDataType(DataType.Byte).Size /*RowStatus*/);
             var totalBufferVarInt = new VarInt(totalBufferSize.Value);
             overflow = totalBufferVarInt.Add(totalBufferVarInt.Length);
-            if (overflow)
-            {
-                totalBufferVarInt.Add(1);
-            }
-            overflow = totalBufferSize.Add(totalBufferVarInt.Length);
             if (overflow)
             {
                 totalBufferVarInt.Add(1);
@@ -147,6 +148,10 @@ public class SerialTypeSerializer : BaseSerializer, ISerializer
                 }
             }
             // Finish - check length OK
+            if (i != totalBufferVarInt.Value)
+            {
+                var a = 1;
+            }
             Assert.Equals(totalBufferVarInt.Value, i);
         }
         return buffer.ToArray();
@@ -207,4 +212,25 @@ public class SerialTypeSerializer : BaseSerializer, ISerializer
         }
         return new DeserializationResult<IDictionary<string, object?>>(obj, rowStatus);
     }
+
+    public override byte[] GetCellBuffer(PageBuffer buffer, int index)
+    {
+        // First field is the total length (VarInt).
+        var totalLength = buffer.ReadVarInt(index);
+        var b = buffer.Slice(index, totalLength.Value);
+        return b;
+    }
+
+    /// <summary>
+    /// Inspects a buffer, and extracts the row status.
+    /// </summary>
+    /// <param name="buffer"></param>
+    public override RowStatus GetRowStatus(byte[] buffer)
+    {
+        var varInt = GetBufferLength(buffer);
+        IBuffer bb = new BufferBase(buffer);
+        var rowStatus = (RowStatus)bb.ReadByte(varInt.Length);
+        return rowStatus;
+    }
+
 }

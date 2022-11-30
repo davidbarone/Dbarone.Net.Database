@@ -19,7 +19,7 @@ public class DebugTests : TestBase
         var tableName = "Table1";
 
         // Act
-        using (var db = Engine.Create(dbName))
+        using (var db = Engine.Create(dbName, serializer: new DefaultSerializer()))
         {
             ColumnInfo[] columns = {
                 new ColumnInfo("Col1", DataType.Int32, false),
@@ -32,7 +32,7 @@ public class DebugTests : TestBase
         }
 
         // Assert
-        using (var db = Engine.Open(dbName, false))
+        using (var db = Engine.Open(dbName, canWrite: false, serializer: new DefaultSerializer()))
         {
             // Assert
             var str = db.DebugPages();
@@ -58,7 +58,7 @@ public class DebugTests : TestBase
         var tableName = "Table1";
 
         // Act
-        using (var db = Engine.Create(dbName))
+        using (var db = Engine.Create(dbName, serializer: new DefaultSerializer()))
         {
             ColumnInfo[] columns = {
                 new ColumnInfo("Col1", DataType.Int32, false),
@@ -71,7 +71,7 @@ public class DebugTests : TestBase
         }
 
         // Assert
-        using (var db = Engine.Open(dbName, false))
+        using (var db = Engine.Open(dbName, canWrite: false, serializer: new DefaultSerializer()))
         {
             // Assert
             var str = db.DebugPage(2);
@@ -110,7 +110,3 @@ Slot #2 Values:
         }
     }
 }
-
-
-
-

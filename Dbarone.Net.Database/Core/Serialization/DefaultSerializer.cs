@@ -224,4 +224,26 @@ public class DefaultSerializer : BaseSerializer, ISerializer
 
     #endregion
 
+    #region Other Methods
+
+    public override byte[] GetCellBuffer(PageBuffer buffer, int index)
+    {
+        // First 2 bytes of each record store the record total length.
+        var totalLength = buffer.ReadUInt16(index);
+        var b = buffer.Slice(index, totalLength);
+        return b;
+    }
+
+    /// <summary>
+    /// Inspects a buffer, and extracts the row status.
+    /// </summary>
+    /// <param name="buffer"></param>
+    public override RowStatus GetRowStatus(byte[] buffer)
+    {
+        IBuffer bb = new BufferBase(buffer);
+        var rowStatus = (RowStatus)bb.ReadByte(4);
+        return rowStatus;
+    }
+
+    #endregion
 }

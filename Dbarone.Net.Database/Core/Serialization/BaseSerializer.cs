@@ -93,15 +93,29 @@ public abstract class BaseSerializer : ISerializer
     #region Other public methods
 
     /// <summary>
+    /// Reads the buffer length field at offset [index], and slices the buffer for that record.
+    /// </summary>
+    /// <param name="buffer"></param>
+    /// <param name="index"></param>
+    /// <returns></returns>
+    public abstract byte[] GetCellBuffer(PageBuffer buffer, int index);
+
+    /// <summary>
+    /// Gets the length of a buffer using the first VarInt field in the buffer starting at offset 0.
+    /// </summary>
+    /// <param name="buffer"></param>
+    /// <returns></returns>
+    public VarInt GetBufferLength(byte[] buffer) {
+        IBuffer bb = new BufferBase(buffer);
+        var varInt = bb.ReadVarInt(0);
+        return varInt;
+    }
+
+    /// <summary>
     /// Inspects a buffer, and extracts the row status.
     /// </summary>
     /// <param name="buffer"></param>
-    public RowStatus GetRowStatus(byte[] buffer)
-    {
-        IBuffer bb = new BufferBase(buffer);
-        var rowStatus = (RowStatus)bb.ReadByte(4);
-        return rowStatus;
-    }
+    public abstract RowStatus GetRowStatus(byte[] buffer);
 
     /// <summary>
     /// Returns the columns for a particular type based on the public properties.

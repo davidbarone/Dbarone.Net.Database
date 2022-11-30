@@ -43,7 +43,7 @@ public class Engine : IEngine
     /// </summary>
     /// <param name="filename">The filename (database).</param>
     /// <param name="canWrite">Set to true to allow writes.</param>
-    public Engine(string filename, bool canWrite)
+    public Engine(string filename, bool canWrite, ISerializer? serializer = null)
     {
         this._filename = filename;
         var exists = File.Exists(this._filename);
@@ -54,7 +54,15 @@ public class Engine : IEngine
             FileShare.None,
             (int)Global.PageSize);
 
-        this._serializer = new DefaultSerializer();
+        if (serializer != null)
+        {
+            this._serializer = serializer;
+        }
+        else
+        {
+            //this._serializer = new DefaultSerializer();
+            this._serializer = new SerialTypeSerializer();
+        }
         this._bufferManager = new BufferManager(new DiskService(this._stream), _serializer);
     }
 
@@ -76,9 +84,9 @@ public class Engine : IEngine
     /// </summary>
     /// <param name="filename">The filename.</param>
     /// <returns></returns>
-    public static IEngine Create(string filename, TextEncoding textEncoding = TextEncoding.UTF8)
+    public static IEngine Create(string filename, TextEncoding textEncoding = TextEncoding.UTF8, ISerializer? serializer = null)
     {
-        var engine = new Engine(filename, canWrite: true);
+        var engine = new Engine(filename, canWrite: true, serializer: serializer);
 
         // Create boot page (page #0)
         var bootPage = engine.CreatePage<BootPage>();
@@ -96,9 +104,9 @@ public class Engine : IEngine
         return File.Exists(filename);
     }
 
-    public static Engine Open(string filename, bool canWrite)
+    public static Engine Open(string filename, bool canWrite, ISerializer? serializer = null)
     {
-        return new Engine(filename, canWrite: true);
+        return new Engine(filename, canWrite: true, serializer: serializer);
     }
 
     public static void Delete(string filename)

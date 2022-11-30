@@ -287,13 +287,13 @@ IsDirty: {page.IsDirty}{Environment.NewLine}";
         {
             // for overflow page, page stores single cell - length of buffer available from headers
             var totalLength = page.Headers().FreeOffset;
+
             var b = buffer.Slice(dataIndex + Global.PageHeaderSize, totalLength);
             return new DeserializationResult<IPageData>(new BufferPageData(b), RowStatus.None);
         }
         else
         {
-            var totalLength = buffer.ReadUInt16(Global.PageHeaderSize + dataIndex); // First 2 bytes of each record store the record total length.
-            var b = buffer.Slice(dataIndex + Global.PageHeaderSize, totalLength);
+            var b = _serializer.GetCellBuffer(buffer, Global.PageHeaderSize + dataIndex);
             if (page.PageDataType == typeof(DictionaryPageData))
             {
                 if (_serializer.GetRowStatus(b).HasFlag(RowStatus.Overflow))
@@ -330,8 +330,7 @@ IsDirty: {page.IsDirty}{Environment.NewLine}";
         page.PageType = (PageType)buffer.ReadByte(0);
 
         // Hydrate Headers (starting at offset: 1)
-        var headerLength = buffer.ReadUInt16(1);    // first 2 bytes of buffer are total length.
-        var headerBuf = buffer.Slice(1, headerLength);
+        var headerBuf = _serializer.GetCellBuffer(buffer, 1);
         page._headers = (PageHeader)_serializer.Deserialize(page.PageHeaderType, headerBuf, textEncoding).Result!;
 
         // Hydrate slots
