@@ -94,10 +94,6 @@ public class SerialTypeSerializer : BaseSerializer, ISerializer
             // Get size of data
             var bodySize = sizes.Sum();
 
-            if (bodySize == 120)
-            {
-                var a = 1;
-            }
             var headerLength = new VarInt(serialTypes.Sum(s => s.Value.Length));
             var headerVarInt = new VarInt(headerLength.Value);
             var overflow = headerVarInt.Add(headerVarInt.Length);
@@ -148,10 +144,6 @@ public class SerialTypeSerializer : BaseSerializer, ISerializer
                 }
             }
             // Finish - check length OK
-            if (i != totalBufferVarInt.Value)
-            {
-                var a = 1;
-            }
             Assert.Equals(totalBufferVarInt.Value, i);
         }
         return buffer.ToArray();
