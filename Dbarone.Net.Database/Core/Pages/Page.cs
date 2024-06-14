@@ -7,6 +7,11 @@ using Dbarone.Net.Proxy;
 /// </summary>
 public class Page
 {
+    //    private byte PageType { get; set; }
+
+    //    private int PageId { get; set; }
+
+
     public PageType PageType { get; set; }
     public bool IsDirty { get; set; }
     public IPageHeader _headers;
@@ -193,7 +198,8 @@ public class Page
         Assert.NotFlag(this.GetRowStatus(slot), RowStatus.Deleted);
         this.ClearRowStatus(slot, RowStatus.Deleted);
         this.ClearRowStatus(slot, RowStatus.Overflow);
-        if (isOverflowPointer) {
+        if (isOverflowPointer)
+        {
             this.SetRowStatus(slot, RowStatus.Overflow);
         }
 
