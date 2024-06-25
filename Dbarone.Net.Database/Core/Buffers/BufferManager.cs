@@ -7,442 +7,134 @@ using Dbarone.Net.Extensions.Object;
 /// <summary>
 /// In memory cache of pages as they are modified or read from disk. Dirty pages are written back to disk with a CHECKPOINT command.
 /// </summary>
-public class BufferManager : IBufferManager
+public abstract class BufferManager : IBufferManager, IStorage
 {
-    private TextEncoding textEncoding = TextEncoding.UTF8;
-    private ISerializer _serializer;
-    public BufferManager(IDiskService diskService, ISerializer serializer)
+    protected int PageSize { get; set; }
+    protected Dictionary<int, Page> Cache = new Dictionary<int, Page>();
+
+    public ISerializer Serializer { get; set; }
+
+    public int Count
     {
-        this._diskService = diskService;
-        this._serializer = serializer;
+        get { return Cache.Count(); }
     }
 
-    public void SaveDirtyPages()
+    /// <summary>
+    /// Creates a new buffer manager with a given page size.
+    /// </summary>
+    /// <param name="pageSize"></param>
+    public BufferManager(int pageSize, ISerializer serializer)
     {
-        foreach (var key in _pages.Keys)
+        this.PageSize = pageSize;
+        this.Serializer = serializer;
+    }
+
+    #region IStorage
+
+    public abstract PageBuffer StorageRead(int pageId);
+
+    public abstract void StorageWrite(PageBuffer page);
+
+    public abstract int StoragePageCount();
+
+    #endregion
+
+    #region IBufferManager
+
+    public int MaxPageId
+    {
+        get
         {
-            var page = _pages[key];
+            var maxBufferId = this.Cache.Values.Max(c => c.PageId);
+            var maxStorageId = StoragePageCount();
+            return maxBufferId > maxStorageId ? maxBufferId : maxStorageId;
+        }
+    }
+
+    public void DropCleanBuffers()
+    {
+
+    }
+
+    public void Save()
+    {
+        foreach (var key in Cache.Keys)
+        {
+            var page = Cache[key];
             if (page.IsDirty)
             {
-                var pageBuffer = SerialisePage(page)!;
-                _diskService.WritePage(key, pageBuffer);
+                var pageBuffer = Serializer.Serialize(page);
+                this.StorageWrite(pageBuffer);
                 page.IsDirty = false;
             }
         }
     }
 
     /// <summary>
+    /// Create a page and return the new page id.
+    /// </summary>
+    /// <param name="pageType">The page type to create.</param>
+    /// <returns>The page id created.</returns>
+    public Page Create(PageType pageType)
+    {
+        // Get max pageid in buffer
+        var nextBufferPageId = this.Cache.Values.Max(p => p.PageId) + 1;
+        var nextStoragePageId = StoragePageCount();
+        var nextPageId = nextBufferPageId > nextStoragePageId ? nextBufferPageId : nextStoragePageId;
+
+        byte[] buffer = new byte[this.PageSize];
+        var pb = new PageBuffer(buffer);
+        pb.PageId = nextPageId;
+        pb.PageType = pageType;
+        var page = Serializer.Deserialize(pb);
+        page.IsDirty = true;
+        this.Cache[pb.PageId] = page;
+        return page;
+    }
+
+    /// <summary>
     /// Marks a page as free
     /// </summary>
     /// <param name="page"></param>
-    public void MarkFree(Page page)
+    public void Clear(int pageId)
     {
-        page.MarkFree();
-        page.Headers().PrevPageId = null;
-
-        // Add to the start of the single-linked free page chain
-        var boot = this.GetPage<BootPage>(0);
-        int? nextId = boot.Headers().FirstFreePageId;
-        if (nextId == null)
-        {
-            page.Headers().NextPageId = null;
-        }
-        else
-        {
-            var nextPage = GetPage(nextId.Value);
-            nextPage.Headers().PrevPageId = page.Headers().PageId;
-            page.Headers().NextPageId = nextId;
-        }
-        boot.Headers().FirstFreePageId = page.Headers().PageId;
-    }
-
-    private IDiskService _diskService;
-    private Dictionary<int, Page> _pages = new Dictionary<int, Page>();
-
-    private PageType GetPageType(PageBuffer pageBuffer)
-    {
-        // Page type (starting at offset: 0)
-        return (PageType)pageBuffer.ReadByte(0);
-    }
-
-    public string DebugPages()
-    {
-        var output = $"{"PageId".Justify(8, Justification.RIGHT)} {"PageType".Justify(16, Justification.RIGHT)} {"Prev".Justify(8, Justification.RIGHT)} {"Next".Justify(8, Justification.RIGHT)} {"Parent".Justify(8, Justification.RIGHT)} {"Slots".Justify(8, Justification.RIGHT)} {"Tran".Justify(8, Justification.RIGHT)} {"Dirty".Justify(8, Justification.RIGHT)} {"Free".Justify(8, Justification.RIGHT)}{Environment.NewLine}";
-        output += $"{"------".Justify(8, Justification.RIGHT)} {"--------".Justify(16, Justification.RIGHT)} {"----".Justify(8, Justification.RIGHT)} {"----".Justify(8, Justification.RIGHT)} {"------".Justify(8, Justification.RIGHT)} {"-----".Justify(8, Justification.RIGHT)} {"----".Justify(8, Justification.RIGHT)} {"-----".Justify(8, Justification.RIGHT)} {"----".Justify(8, Justification.RIGHT)}{Environment.NewLine}";
-
-        var pageCount = this._diskService.PageCount;
-        for (int i = 0; i < pageCount; i++)
-        {
-            var page = GetPage(i);
-            output += $"{page.Headers().PageId.ToString().Justify(8, Justification.RIGHT)} {page.PageType.ToString().Justify(16, Justification.RIGHT)} {page.Headers().PrevPageId.ToString().Justify(8, Justification.RIGHT)} {page.Headers().NextPageId.ToString().Justify(8, Justification.RIGHT)} {page.Headers().ParentObjectId.ToString().Justify(8, Justification.RIGHT)} {page.Headers().SlotsUsed.ToString().Justify(8, Justification.RIGHT)} {page.Headers().TransactionId.ToString().Justify(8, Justification.RIGHT)} {page.IsDirty.ToString().Justify(8, Justification.RIGHT)} {page.Headers().FreeOffset.ToString().Justify(8, Justification.RIGHT)}{Environment.NewLine}";
-        }
-        return output;
-    }
-
-    public string DebugPage(int pageId)
-    {
-        var page = GetPage(pageId);
-
-        var output = @$"PageType: {page.PageType.ToString()}
-IsDirty: {page.IsDirty}{Environment.NewLine}";
-
-        var properties = page.Headers().GetType().GetProperties().Where(p => p.PropertyType.IsValueType || p.PropertyType == typeof(string));
-        foreach (var property in properties)
-        {
-            output += $"Headers.{property.Name}: {property.GetValue(page.Headers())}{Environment.NewLine}";
-        }
-        for (int i = 0; i < page.Headers().SlotsUsed; i++)
-        {
-            output += $"{Environment.NewLine}";
-            var status = page.Statuses[i];
-            var statusString = $"[{(status.HasFlag(RowStatus.Deleted) ? 'D' : ' ')}{(status.HasFlag(RowStatus.Overflow) ? 'O' : ' ')}{(status.HasFlag(RowStatus.Null) ? 'N' : ' ')}]";
-            output += $"Slot #{i}: Offset: {page.Slots[i]}, Status Flags: {statusString}, Type: {page._data[i].GetType().Name}{Environment.NewLine}";
-            output += $"Slot #{i} Values:{Environment.NewLine}";
-            var dict = page._data[i].ToDictionary();
-            output += string.Join(Environment.NewLine, dict.Keys.Select(k => $" - {k}: {dict[k]}"));
-            output += Environment.NewLine;
-        }
-        return output;
+        var page = this.Get(pageId);
+        page.Clear();
     }
 
     /// <summary>
     /// Gets a page.
     /// </summary>
-    /// <param name="pageId"></param>
-    /// <returns></returns>
-    public Page GetPage(int pageId)
+    /// <remarks>
+    /// This method returns a page from the cache if present. Otherwise, it will read the page from storage.
+    /// </remarks>
+    /// <param name="pageId">The page id.</param>
+    /// <returns>Returns a page.</returns>
+    public Page Get(int pageId)
     {
-        if (_pages.ContainsKey(pageId))
+        if (Cache.ContainsKey(pageId))
         {
             // cache hit
-            var page = _pages[pageId];
-            Assert.AssignableFrom(page, typeof(Page));
-            return _pages[pageId];
+            var page = Cache[pageId];
+            return Cache[pageId];
         }
         else
         {
             // cache miss - read from disk + add to buffer cache
-            var buffer = _diskService.ReadPage(pageId);
-            var pageType = GetPageType(buffer);
-
-            Page? page = null;
-            if (pageType == PageType.Boot) page = new BootPage();
-            else if (pageType == PageType.SystemTable) page = new SystemTablePage();
-            else if (pageType == PageType.SystemColumn) page = new SystemColumnPage();
-            else if (pageType == PageType.Data) page = new DataPage();
-            else if (pageType == PageType.Overflow) page = new OverflowPage();
-            else throw new Exception("Unable to create a new page.");
-
-            // Hydrate the page from the buffer
-            HydratePage(page, buffer);
-
-            // Create header proxy
-            page.CreateHeaderProxy();
-
-            // Add to cache, and return
-            this._pages[pageId] = page;
-
-            // If Boot page, we set the text encoding for subsequent pages
-            // Page0 is always read using default encoding of UTF-8.
-            if (pageType == PageType.Boot && pageId == 0)
-            {
-                this.textEncoding = (page as BootPage)!.Headers().TextEncoding;
-            }
-
+            var buffer = StorageRead(pageId);
+            var page = Serializer.Deserialize(buffer);
+            this.Cache[pageId] = page;
             return page;
         }
     }
 
     /// <summary>
-    /// Gets a page from the buffer cache. If page not present, reads from disk
+    /// Gets the database configuration from the boot page (page0).
     /// </summary>
-    /// <param name="pageId"></param>
-    /// <returns></returns>
-    public T GetPage<T>(int pageId) where T : Page
+    public BootData GetBootData()
     {
-        return (T)GetPage(pageId);
-    }
-
-    /// <summary>
-    /// Instantiates / creates a new page from thin air.
-    /// </summary>
-    /// <typeparam name="T">The page type.</typeparam>
-    /// <param name="pageId">The page Id.</param>
-    /// <param name="parentObjectId">Optional parent id. Required for some page types.</param>
-    /// <returns>Returns a new instantiated page.</returns>
-    /// <exception cref="Exception"></exception>
-    private T InitialisePage<T>(int pageId, int? parentObjectId = null, int? prevPageId = null) where T : Page
-    {
-        //var buffer = _diskService.ReadPage(pageId);
-
-        T? page = null;
-        // Create page object - buffer not required.
-        if (typeof(T) == typeof(BootPage)) page = (T)(object)new BootPage(pageId);
-        else if (typeof(T) == typeof(SystemTablePage)) page = (T)(object)new SystemTablePage(pageId);
-        else if (typeof(T) == typeof(SystemColumnPage)) page = (T)(object)new SystemColumnPage(pageId);
-        else if (typeof(T) == typeof(DataPage)) page = (T)(object)new DataPage(pageId, parentObjectId);
-        else if (typeof(T) == typeof(OverflowPage)) page = (T)(object)new OverflowPage(pageId);
-        else throw new Exception("Unable to create a new page.");
-
-        if (prevPageId != null)
-        {
-            page.Headers().PrevPageId = prevPageId;
-        }
-
-        // Create header proxy
-        page.CreateHeaderProxy();
-
-        // For brand new pages, immediately set dirty flag
-        page.SetDirty();
-
-        // Add to cache, and return
-        this._pages[pageId] = page;
-        return (T)page;
-    }
-
-    public T CreatePage<T>(int? parentObjectId = null, Page? linkedPage = null) where T : Page
-    {
-        // Check if any free pages we can serve up first?
-        int? firstFreePageId = null;
-        int pageId;
-        bool increasePageCount = false;
-        BootPage? bootPage = null;
-
-        if (typeof(T) != typeof(BootPage))
-        {
-            bootPage = this.GetPage<BootPage>(0);
-            firstFreePageId = bootPage.Headers().FirstFreePageId;
-        }
-
-        if (firstFreePageId != null && bootPage != null)
-        {
-            // reuse existing page
-            pageId = firstFreePageId.Value;
-            var free = this.GetPage(firstFreePageId.Value);
-            Assert.True(free.Headers().IsUnused);
-            bootPage.Headers().FirstFreePageId = free.Headers().NextPageId;
-            this._diskService.ClearPage(pageId);
-        }
-        else
-        {
-            // create new page
-            pageId = _diskService.CreatePage();
-            increasePageCount = true;
-        }
-
-        // Updated linked page
-        if (linkedPage != null)
-        {
-            linkedPage.Headers().NextPageId = pageId;
-        }
-
-        // Initialise page
-        var page = InitialisePage<T>(pageId, parentObjectId, (linkedPage != null) ? linkedPage.Headers().PageId : null);
-
-        // Update boot page PageCount
-        if (increasePageCount)
-        {
-            if (page.GetType() == typeof(BootPage))
-            {
-                (page as BootPage)!.Headers().PageCount++;
-            }
-            else if (bootPage != null)
-            {
-                bootPage.Headers().PageCount++;
-            }
-        }
-
-        return page;
-    }
-
-    #region Serialisation
-
-    /// <summary>
-    /// Serialise row object. For page types that use
-    /// DictionaryPageData (i.e. data pages), we get
-    /// the inner dictionary.
-    /// </summary>
-    /// <param name="row">The row to serialise.</param>
-    /// <param name="columns">The column metadata.</param>
-    /// <returns>A byte[] array</returns>
-    public byte[] SerialiseRow(object row, RowStatus rowStatus, IEnumerable<ColumnInfo> columns)
-    {
-        var dictionaryRow = row as DictionaryPageData;
-        byte[]? buffer = null;
-        if (dictionaryRow != null)
-        {
-            buffer = _serializer.SerializeDictionary(columns, dictionaryRow.Row, rowStatus, textEncoding);
-        }
-        else
-        {
-            buffer = _serializer.Serialize(columns, row, rowStatus, textEncoding);
-        }
-        return buffer;
-    }
-
-    private DeserializationResult<IPageData> DeserialiseRow(Page page, PageBuffer buffer, int dataIndex)
-    {
-        // add data
-        if (page.PageDataType == typeof(BufferPageData))
-        {
-            // for overflow page, page stores single cell - length of buffer available from headers
-            var totalLength = page.Headers().FreeOffset;
-
-            var b = buffer.Slice(dataIndex + Global.PageHeaderSize, totalLength);
-            return new DeserializationResult<IPageData>(new BufferPageData(b), RowStatus.None);
-        }
-        else
-        {
-            var b = _serializer.GetCellBuffer(buffer, Global.PageHeaderSize + dataIndex);
-            if (page.PageDataType == typeof(DictionaryPageData))
-            {
-                if (_serializer.GetRowStatus(b).HasFlag(RowStatus.Overflow))
-                {
-                    // overflow data
-                    var result = _serializer.Deserialize<OverflowPointer>(b, textEncoding);
-                    return new DeserializationResult<IPageData>(result.Result, result.RowStatus);
-                }
-                else
-                {
-                    // dictionary data
-                    var columnMeta = this.GetColumnsForPage(page);
-                    var result = _serializer.DeserializeDictionary(columnMeta, b, textEncoding);
-                    return new DeserializationResult<IPageData>(new DictionaryPageData(result.Result!), result.RowStatus);
-                }
-            }
-            else
-            {
-                // POCO data
-                var result = _serializer.Deserialize(page.PageDataType, b, textEncoding);
-                return new DeserializationResult<IPageData>((IPageData)result.Result!, result.RowStatus);
-            }
-        }
-    }
-
-    /// <summary>
-    /// Deserialises a buffer into an existing page.
-    /// </summary>
-    /// <param name="page">Page to deserialise into.</param>
-    /// <param name="buffer">The buffer to deserialise.</param>
-    private void HydratePage(Page page, PageBuffer buffer)
-    {
-        // Page type (starting at offset: 0)
-        page.PageType = (PageType)buffer.ReadByte(0);
-
-        // Hydrate Headers (starting at offset: 1)
-        var headerBuf = _serializer.GetCellBuffer(buffer, 1);
-        page._headers = (PageHeader)_serializer.Deserialize(page.PageHeaderType, headerBuf, textEncoding).Result!;
-
-        // Hydrate slots
-        var slotIndex = Global.PageSize - 2;
-        for (int slot = 0; slot < page._headers.SlotsUsed; slot++)
-        {
-            var dataIndex = buffer.ReadUInt16(slotIndex);
-            page.Slots.Add(dataIndex);
-            var deserialisationResult = DeserialiseRow(page, buffer, dataIndex);
-            page._data.Add(deserialisationResult.Result!);
-            page.Statuses.Add(deserialisationResult.RowStatus);
-            slotIndex = slotIndex - 2;
-        }
-    }
-
-    /// <summary>
-    /// Converts a page to a PageBuffer which can be persisted to disk. Is called when persisting pages to disk.
-    /// </summary>
-    /// <param name="page">The page to convert.</param>
-    /// <returns>Returns a PageBuffer representation of the page.</returns>
-    private PageBuffer? SerialisePage(Page page)
-    {
-        byte[] b = new byte[8192];
-        PageBuffer buffer = new PageBuffer(b, page.Headers().PageId);
-
-        // Page Type (offset 0)
-        buffer.Write(page.PageType, 0);
-
-        // Headers - we need to serialise the original header, not the proxy
-        // Offset 1
-        var headerType = page.Headers().GetType();
-        var pi = headerType.GetProperty("Target");
-        var h = page.Headers();
-        if (pi != null)
-        {
-            h = (IPageHeader)pi.GetValue(page.Headers())!;
-        }
-        var headerBytes = _serializer.Serialize(h, RowStatus.None, textEncoding);
-        // Header must be less than 50 (PageType occupies 1 byte at start)
-        Assert.LessThan(headerBytes.Length, Global.PageHeaderSize);
-        buffer.Write(headerBytes, 1);
-
-        // Serialize slots
-        var data = page._data.ToList();
-        var slotIndex = Global.PageSize - 2;
-        for (ushort slot = 0; slot < page.Headers().SlotsUsed; slot++)
-        {
-            var dataIndex = page.Slots[slot];
-            buffer.Write(dataIndex, slotIndex);
-
-            // Serialize data
-            // totalLength is the second UInt from start.
-            var bufferPageData = data[slot] as BufferPageData;
-            var overflowPointer = data[slot] as OverflowPointer;
-            if (bufferPageData != null)
-            {
-                // For buffer page data (used in overflow pages), data already byte[].
-                // Just write out.
-                buffer.Write(bufferPageData.Buffer, dataIndex + Global.PageHeaderSize);
-            }
-            else if (overflowPointer != null)
-            {
-                // cell is an overflow pointer
-                var columns = _serializer.GetColumnsForType(typeof(OverflowPointer));
-                var dataBytes = SerialiseRow(data[slot], page.Statuses[slot] | RowStatus.Overflow, columns);
-                buffer.Write(dataBytes, dataIndex + Global.PageHeaderSize);
-            }
-            else
-            {
-                // Normal data - must serialise.
-                var columns = GetColumnsForPage(page);
-                var dataBytes = SerialiseRow(data[slot], page.Statuses[slot], columns);
-                buffer.Write(dataBytes, dataIndex + Global.PageHeaderSize);
-            }
-            slotIndex = slotIndex - 2;
-        }
-        return buffer;
-    }
-
-    #endregion
-
-    #region Metadata
-
-    /// <summary>
-    /// Gets the column information for a page.
-    /// </summary>
-    /// <param name="page">The page</param>
-    /// <returns>Returns either static or configured columns.</returns>
-    /// <exception cref="Exception"></exception>
-    public IEnumerable<ColumnInfo> GetColumnsForPage(Page page)
-    {
-        if (page.PageDataType != typeof(DictionaryPageData))
-        {
-            // pages that have static data row types
-            return _serializer.GetColumnsForType(page.PageDataType);
-        }
-        else
-        {
-            // The columns are configured at the parent object.
-            if (page.PageType == PageType.Data)
-            {
-                if (page.GetType() == typeof(DataPage))
-                {
-                    var parentObjectId = page.Headers().ParentObjectId;
-                    var heap = new HeapTableManager<SystemColumnPageData, SystemColumnPage>(this, this._serializer, parentObjectId);
-                    var mapper = Mapper.ObjectMapper<SystemColumnPageData, ColumnInfo>.Create();
-                    return mapper.MapMany(heap.Scan());
-                }
-                throw new Exception("Cannot get columns for page.");
-            }
-            throw new Exception("Cannot get columns for page.");
-        }
+        var data = (BootData)this.Get(0).Data;
+        return data;
     }
 
     #endregion

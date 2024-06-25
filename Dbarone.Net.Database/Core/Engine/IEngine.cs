@@ -31,14 +31,14 @@ public interface IEngine : IDisposable
     /// </summary>
     /// <param name="tableName">The table name.</param>
     /// <returns>Returns the column information for the table.</returns>
-    IEnumerable<ColumnInfo> Columns(string tableName);
+    //IEnumerable<ColumnInfo> Columns(string tableName);
 
     #endregion
 
     #region DDL
 
-    TableInfo CreateTable<T>(string tableName);
-    TableInfo CreateTable(string tableName, IEnumerable<ColumnInfo> columns);
+    TableInfo CreateTable(string tableName);
+    //TableInfo CreateTable(string tableName, IEnumerable<ColumnInfo> columns);
 
     IndexInfo CreateIndex(string tableName, string indexName, IList<string> columns, bool unique);
     void DropIndex(string indexName);
@@ -75,13 +75,6 @@ public interface IEngine : IDisposable
     int Delete<T>(string tableName, Func<T, bool> predicate) where T : class;
 
     #endregion
-
-    /// <summary>
-    /// Gets a page.
-    /// </summary>
-    /// <param name="pageId"></param>
-    /// <returns></returns>
-    T GetPage<T>(int pageId) where T : Page;
 
     #region Debugging
 

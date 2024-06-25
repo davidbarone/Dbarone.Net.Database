@@ -11,90 +11,47 @@ public class Engine : IEngine
 {
     private string _filename;
     private Stream _stream;
-    private BufferManager _bufferManager;
-    private ISerializer _serializer;
-
-    HeapTableManager<SystemTablePageData, SystemTablePage>? _systemTablesHeap = null;
-    private HeapTableManager<SystemTablePageData, SystemTablePage> SystemTablesHeap
-    {
-        get
-        {
-            if (_systemTablesHeap == null)
-            {
-                _systemTablesHeap = new HeapTableManager<SystemTablePageData, SystemTablePage>(this._bufferManager, null);
-            }
-            return _systemTablesHeap;
-        }
-    }
-
-    /// <summary>
-    /// Returns a reference to the boot page.
-    /// </summary>
-    /// <returns></returns>
-    private BootPage GetBootPage()
-    {
-        return _bufferManager.GetPage<BootPage>(0);
-    }
-
-    #region Constructor / destructor
-
-    /// <summary>
-    /// Instantiates a new Engine object.
-    /// </summary>
-    /// <param name="filename">The filename (database).</param>
-    /// <param name="canWrite">Set to true to allow writes.</param>
-    public Engine(string filename, bool canWrite, ISerializer? serializer = null)
-    {
-        this._filename = filename;
-        var exists = File.Exists(this._filename);
-        this._stream = new FileStream(
-            filename,
-            exists ? FileMode.Open : FileMode.OpenOrCreate,
-            canWrite ? FileAccess.Write | FileAccess.Read : FileAccess.Read,
-            FileShare.None,
-            (int)Global.PageSize);
-
-        if (serializer != null)
-        {
-            this._serializer = serializer;
-        }
-        else
-        {
-            //this._serializer = new DefaultSerializer();
-            this._serializer = new SerialTypeSerializer();
-        }
-        this._bufferManager = new BufferManager(new DiskService(this._stream), _serializer);
-    }
-
-    public void Dispose()
-    {
-        if (this._stream != null)
-        {
-            //this._stream.Close();
-            this._stream.Dispose();
-        }
-    }
-
-    #endregion
+    public BufferManager BufferManager { get; set; }
 
     #region Static members
 
     /// <summary>
-    /// Creates a new database, and writes the core system pages required for functioning.
+    /// Creates an in-memory database, and writes the core system pages required for initial setup.
+    /// </summary>
+    /// <param name="options"></param>
+    /// <returns></returns>
+    public static IEngine Create(CreateDatabaseOptions? options = null)
+    {
+        if (options is null)
+        {
+            options = new CreateDatabaseOptions();
+        }
+
+        var engine = new Engine(options);
+        return engine;
+    }
+
+    /// <summary>
+    /// Creates a new disk-based database, and writes the core system pages required for initial setup.
     /// </summary>
     /// <param name="filename">The filename.</param>
     /// <returns></returns>
-    public static IEngine Create(string filename, TextEncoding textEncoding = TextEncoding.UTF8, ISerializer? serializer = null)
+    public static IEngine Create(string filename, CreateDatabaseOptions options = null)
     {
-        var engine = new Engine(filename, canWrite: true, serializer: serializer);
+        var engine = new Engine(filename, options);
+
+        if (options is null)
+        {
+            options = new CreateDatabaseOptions();
+        }
 
         // Create boot page (page #0)
-        var bootPage = engine.CreatePage<BootPage>();
-        bootPage.Headers().CreationTime = DateTime.Now;
-        bootPage.Headers().TextEncoding = textEncoding;
-
-        // Create System table page (page #1)
-        var systemTablePage = engine.CreatePage<SystemTablePage>();
+        var bootPage = engine.BufferManager.Create(PageType.Boot);
+        BootData data = (BootData)bootPage.Data;
+        //data.CreationTime = DateTime.Now;
+        data.TextEncoding = options.TextEncoding;
+        data.PageSize = options.PageSize;
+        data.OverflowThreshold = options.OverflowThreshold;
 
         return engine;
     }
@@ -104,9 +61,9 @@ public class Engine : IEngine
         return File.Exists(filename);
     }
 
-    public static Engine Open(string filename, bool canWrite, ISerializer? serializer = null)
+    public static Engine Open(string filename, bool readOnly)
     {
-        return new Engine(filename, canWrite: true, serializer: serializer);
+        return new Engine(filename, readOnly: false);
     }
 
     public static void Delete(string filename)
@@ -125,22 +82,127 @@ public class Engine : IEngine
 
     #endregion
 
+    #region Constructor / destructor
+
+    /// <summary>
+    /// Creates a new in-memory database.
+    /// </summary>
+    /// <param name="options">The options to create the new database.</param>
+    private Engine(CreateDatabaseOptions? options = null)
+    {
+        if (options is null)
+        {
+            options = new CreateDatabaseOptions();
+        }
+
+        ISerializer serializer = new Serializer(options.PageSize, options.TextEncoding);
+        this.BufferManager = new MemoryBufferManager(options.PageSize, serializer);
+    }
+
+    /// <summary>
+    /// Instantiates a new Engine object based on a disk file.
+    /// </summary>
+    /// <param name="filename">The filename (database).</param>
+    /// <param name="canWrite">Set to true to allow writes.</param>
+    public Engine(string filename, CreateDatabaseOptions options)
+    {
+        if (options is null)
+        {
+            throw new Exception("Must set create database options.");
+        }
+
+        this._filename = filename;
+        var exists = File.Exists(this._filename);
+
+        if (exists)
+        {
+            throw new Exception("File already exists");
+        }
+
+        this._stream = new FileStream(
+            filename,
+            FileMode.CreateNew,
+            FileAccess.Write | FileAccess.Read,
+            FileShare.None,
+            options.PageSize);
+
+
+        // Reconfigure the buffer manager with the actual page size + encoding for this database.
+        var serializer = new Serializer(options.PageSize, options.TextEncoding);
+        this.BufferManager = new DiskBufferManager(this._stream, options.PageSize, serializer);
+    }
+
+    /// <summary>
+    /// Instantiates a new Engine object based on an existing disk file.
+    /// </summary>
+    /// <param name="filename">The filename (database).</param>
+    /// <param name="canWrite">Set to true to allow writes.</param>
+    public Engine(string filename, bool readOnly = false)
+    {
+        this._filename = filename;
+        var exists = File.Exists(this._filename);
+
+        if (!exists)
+        {
+            throw new Exception("Database file does not exist.");
+        }
+
+        // Open database intially with 512 page size, to read page 0.
+        // Need to get the actual page size + text encoding information.
+        this._stream = new FileStream(
+            filename,
+            FileMode.Open,
+            readOnly ? FileAccess.Read : FileAccess.Write | FileAccess.Read,
+            FileShare.None,
+            512);
+
+        ISerializer serializer = new Serializer(512, Document.TextEncoding.UTF8);
+        this.BufferManager = new DiskBufferManager(this._stream, 512, serializer);
+        var boot = this.BufferManager.GetBootData();
+
+        // Reconfigure the buffer manager with the actual page size + encoding for this database.
+        this._stream = new FileStream(
+            filename,
+            FileMode.Open,
+            readOnly ? FileAccess.Read : FileAccess.Write | FileAccess.Read,
+            FileShare.None,
+            boot.PageSize);
+        serializer = new Serializer(boot.PageSize, boot.TextEncoding);
+        this.BufferManager = new DiskBufferManager(this._stream, boot.PageSize, serializer);
+    }
+
+    public void Dispose()
+    {
+        if (this._stream != null)
+        {
+            //this._stream.Close();
+            this._stream.Dispose();
+        }
+    }
+
+    #endregion
+
     #region Metadata
 
     public DatabaseInfo Database()
-    {
-        var page0 = this.GetPage<BootPage>(0);
-        var mapper = Mapper.ObjectMapper<IBootPageHeader, DatabaseInfo>.Create();
-        return mapper.MapOne(page0.Headers())!;
+    {/*
+        var page0 = this.BufferManager.Get(0);
+        var mapper = Mapper.ObjectMapper<BootData, DatabaseInfo>.Create();
+        return mapper.MapOne(page0.BootData)!;
+        */
+        return null;
     }
 
     public IEnumerable<TableInfo> Tables()
     {
+        /*
         var systemTablePage = this.GetPage<SystemTablePage>(1);
         var mapper = ObjectMapper<SystemTablePageData, TableInfo>.Create();
         var data = systemTablePage._data.Select(r => (r as SystemTablePageData)!);
         var mapped = mapper.MapMany(data!);
         return mapped;
+        */
+        return null;
     }
 
     public TableInfo Table(string tableName)
@@ -153,24 +215,18 @@ public class Engine : IEngine
         return table;
     }
 
-    public IEnumerable<ColumnInfo> Columns(string tableName)
-    {
-        var table = Table(tableName);
-        var heap = new HeapTableManager<SystemColumnPageData, SystemColumnPage>(this._bufferManager, this._serializer, table.ObjectId);
-        var mapper = ObjectMapper<SystemColumnPageData, ColumnInfo>.Create();
-        var mapped = mapper.MapMany(heap.Scan());
-        return mapped;
-    }
-
     #endregion
 
     #region DQL
 
     public IEnumerable<IDictionary<string, object?>> ReadRaw(string tableName)
     {
+        /*
         var table = Table(tableName);
         HeapTableManager<DictionaryPageData, DataPage> heap = new HeapTableManager<DictionaryPageData, DataPage>(this._bufferManager, this._serializer, table.ObjectId);
         return heap.Scan().Select(r => r.Row);
+        */
+        return null;
     }
 
     public IEnumerable<T?> Read<T>(string tableName) where T : class
@@ -187,14 +243,18 @@ public class Engine : IEngine
 
     public int InsertRaw(string tableName, IDictionary<string, object?> row)
     {
+        /*
         var table = Table(tableName);
         var dict = new DictionaryPageData(row);
         var heap = new HeapTableManager<DictionaryPageData, DataPage>(this._bufferManager, this._serializer, table.ObjectId);
         return heap.AddRow(dict);
+        */
+        return 0;
     }
 
     public int BulkInsertRaw(string tableName, IEnumerable<IDictionary<string, object?>> rows)
     {
+        /*
         if (!rows.Any())
         {
             return 0;
@@ -203,23 +263,31 @@ public class Engine : IEngine
         var table = Table(tableName);
         var heap = new HeapTableManager<DictionaryPageData, DataPage>(this._bufferManager, this._serializer, table.ObjectId);
         return heap.AddRows(rows.Select(r => new DictionaryPageData(r)));
+        */
+        return 0;
     }
 
     public int UpdateRaw(string tableName, Func<IDictionary<string, object?>, IDictionary<string, object?>> transform, Func<IDictionary<string, object?>, bool> predicate)
     {
+        /*
         var table = Table(tableName);
         HeapTableManager<DictionaryPageData, DataPage> heap = new HeapTableManager<DictionaryPageData, DataPage>(this._bufferManager, this._serializer, table.ObjectId);
         return heap.UpdateRows(
             ((dictionaryPageData) => { return new DictionaryPageData(transform.Invoke(dictionaryPageData.Row)!); }),
             ((dictionaryPageData) => predicate.Invoke(dictionaryPageData.Row))
         );
+        */
+        return 0;
     }
 
     public int DeleteRaw(string tableName, Func<IDictionary<string, object?>, bool> predicate)
     {
+        /*
         var table = Table(tableName);
         HeapTableManager<DictionaryPageData, DataPage> heap = new HeapTableManager<DictionaryPageData, DataPage>(this._bufferManager, this._serializer, table.ObjectId);
         return heap.DeleteRows((dictionaryPageData) => predicate.Invoke(dictionaryPageData.Row));
+        */
+        return 0;
     }
 
     public int Insert<T>(string table, T row)
@@ -264,19 +332,25 @@ public class Engine : IEngine
 
     public int Update<T>(string tableName, Func<T, T> transform, Func<T, bool> predicate) where T : class
     {
+        /*
         var table = Table(tableName);
         HeapTableManager<DictionaryPageData, DataPage> heap = new HeapTableManager<DictionaryPageData, DataPage>(this._bufferManager, this._serializer, table.ObjectId);
         return heap.UpdateRows(
             ((dictionaryPageData) => { return new DictionaryPageData(transform.Invoke(dictionaryPageData.Row.ToObject<T>()!).ToDictionary()!); }),
             ((dictionaryPageData) => predicate.Invoke(dictionaryPageData.Row.ToObject<T>()!))
         );
+        */
+        return 0;
     }
 
     public int Delete<T>(string tableName, Func<T, bool> predicate) where T : class
     {
+        /*
         var table = Table(tableName);
         HeapTableManager<DictionaryPageData, DataPage> heap = new HeapTableManager<DictionaryPageData, DataPage>(this._bufferManager, this._serializer, table.ObjectId);
         return heap.DeleteRows((dictionaryPageData) => predicate.Invoke(dictionaryPageData.Row.ToObject<T>()!));
+        */
+        return 0;
     }
 
     #endregion
@@ -286,11 +360,12 @@ public class Engine : IEngine
     /// </summary>
     public void CheckPoint()
     {
-        this._bufferManager.SaveDirtyPages();
+        this.BufferManager.Save();
     }
 
-    public TableInfo CreateTable<T>(string tableName)
+    public TableInfo CreateTable(string tableName)
     {
+        /*
         // Gets the unique object id for the new table.
         var parentObjectId = GetBootPage().GetNextObjectId();
 
@@ -331,49 +406,10 @@ public class Engine : IEngine
 
         // return
         return Table(tableName);
+        */
+        return null;
     }
 
-    public TableInfo CreateTable(string tableName, IEnumerable<ColumnInfo> columns)
-    {
-        // Gets the unique object id for the new table.
-        var parentObjectId = GetBootPage().GetNextObjectId();
-
-        // Create table
-        this.SystemTablesHeap.AddRow(new SystemTablePageData()
-        {
-            TableName = tableName,
-            ObjectId = parentObjectId,
-            DataPageId = 0,
-            IsSystemTable = false,
-            ColumnPageId = 0
-        });
-
-        // Create columns
-        var systemColumnPage = this.CreatePage<SystemColumnPage>();
-        foreach (var column in columns)
-        {
-            var obj = new SystemColumnPageData(parentObjectId, column.Name, column.DataType, column.IsNullable);
-            var columnMeta = this._serializer.GetColumnsForType(systemColumnPage.PageDataType);
-            var buffer = this._bufferManager.SerialiseRow(obj, RowStatus.None, columnMeta);
-            systemColumnPage.AddDataRow(obj, buffer, false);
-        }
-
-        // Create data page
-        var dataPage = this.CreatePage<DataPage>(parentObjectId);
-
-        // Update the table metadata
-        this.SystemTablesHeap.UpdateRows(r => new SystemTablePageData
-        {
-            ObjectId = parentObjectId,
-            TableName = r.TableName,
-            DataPageId = dataPage.Headers().PageId,
-            IsSystemTable = r.IsSystemTable,
-            ColumnPageId = systemColumnPage.Headers().PageId
-        }, r => r.ObjectId == parentObjectId);
-
-        // return
-        return Table(tableName);
-    }
 
     public IndexInfo CreateIndex(string tableName, string indexName, IList<string> columns, bool unique)
     {
@@ -385,28 +421,9 @@ public class Engine : IEngine
 
     }
 
-
-    public T GetPage<T>(int pageId) where T : Page
-    {
-        return this._bufferManager.GetPage<T>(pageId);
-    }
-
-    /// <summary>
-    /// Creates a new page. Also updates the PageCount header on the boot page.
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <returns></returns>
-    private T CreatePage<T>(int? parentObjectId = null) where T : Page
-    {
-        var page = this._bufferManager.CreatePage<T>(parentObjectId);
-        return page;
-    }
-
-
     #region Unsupported
 
     public TableInfo GetTableInfo(string tableName) { throw new NotSupportedException("Not supported."); }
-    public IEnumerable<ColumnInfo> GetColumnInfo(string tableName) { throw new NotSupportedException("Not supported."); }
 
 
     public bool BeginTransaction() { throw new NotSupportedException("Not supported."); }
@@ -419,12 +436,12 @@ public class Engine : IEngine
 
     public string DebugPages()
     {
-        return this._bufferManager.DebugPages();
+        return null;
     }
 
     public string DebugPage(int pageId)
     {
-        return this._bufferManager.DebugPage(pageId);
+        return null;
     }
 
     #endregion

@@ -4,9 +4,26 @@ using Dbarone.Net.Database;
 /// Row status flags.
 /// </summary>
 [Flags]
-public enum RowStatus : Byte {
-    None = 0,
+public enum RowStatus : Byte
+{
+
+    /// <summary>
+    /// The row is normal / default status.
+    /// </summary>
+    Default = 0,
+
+    /// <summary>
+    /// The row has been deleted.
+    /// </summary>
     Deleted = 1,
+
+    /// <summary>
+    /// The row is an overflow row.
+    /// </summary>
     Overflow = 2,
-    Null = 4
+
+    /// <summary>
+    /// The row is a null value.
+    /// </summary>
+    //Null = 4
 }

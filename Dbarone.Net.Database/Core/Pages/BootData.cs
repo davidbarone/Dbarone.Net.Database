@@ -1,20 +1,10 @@
 namespace Dbarone.Net.Database;
-
-public interface IBootPageHeader : IPageHeader {
-    string Magic { get; set; }
-    byte Version { get; set; }
-    int PageCount { get; set; }
-    DateTime CreationTime { get; set; }
-    int NextObjectId { get; set; }
-    int TablesPageId { get; set; }
-    TextEncoding TextEncoding { get; set; }
-    int? FirstFreePageId { get; set; }
-}
+using Dbarone.Net.Document;
 
 /// <summary>
 /// Headers for boot page type
 /// </summary>
-public class BootPageHeader : PageHeader , IBootPageHeader
+public class BootData
 {
     /// <summary>
     /// Magic / file header.
@@ -27,11 +17,6 @@ public class BootPageHeader : PageHeader , IBootPageHeader
     public byte Version { get; set; } = 1;
 
     /// <summary>
-    /// The number of pages in the database.
-    /// </summary>
-    public int PageCount { get; set; }
-
-    /// <summary>
     /// Database creation date/time
     /// </summary>
     public DateTime CreationTime { get; set; } = DateTime.Now;
@@ -42,15 +27,25 @@ public class BootPageHeader : PageHeader , IBootPageHeader
     public int NextObjectId { get; set; }
 
     /// <summary>
-    /// First page id of system tables.
+    /// Root node for system tables btree.
     /// </summary>
-    public int TablesPageId { get; set; }
+    public int SystemTablesPageId { get; set; }
 
     /// <summary>
     /// Sets the text encoding for the database.
     /// </summary>
     public TextEncoding TextEncoding { get; set; }
-    
+
+    /// <summary>
+    /// The page size for the database.
+    /// </summary>
+    public int PageSize { get; set; }
+
+    /// <summary>
+    /// The overflow threshold expressed as a percentage. The default is 25.
+    /// </summary>
+    public int OverflowThreshold { get; set; } = 25;
+
     /// <summary>
     /// Pointer to single-linked list of free pages.
     /// </summary>

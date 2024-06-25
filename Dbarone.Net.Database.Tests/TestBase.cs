@@ -37,27 +37,29 @@ public class TestBase
     protected TableInfo CreateTable(IEngine db, Type tableType)
     {
         var tableName = tableType.Name;
-        var columns = GetColumnsForType(tableType);
-        return db.CreateTable(tableName, columns);
+        //var columns = GetColumnsForType(tableType);
+        return db.CreateTable(tableName/*, columns*/);
     }
 
     protected TableInfo CreateTableFromEntity<T>(IEngine db)
     {
         var tableName = typeof(T).Name;
-        return db.CreateTable<T>(tableName);
+        return db.CreateTable(tableName);
     }
 
-    protected IEnumerable<ColumnInfo> GetColumnsForType(Type type)
-    {
-        var cols = new List<ColumnInfo>();
-        var props = type.GetProperties();
-        foreach (var prop in props)
+    /*
+        protected IEnumerable<ColumnInfo> GetColumnsForType(Type type)
         {
-            var col = new ColumnInfo(prop.Name, prop.PropertyType);
-            cols.Add(col);
+            var cols = new List<ColumnInfo>();
+            var props = type.GetProperties();
+            foreach (var prop in props)
+            {
+                var col = new ColumnInfo(prop.Name, prop.PropertyType);
+                cols.Add(col);
+            }
+            return cols;
         }
-        return cols;
-    }
+    */
 
     protected string GetRandomString(int length)
     {

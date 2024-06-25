@@ -4,31 +4,42 @@
 public enum PageType : Byte
 {
     /// <summary>
-    /// A page type that stores raw leaf level data.
+    /// Page type is empty page. These pages can be repurposed.
     /// </summary>
-    Data = 1,
-    /// <summary>
-    /// A page type that stores index information.
-    /// </summary>
-    Index = 2,
+    Empty = 0,
 
     /// <summary>
     /// A page type that stores the database metadata.
     /// </summary>
-    Boot = 3,
+    Boot = 1,
+
+    /// <summary>
+    /// A b-tree node page.
+    /// </summary>
+    Btree = 2,
+
+    /// <summary>
+    /// A page type that stores raw leaf level data.
+    /// </summary>
+    Data = 3,
+
+    /// <summary>
+    /// A page type that stores index information.
+    /// </summary>
+    Index = 4,
 
     /// <summary>
     /// A page type that stores table metadata.
     /// </summary>
-    SystemTable = 4,
+    SystemTable = 5,
 
     /// <summary>
     /// A page type that stores table metadata.
     /// </summary>
-    SystemColumn = 5,
+    SystemColumn = 6,
 
     /// <summary>
     /// Stores large data which spills over 1 page in size.
     /// </summary>
-    Overflow = 6,
+    Overflow = 7,
 }

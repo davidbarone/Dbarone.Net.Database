@@ -1,3 +1,5 @@
+using Dbarone.Net.Document;
+
 namespace Dbarone.Net.Database;
 
 /// <summary>
@@ -5,26 +7,23 @@ namespace Dbarone.Net.Database;
 /// </summary>
 public interface ISerializer
 {
-    #region Serialization
+    /// <summary>
+    /// Serialises a document to a byte array.
+    /// </summary>
+    /// <param name="value">The document to be serialised.</param>
+    /// <param name="textEncoding">The optional text encoding to use for serialisation.</param>
+    /// <returns>Returns a serialised byte array representing the document.</returns>
+    byte[] Serialize(DocumentValue value);
 
-    byte[] Serialize(object obj, RowStatus rowStatus, TextEncoding textEncoding = TextEncoding.UTF8);
-    byte[] Serialize(IEnumerable<ColumnInfo> columns, object obj, RowStatus rowStatus, TextEncoding textEncoding = TextEncoding.UTF8);
-    byte[] SerializeDictionary(IEnumerable<ColumnInfo> columns, IDictionary<string, object?> obj, RowStatus rowStatus, TextEncoding textEncoding = TextEncoding.UTF8);
+    DocumentValue Deserialize(byte[] buffer);
 
-    #endregion
+    public byte[] Serialize(object obj);
 
-    #region Deserialization
+    public object Deserialize(byte[] buffer, Type toType);
 
-    DeserializationResult<T> Deserialize<T>(byte[] buffer, TextEncoding textEncoding = TextEncoding.UTF8);
-    DeserializationResult<object> Deserialize(Type type, byte[] buffer, TextEncoding textEncoding = TextEncoding.UTF8);
-    DeserializationResult<T> Deserialize<T>(IEnumerable<ColumnInfo> columns, byte[] buffer, TextEncoding textEncoding = TextEncoding.UTF8) where T : IPageData;
-    DeserializationResult<object> Deserialize(Type type, IEnumerable<ColumnInfo> columns, byte[] buffer, TextEncoding textEncoding = TextEncoding.UTF8);
-    DeserializationResult<IDictionary<string, object?>> DeserializeDictionary(IEnumerable<ColumnInfo> columns, byte[] buffer, TextEncoding textEncoding = TextEncoding.UTF8);
+    public PageBuffer Serialize(Page page);
 
-    #endregion
+    public Page Deserialize(PageBuffer buffer);
 
-    VarInt GetBufferLength(byte[] buffer);
-    RowStatus GetRowStatus(byte[] buffer);
-    byte[] GetCellBuffer(PageBuffer buffer, int index);
-    IEnumerable<ColumnInfo> GetColumnsForType(Type type);
+    public bool IsPageOverflow(Page page, DictionaryDocument? data = null, object? cell = null);
 }

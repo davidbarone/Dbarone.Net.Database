@@ -1,3 +1,5 @@
+using Dbarone.Net.Document;
+
 namespace Dbarone.Net.Database;
 
 /// <summary>
@@ -59,7 +61,7 @@ public interface IBuffer
     public byte[] ReadBytes(int index, int length);
     public DateTime ReadDateTime(int index);
     public string ReadString(int index, int length, TextEncoding textEncoding = TextEncoding.UTF8);
-    public object Read(DataType dataType, int index, int? length = null, TextEncoding textEncoding = TextEncoding.UTF8);
+    public object Read(DocumentType documentType, int index, int? length = null, TextEncoding textEncoding = TextEncoding.UTF8);
 
     #endregion
 
@@ -81,10 +83,9 @@ public interface IBuffer
     public void Write(Decimal value, int index);
     public void Write(Guid value, int index);
     public void Write(byte[] value, int index);
-    public void Write(DateTime  value, int index);
+    public void Write(DateTime value, int index);
     public void Write(string value, int index, TextEncoding textEncoding = TextEncoding.UTF8);
     public void Write(object value, int index, TextEncoding textEncoding = TextEncoding.UTF8);
 
     #endregion
-
 }

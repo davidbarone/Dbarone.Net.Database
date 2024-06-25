@@ -1,8 +1,10 @@
 using Dbarone.Net.Database;
 
-public class BufferPageData : IPageData {
+public class BufferData
+{
     public byte[] Buffer { get; set; }
-    public BufferPageData(byte[]buffer){
+    public BufferData(byte[] buffer)
+    {
         this.Buffer = buffer;
     }
 }

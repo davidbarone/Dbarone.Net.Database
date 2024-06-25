@@ -4,10 +4,10 @@ using Dbarone.Net.Document;
 
 public class BTreeManager
 {
-    private IDiskService DiskService { get; set; }
-    public BTreeManager(IDiskService diskService)
+    private BufferManager BufferManager { get; set; }
+    public BTreeManager(BufferManager bufferManager)
     {
-        this.DiskService = diskService;
+        this.BufferManager = bufferManager;
     }
 
     public void Insert(int key, DocumentValue document)

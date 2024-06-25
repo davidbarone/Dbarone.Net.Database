@@ -1,7 +1,12 @@
+using Dbarone.Net.Document;
+
+namespace Dbarone.Net.Database;
+
 /// <summary>
 /// Public information about a database.
 /// </summary>
-public class DatabaseInfo {
+public class DatabaseInfo
+{
     public string Magic { get; set; } = default!;
     public Byte Version { get; set; }
     public DateTime CreationTime { get; set; }

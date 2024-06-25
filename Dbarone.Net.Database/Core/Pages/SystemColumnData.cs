@@ -1,35 +1,34 @@
-namespace Dbarone.Net.Database;
 using Dbarone.Net.Extensions.Reflection;
+using Dbarone.Net.Document;
+
+namespace Dbarone.Net.Database;
 
 /// <summary>
 /// The item data for the SystemColumnPage type.
 /// </summary>
-public class SystemColumnPageData : PageData
+public class SystemColumnData
 {
     public int ObjectId { get; set; }
     public string Name { get; set; } = default!;
-    public DataType DataType { get; set; } = default!;
+    public DocumentType DocumentType { get; set; } = default!;
     public bool IsNullable { get; set; }
 
-    public SystemColumnPageData(int objectId, string name, Type type)
+    public SystemColumnData(int objectId, string name, Type type)
     {
+        /*
         this.ObjectId = objectId;
         this.Name = name;
-        this.DataType = Types.GetByType(type).DataType;
+        this.DocumentType = Types.GetByType(type).DataType;
         this.IsNullable = type.IsNullable();
+        */
+
     }
 
-    public SystemColumnPageData(int objectId, string name, DataType dataType, bool isNullable)
+    public SystemColumnData(int objectId, string name, DocumentType documentType, bool isNullable)
     {
         this.ObjectId = objectId;
         this.Name = name;
-        this.DataType = dataType;
+        this.DocumentType = documentType;
         this.IsNullable = isNullable;
     }
-
-    public SystemColumnPageData()
-    {
-
-    }
-
 }

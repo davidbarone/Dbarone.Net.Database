@@ -213,3 +213,14 @@ Naming conventions
 - 128 characters max
 - Keywords (cannot be used as column name)
   - rowid
+
+## Notes
+Testing Order
+
+- External Libraries
+  - Document
+  - Mapper
+  - Csv
+  - 
+- Buffer
+- Buffer Manager

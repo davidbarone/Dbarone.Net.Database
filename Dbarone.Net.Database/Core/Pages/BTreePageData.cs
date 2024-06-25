@@ -8,12 +8,17 @@ namespace Dbarone.Net.Database;
 /// <remarks>
 /// B-tree node can be either a leaf node or non-leaf (interior) node. Can also be either data node or index node.
 /// </remarks>
-public class BTreePage : Page
+public class BTreePageData
 {
     /// <summary>
     /// Set to true for leaf node. Otherwise, is an internal node.
     /// </summary>
     private bool IsLeaf { get; set; }
+
+    /// <summary>
+    /// The level of the node. Level 0 nodes are leaf nodes. Higher levels are internal nodes.
+    /// </summary>
+    private int Level { get; set; }
 
     /// <summary>
     /// Set to true for index node. Otherwise is a data node.
@@ -30,17 +35,12 @@ public class BTreePage : Page
     /// </summary>
     private short Cells { get; set; }
 
-
     /// <summary>
     /// The keys for the node. 
     /// </summary>
-    private List<int> Keys { get; set; } = new List<int>();
+    private IList<object> Keys { get; set; } = new List<object>();
 
+    private IList<object> Children { get; set; } = new List<object>();
 
-    public void Insert()
-    {
-
-    }
-
-
+    public IList<RowStatus> Statuses { get; set; } = new List<RowStatus>();
 }

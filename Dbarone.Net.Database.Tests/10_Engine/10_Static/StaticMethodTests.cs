@@ -3,6 +3,7 @@ using Xunit;
 using Dbarone.Net.Database;
 using System.IO;
 using System.Linq;
+using Dbarone.Net.Document;
 
 public class StaticMethodTests : TestBase
 {
@@ -36,7 +37,7 @@ public class StaticMethodTests : TestBase
         }
 
         // Act
-        using (var db = Engine.Create(dbName, TextEncoding.Latin1))
+        using (var db = Engine.Create(dbName, new CreateDatabaseOptions { TextEncoding = TextEncoding.Latin1 }))
         {
             db.CheckPoint();
         }
