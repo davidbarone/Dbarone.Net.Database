@@ -52,8 +52,16 @@ public class Serializer : ISerializer
         var docValue = Deserialize(buffer);
 
         // Map to POCO
-        var obj = Mapper.Map(toType, docValue);
-        return obj;
+        try
+        {
+            var obj = Mapper.Map(toType, docValue);
+            return obj;
+        }
+        catch (Exception ex)
+        {
+            var a = ex;
+            return null;
+        }
     }
 
     public byte[] Serialize(object obj)

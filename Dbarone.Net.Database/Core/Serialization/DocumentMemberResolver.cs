@@ -1,5 +1,5 @@
-using Dbarone.Net.Document;
 using Dbarone.Net.Mapper;
+using Dbarone.Net.Document;
 
 namespace Dbarone.Net.Database;
 
@@ -30,7 +30,14 @@ public class DocumentMemberResolver : AbstractMemberResolver, IMemberResolver
             var objDict = obj as IDictionary<string, DocumentValue>;
             if (objDict != null)
             {
-                return (object)objDict[memberName];
+                if (objDict[memberName].Type == DocumentType.Null)
+                {
+                    return null;
+                }
+                else
+                {
+                    return (object)objDict[memberName];
+                }
             }
             else
             {
@@ -55,7 +62,14 @@ public class DocumentMemberResolver : AbstractMemberResolver, IMemberResolver
             var objDict = target as IDictionary<string, DocumentValue>;
             if (objDict != null)
             {
-                objDict[memberName] = (DocumentValue)value;
+                if (value is null)
+                {
+                    objDict[memberName] = DocumentValue.Null;
+                }
+                else
+                {
+                    objDict[memberName] = (DocumentValue)value;
+                }
             }
             else
             {

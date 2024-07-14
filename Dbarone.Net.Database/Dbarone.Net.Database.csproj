@@ -12,7 +12,7 @@
     <PackageReference Include="Dbarone.Net.Extensions.Object" Version="1.0.6" />
     <PackageReference Include="Dbarone.Net.Extensions.Reflection" Version="1.0.4" />
     <PackageReference Include="Dbarone.Net.Extensions.String" Version="1.0.1" />
-    <PackageReference Include="Dbarone.Net.Mapper" Version="2.0.1" />
+    <PackageReference Include="Dbarone.Net.Mapper" Version="2.0.3" />
     <PackageReference Include="dbarone.net.proxy" Version="1.0.1" />
   </ItemGroup>
 

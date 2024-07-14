@@ -49,11 +49,7 @@ public class MemberwiseDocumentValueMapperOperator : MapperOperator
 
     private void GetRuntimeOperator(object? source)
     {
-        if (source == null)
-        {
-            throw new Exception("null value invalid.");
-        }
-        var sourceRunTimeType = source.GetType();
+        var sourceRunTimeType = (source is null) ? this.SourceType.Type : source.GetType();
         if (this.runtimeOperator == null)
         {
             // Switch target type to use DictionaryDocument
