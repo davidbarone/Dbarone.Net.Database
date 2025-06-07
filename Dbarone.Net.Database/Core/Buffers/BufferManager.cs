@@ -133,7 +133,7 @@ public abstract class BufferManager : IBufferManager, IStorage
     /// </summary>
     public BootData GetBootData()
     {
-        var data = (BootData)this.Get(0).Data;
+        var data = (BootData)this.Get(0).Header;
         return data;
     }
 

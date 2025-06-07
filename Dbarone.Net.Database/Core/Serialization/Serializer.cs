@@ -84,7 +84,7 @@ public class Serializer : ISerializer
         DictionaryDocument dict = new DictionaryDocument();
         dict["PageId"] = page.PageId;
         dict["PageType"] = (byte)page.PageType;
-        dict["Data"] = (DictionaryDocument)Mapper.Map(typeof(DictionaryDocument), page.Data)!;
+        dict["Header"] = (DictionaryDocument)Mapper.Map(typeof(DictionaryDocument), page.Header)!;
         dict["Cells"] = new DocumentArray(Mapper.Map<IEnumerable<object>, List<DictionaryDocument>>(page.Cells)!);
 
         // Deserialise to DocumentValue
@@ -101,15 +101,15 @@ public class Serializer : ISerializer
         Page page = new Page(dict["PageId"], (PageType)(int)dict["PageType"]);
         page.IsDirty = false;
 
-        DictionaryDocument data = dict["Data"].AsDocument;
+        DictionaryDocument header = dict["Header"].AsDocument;
         DocumentArray arr = dict["Cells"].AsArray;
 
         if (page.PageType == PageType.Boot)
         {
-            page.Data = Mapper.Map<DictionaryDocument, BootData>(dict["Data"].AsDocument)!;
+            page.Header = Mapper.Map<DictionaryDocument, BootData>(dict["Header"].AsDocument)!;
         }
 
-        page.DataBuffer = Serialize(data);
+        page.HeaderBuffer = Serialize(header);
         page.CellBuffers = arr.Select(c => Serialize(c)).ToArray();
 
         return page;

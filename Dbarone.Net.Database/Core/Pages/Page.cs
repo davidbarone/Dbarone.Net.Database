@@ -22,8 +22,8 @@ public class Page
     /// <remarks>
     /// This object is specific for each page type.
     /// </remarks>
-    public object Data { get; set; }
-    public byte[] DataBuffer { get; set; }
+    public object Header { get; set; }
+    public byte[] HeaderBuffer { get; set; }
 
     #endregion
 
