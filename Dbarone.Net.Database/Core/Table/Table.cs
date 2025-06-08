@@ -5,40 +5,30 @@ using System.Linq;
 
 namespace Dbarone.Net.Database;
 
-public class Table : TableCell, IList<TableCell>
+public class Table : IList<TableRow>
 {
-    public Table()
-        : base(DocumentType.Array, new List<TableCell>())
-    {
-    }
+    IList<TableRow> RawValue = new List<TableRow>();
 
-    public Table(List<TableCell> array)
-        : this()
+    public Table(List<TableRow> array)
     {
         if (array == null) throw new ArgumentNullException(nameof(array));
 
         this.AddRange(array);
     }
 
-    public Table(params TableCell[] array)
-        : this()
+    public Table(params TableRow[] array)
     {
         if (array == null) throw new ArgumentNullException(nameof(array));
-
         this.AddRange(array);
     }
 
-    public Table(IEnumerable<TableCell> items)
-        : this()
+    public Table(IEnumerable<TableRow> rows)
     {
-        if (items == null) throw new ArgumentNullException(nameof(items));
-
-        this.AddRange(items);
+        if (rows == null) throw new ArgumentNullException(nameof(rows));
+        this.AddRange(rows);
     }
 
-    public new IList<TableCell> RawValue => (IList<TableCell>)base.RawValue;
-
-    public override TableCell this[int index]
+    public TableRow this[int index]
     {
         get
         {
@@ -46,7 +36,7 @@ public class Table : TableCell, IList<TableCell>
         }
         set
         {
-            this.RawValue[index] = value ?? TableCell.Null;
+            this.RawValue[index] = value;
         }
     }
 
@@ -54,15 +44,15 @@ public class Table : TableCell, IList<TableCell>
 
     public bool IsReadOnly => false;
 
-    public void Add(TableCell item) => this.RawValue.Add(item ?? TableCell.Null);
+    public void Add(TableRow row) => this.RawValue.Add(row);
 
     public void AddRange<TCollection>(TCollection collection)
-        where TCollection : ICollection<TableCell>
+        where TCollection : ICollection<TableRow>
     {
         if (collection == null)
             throw new ArgumentNullException(nameof(collection));
 
-        var list = (List<TableCell>)base.RawValue;
+        var list = (List<TableRow>)this.RawValue;
 
         var listEmptySpace = list.Capacity - list.Count;
         if (listEmptySpace < collection.Count)
@@ -70,36 +60,35 @@ public class Table : TableCell, IList<TableCell>
             list.Capacity += collection.Count;
         }
 
-        foreach (var bsonValue in collection)
+        foreach (var row in collection)
         {
-            list.Add(bsonValue ?? Null);
+            list.Add(row);
         }
-
     }
 
-    public void AddRange(IEnumerable<TableCell> items)
+    public void AddRange(IEnumerable<TableRow> rows)
     {
-        if (items == null) throw new ArgumentNullException(nameof(items));
+        if (rows == null) throw new ArgumentNullException(nameof(rows));
 
-        foreach (var item in items)
+        foreach (var row in rows)
         {
-            this.Add(item ?? TableCell.Null);
+            this.Add(row);
         }
     }
 
     public void Clear() => this.RawValue.Clear();
 
-    public bool Contains(TableCell item) => this.RawValue.Contains(item ?? TableCell.Null);
+    public bool Contains(TableRow row) => this.RawValue.Contains(row);
 
-    public void CopyTo(TableCell[] array, int arrayIndex) => this.RawValue.CopyTo(array, arrayIndex);
+    public void CopyTo(TableRow[] array, int arrayIndex) => this.RawValue.CopyTo(array, arrayIndex);
 
-    public IEnumerator<TableCell> GetEnumerator() => this.RawValue.GetEnumerator();
+    public IEnumerator<TableRow> GetEnumerator() => this.RawValue.GetEnumerator();
 
-    public int IndexOf(TableCell item) => this.RawValue.IndexOf(item ?? TableCell.Null);
+    public int IndexOf(TableRow row) => this.RawValue.IndexOf(row);
 
-    public void Insert(int index, TableCell item) => this.RawValue.Insert(index, item ?? TableCell.Null);
+    public void Insert(int index, TableRow row) => this.RawValue.Insert(index, row);
 
-    public bool Remove(TableCell item) => this.RawValue.Remove(item);
+    public bool Remove(TableRow row) => this.RawValue.Remove(row);
 
     public void RemoveAt(int index) => this.RawValue.RemoveAt(index);
 
@@ -111,7 +100,7 @@ public class Table : TableCell, IList<TableCell>
         }
     }
 
-    public override int CompareTo(TableCell other)
+    public override int CompareTo(TableRow other)
     {
         // if types are different, returns sort type order
         if (other.Type != DocumentType.Array) return this.Type.CompareTo(other.Type);
@@ -129,22 +118,5 @@ public class Table : TableCell, IList<TableCell>
         if (result != 0) return result;
         if (i == this.Count) return i == otherArray.Count ? 0 : -1;
         return 1;
-    }
-
-    private int _length;
-
-    internal override int GetBytesCount(bool recalc)
-    {
-        if (recalc == false && _length > 0) return _length;
-
-        var length = 5;
-        var array = this.RawValue;
-
-        for (var i = 0; i < array.Count; i++)
-        {
-            length += this.GetBytesCountElement(i.ToString(), array[i]);
-        }
-
-        return _length = length;
     }
 }
