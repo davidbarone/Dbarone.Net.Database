@@ -5,22 +5,22 @@ using Dbarone.Net.Extensions;
 namespace Dbarone.Net.Database;
 
 /// <summary>
-/// Mapper for when the source is a memberwise source, and the target is DocumentValue
+/// Mapper for when the source is a memberwise source, and the target is TableCell
 /// In this case, we actually need to use a DictionaryDocument type.
 /// </summary>
-public class MemberwiseDocumentValueMapperOperator : MapperOperator
+public class MemberwiseTableCellMapperOperator : MapperOperator
 {
     private MapperOperator? runtimeOperator = null;
 
     /// <summary>
-    /// Creates a new <see cref="MemberwiseDocumentValueTargetMapperOperator"/> instance.
+    /// Creates a new <see cref="MemberwiseTableCellTargetMapperOperator"/> instance.
     /// </summary>
     /// <param name="builder">The <see cref="MapperBuilder"/> instance.</param>
     /// <param name="sourceType">The source <see cref="BuildType"/> instance.</param>
     /// <param name="targetType">The target <see cref="BuildType"/> instance.</param>
     /// <param name="parent">An optional parent <see cref="MapperOperator"/> instance.</param>
     /// <param name="onLog">Optional logging callback.</param>
-    public MemberwiseDocumentValueMapperOperator(MapperBuilder builder, BuildType sourceType, BuildType targetType, MapperOperator? parent = null, MapperOperatorLogDelegate? onLog = null) : base(builder, sourceType, targetType, parent, onLog)
+    public MemberwiseTableCellMapperOperator(MapperBuilder builder, BuildType sourceType, BuildType targetType, MapperOperator? parent = null, MapperOperatorLogDelegate? onLog = null) : base(builder, sourceType, targetType, parent, onLog)
     {
     }
 
@@ -44,7 +44,7 @@ public class MemberwiseDocumentValueMapperOperator : MapperOperator
     {
         return SourceType.MemberResolver.HasMembers
             && SourceType.Type != typeof(DateTime)
-            && TargetType.Type == typeof(DocumentValue);
+            && TargetType.Type == typeof(TableCell);
     }
 
     private void GetRuntimeOperator(object? source)

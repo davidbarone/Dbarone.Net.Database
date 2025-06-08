@@ -25,20 +25,20 @@ public class Serializer : ISerializer
         var conf = new MapperConfiguration()
                     .SetAutoRegisterTypes(true)
                     .RegisterResolvers<DocumentMemberResolver>()
-                    .RegisterOperator<EnumerableDocumentValueMapperOperator>()
-                    .RegisterOperator<MemberwiseDocumentValueMapperOperator>();
+                    .RegisterOperator<EnumerableTableCellMapperOperator>()
+                    .RegisterOperator<MemberwiseTableCellMapperOperator>();
 
         Mapper = new ObjectMapper(conf);
     }
 
-    public DocumentValue Deserialize(byte[] buffer)
+    public TableCell Deserialize(byte[] buffer)
     {
         IDocumentSerializer ser = new DocumentSerializer();
         var doc = ser.Deserialize(buffer, TextEncoding);
         return doc;
     }
 
-    public byte[] Serialize(DocumentValue document)
+    public byte[] Serialize(TableCell document)
     {
         IDocumentSerializer ser = new DocumentSerializer();
         var bytes = ser.Serialize(document, null, TextEncoding);
@@ -48,7 +48,7 @@ public class Serializer : ISerializer
 
     public object Deserialize(byte[] buffer, Type toType)
     {
-        // Deserialise to DocumentValue
+        // Deserialise to TableCell
         var docValue = Deserialize(buffer);
 
         // Map to POCO
@@ -66,10 +66,10 @@ public class Serializer : ISerializer
 
     public byte[] Serialize(object obj)
     {
-        // Map to DocumentValue
+        // Map to TableCell
         var dict = (DictionaryDocument)Mapper.Map(typeof(DictionaryDocument), obj)!;
 
-        // Deserialise to DocumentValue
+        // Deserialise to TableCell
         var bytes = Serialize(dict);
         Assert.LessThanEquals(bytes.Length, PageSize);
         return bytes;
@@ -87,7 +87,7 @@ public class Serializer : ISerializer
         dict["Header"] = (DictionaryDocument)Mapper.Map(typeof(DictionaryDocument), page.Header)!;
         dict["Cells"] = new DocumentArray(Mapper.Map<IEnumerable<object>, List<DictionaryDocument>>(page.Cells)!);
 
-        // Deserialise to DocumentValue
+        // Deserialise to TableCell
         var bytes = Serialize(dict);
         Assert.LessThanEquals(bytes.Length, PageSize);
         return new PageBuffer(bytes);

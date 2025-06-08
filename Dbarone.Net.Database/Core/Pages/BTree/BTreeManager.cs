@@ -10,7 +10,7 @@ public class BTreeManager
         this.BufferManager = bufferManager;
     }
 
-    public void Insert(int key, DocumentValue document)
+    public void Insert(int key, TableCell document)
     {
 
     }
@@ -20,7 +20,7 @@ public class BTreeManager
 
     }
 
-    public DocumentValue Search(int key)
+    public TableCell Search(int key)
     {
         return null;
 

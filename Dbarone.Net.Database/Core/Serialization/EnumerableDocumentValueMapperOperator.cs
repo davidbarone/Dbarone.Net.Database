@@ -6,19 +6,19 @@ using System.Collections;
 namespace Dbarone.Net.Database;
 
 /// <summary>
-/// Maps IEnumerable types to a <see cref="DocumentValue"/> type.
+/// Maps IEnumerable types to a <see cref="TableCell"/> type.
 /// </summary>
-public class EnumerableDocumentValueMapperOperator : EnumerableMapperOperator
+public class EnumerableTableCellMapperOperator : EnumerableMapperOperator
 {
     /// <summary>
-    /// Creates a new <see cref="EnumerableToDocumentValueMapperOperator"/> instance.
+    /// Creates a new <see cref="EnumerableToTableCellMapperOperator"/> instance.
     /// </summary>
     /// <param name="builder">The <see cref="MapperBuilder"/> instance.</param>
     /// <param name="sourceType">The source <see cref="BuildType"/> instance.</param>
     /// <param name="targetType">The target <see cref="BuildType"/> instance.</param>
     /// <param name="parent">An optional parent <see cref="MapperOperator"/> instance.</param>
     /// <param name="onLog">Optional logging callback.</param>
-    public EnumerableDocumentValueMapperOperator(MapperBuilder builder, BuildType sourceType, BuildType targetType, MapperOperator? parent = null, MapperOperatorLogDelegate? onLog = null) : base(builder, sourceType, targetType, parent, onLog)
+    public EnumerableTableCellMapperOperator(MapperBuilder builder, BuildType sourceType, BuildType targetType, MapperOperator? parent = null, MapperOperatorLogDelegate? onLog = null) : base(builder, sourceType, targetType, parent, onLog)
     {
     }
 
@@ -32,7 +32,7 @@ public class EnumerableDocumentValueMapperOperator : EnumerableMapperOperator
         // Children
         Dictionary<string, MapperOperator> children = new Dictionary<string, MapperOperator>();
         var fromElementType = SourceType.EnumerableElementType;
-        var toElementType = typeof(DocumentValue);
+        var toElementType = typeof(TableCell);
 
         if (fromElementType == null)
         {
@@ -51,7 +51,7 @@ public class EnumerableDocumentValueMapperOperator : EnumerableMapperOperator
     public override bool CanMap()
     {
         return SourceType.MemberResolver.IsEnumerable
-            && TargetType.Type == typeof(DocumentValue);
+            && TargetType.Type == typeof(TableCell);
     }
 
     /// <summary>
@@ -68,6 +68,6 @@ public class EnumerableDocumentValueMapperOperator : EnumerableMapperOperator
             throw new MapperBuildException(SourceType.Type, MapperEndPoint.Source, this.GetPath(), "Type does not implement IEnumerable.");
         }
         EnumerableBuffer buffer = new EnumerableBuffer(arr, Children["[]"].Map);
-        return new DocumentArray((DocumentValue[])buffer.ToArray(typeof(DocumentValue)));
+        return new DocumentArray((TableCell[])buffer.ToArray(typeof(TableCell)));
     }
 }

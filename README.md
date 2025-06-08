@@ -1,9 +1,25 @@
 # Dbarone.Net.Database
-A NoSQL database written in .NET.
+A simple database written in .NET.
 
 This is a simple database engine that can be used for very basic data storage use-cases (for example configurations, small prototype applications etc). It is written entirely in .NET Core, and should be portable to any system that can run .NET Core.
 
 *NOTE: This project is still in very early development, and is not useable yet.*
+
+It has taken inspiration from several other projects including:
+- sqlite
+- litedb
+
+## Data Types
+The following data types are used internally:
+- Null
+- Integer
+- Real
+- Blob
+- String
+
+Other types (for example DateTime and Guid) as represented interally using one of the above data types.
+
+Although the database only stores data in one of the above types, all built-in .NET types are supported.
 
 ## Basics
 

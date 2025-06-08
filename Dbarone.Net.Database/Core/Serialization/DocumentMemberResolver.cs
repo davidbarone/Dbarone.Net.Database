@@ -27,7 +27,7 @@ public class DocumentMemberResolver : AbstractMemberResolver, IMemberResolver
     {
         Getter func = (object obj) =>
         {
-            var objDict = obj as IDictionary<string, DocumentValue>;
+            var objDict = obj as IDictionary<string, TableCell>;
             if (objDict != null)
             {
                 if (objDict[memberName].Type == DocumentType.Null)
@@ -59,21 +59,21 @@ public class DocumentMemberResolver : AbstractMemberResolver, IMemberResolver
     {
         Setter action = delegate (object target, object? value)
         {
-            var objDict = target as IDictionary<string, DocumentValue>;
+            var objDict = target as IDictionary<string, TableCell>;
             if (objDict != null)
             {
                 if (value is null)
                 {
-                    objDict[memberName] = DocumentValue.Null;
+                    objDict[memberName] = TableCell.Null;
                 }
                 else
                 {
-                    objDict[memberName] = (DocumentValue)value;
+                    objDict[memberName] = (TableCell)value;
                 }
             }
             else
             {
-                throw new Exception("Target must implement IDictionary<string, DocumentValue>.");
+                throw new Exception("Target must implement IDictionary<string, TableCell>.");
             }
         };
         return action;
@@ -88,7 +88,7 @@ public class DocumentMemberResolver : AbstractMemberResolver, IMemberResolver
     /// <returns>Returns the member type.</returns>
     public override Type GetMemberType(Type type, string memberName, MapperOptions options)
     {
-        return typeof(DocumentValue);
+        return typeof(TableCell);
     }
 
     /// <summary>
@@ -98,14 +98,14 @@ public class DocumentMemberResolver : AbstractMemberResolver, IMemberResolver
     /// <returns>A string array of member names.</returns>
     public override string[] GetInstanceMembers(object obj)
     {
-        var objDict = obj as IDictionary<string, DocumentValue>;
+        var objDict = obj as IDictionary<string, TableCell>;
         if (objDict != null)
         {
             return objDict.Keys.ToArray();
         }
         else
         {
-            throw new Exception("Object must implement IDictionary<string, DocumentValue> interface.");
+            throw new Exception("Object must implement IDictionary<string, TableCell> interface.");
         }
     }
 
@@ -116,7 +116,7 @@ public class DocumentMemberResolver : AbstractMemberResolver, IMemberResolver
     /// <returns>Returns true if the current IMemberResolver can resolve members of the specified type.</returns>
     public override bool CanResolveMembersForType(Type type)
     {
-        return type.IsAssignableTo(typeof(DocumentValue));
+        return type.IsAssignableTo(typeof(TableCell));
     }
 
     /// <summary>

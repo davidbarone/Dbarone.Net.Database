@@ -13,9 +13,9 @@ public interface ISerializer
     /// <param name="value">The document to be serialised.</param>
     /// <param name="textEncoding">The optional text encoding to use for serialisation.</param>
     /// <returns>Returns a serialised byte array representing the document.</returns>
-    byte[] Serialize(DocumentValue value);
+    byte[] Serialize(TableCell value);
 
-    DocumentValue Deserialize(byte[] buffer);
+    TableCell Deserialize(byte[] buffer);
 
     public byte[] Serialize(object obj);
 
