@@ -13,9 +13,9 @@ public interface ISerializer
     /// <param name="value">The document to be serialised.</param>
     /// <param name="textEncoding">The optional text encoding to use for serialisation.</param>
     /// <returns>Returns a serialised byte array representing the document.</returns>
-    byte[] Serialize(TableCell value);
+    byte[] Serialize(Table table);
 
-    TableCell Deserialize(byte[] buffer);
+    Table Deserialize(byte[] buffer);
 
     public byte[] Serialize(object obj);
 
@@ -25,5 +25,5 @@ public interface ISerializer
 
     public Page Deserialize(PageBuffer buffer);
 
-    public bool IsPageOverflow(Page page, DictionaryDocument? data = null, object? cell = null);
+    public bool IsPageOverflow(Page page, Table? table = null, object? cell = null);
 }

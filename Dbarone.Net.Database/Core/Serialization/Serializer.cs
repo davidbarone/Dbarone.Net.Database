@@ -1,11 +1,11 @@
-namespace Dbarone.Net.Database;
-
 using Dbarone.Net.Assertions;
 using System.Collections;
 using Dbarone.Net.Extensions.Object;
 using Dbarone.Net.Document;
 using Dbarone.Net.Mapper;
 using System.Data.SqlTypes;
+
+namespace Dbarone.Net.Database;
 
 /// <summary>
 /// Base class for Serializer. A serializer perform serialize and deserialize functions to convert .NET objects to and from byte[] arrays.
@@ -25,23 +25,23 @@ public class Serializer : ISerializer
         var conf = new MapperConfiguration()
                     .SetAutoRegisterTypes(true)
                     .RegisterResolvers<DocumentMemberResolver>()
-                    .RegisterOperator<EnumerableTableCellMapperOperator>()
-                    .RegisterOperator<MemberwiseTableCellMapperOperator>();
+                    .RegisterOperator<TableMapperOperator>()
+                    .RegisterOperator<TableRowMapperOperator>();
 
         Mapper = new ObjectMapper(conf);
     }
 
-    public TableCell Deserialize(byte[] buffer)
+    public Table Deserialize(byte[] buffer)
     {
         IDocumentSerializer ser = new DocumentSerializer();
-        var doc = ser.Deserialize(buffer, TextEncoding);
-        return doc;
+        var table = ser.Deserialize(buffer, TextEncoding);
+        return table;
     }
 
-    public byte[] Serialize(TableCell document)
+    public byte[] Serialize(Table table)
     {
         IDocumentSerializer ser = new DocumentSerializer();
-        var bytes = ser.Serialize(document, null, TextEncoding);
+        var bytes = ser.Serialize(table, null, TextEncoding);
         Assert.LessThanEquals(bytes.Length, PageSize);
         return bytes;
     }
@@ -115,14 +115,14 @@ public class Serializer : ISerializer
         return page;
     }
 
-    public bool IsPageOverflow(Page page, DictionaryDocument? data = null, object? cell = null)
+    public bool IsPageOverflow(Page page, Table? table = null, object? cell = null)
     {
         var remaining = PageSize;
         remaining -= 5;     // pageid is int and pagetype is byte
-        if (data is not null)
+        if (table is not null)
         {
             // new data object to replace old one - calculate size and deduct from remaining
-            remaining = remaining - Serialize(data).Length;
+            remaining = remaining - Serialize(table).Length;
         }
         if (cell is not null)
         {

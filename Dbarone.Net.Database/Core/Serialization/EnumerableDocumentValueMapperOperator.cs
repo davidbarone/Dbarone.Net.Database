@@ -6,9 +6,9 @@ using System.Collections;
 namespace Dbarone.Net.Database;
 
 /// <summary>
-/// Maps IEnumerable types to a <see cref="TableCell"/> type.
+/// Maps IEnumerable types to a <see cref="Table"/> type.
 /// </summary>
-public class EnumerableTableCellMapperOperator : EnumerableMapperOperator
+public class TableMapperOperator : EnumerableMapperOperator
 {
     /// <summary>
     /// Creates a new <see cref="EnumerableToTableCellMapperOperator"/> instance.
@@ -18,12 +18,12 @@ public class EnumerableTableCellMapperOperator : EnumerableMapperOperator
     /// <param name="targetType">The target <see cref="BuildType"/> instance.</param>
     /// <param name="parent">An optional parent <see cref="MapperOperator"/> instance.</param>
     /// <param name="onLog">Optional logging callback.</param>
-    public EnumerableTableCellMapperOperator(MapperBuilder builder, BuildType sourceType, BuildType targetType, MapperOperator? parent = null, MapperOperatorLogDelegate? onLog = null) : base(builder, sourceType, targetType, parent, onLog)
+    public TableMapperOperator(MapperBuilder builder, BuildType sourceType, BuildType targetType, MapperOperator? parent = null, MapperOperatorLogDelegate? onLog = null) : base(builder, sourceType, targetType, parent, onLog)
     {
     }
 
     /// <summary>
-    /// GetChildren implementation for <see cref="EnumerableMapperOperator"/>.
+    /// GetChildren implementation for <see cref="TableMapperOperator"/>.
     /// </summary>
     /// <returns>Returns the children operators.</returns>
     /// <exception cref="MapperBuildException"></exception>
@@ -51,7 +51,7 @@ public class EnumerableTableCellMapperOperator : EnumerableMapperOperator
     public override bool CanMap()
     {
         return SourceType.MemberResolver.IsEnumerable
-            && TargetType.Type == typeof(TableCell);
+            && TargetType.Type == typeof(Table);
     }
 
     /// <summary>
@@ -68,6 +68,6 @@ public class EnumerableTableCellMapperOperator : EnumerableMapperOperator
             throw new MapperBuildException(SourceType.Type, MapperEndPoint.Source, this.GetPath(), "Type does not implement IEnumerable.");
         }
         EnumerableBuffer buffer = new EnumerableBuffer(arr, Children["[]"].Map);
-        return new DocumentArray((TableCell[])buffer.ToArray(typeof(TableCell)));
+        return new Table((TableRow[])buffer.ToArray(typeof(TableRow)));
     }
 }

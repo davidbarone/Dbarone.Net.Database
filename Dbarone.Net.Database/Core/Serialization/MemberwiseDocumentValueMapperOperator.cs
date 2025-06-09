@@ -5,10 +5,10 @@ using Dbarone.Net.Extensions;
 namespace Dbarone.Net.Database;
 
 /// <summary>
-/// Mapper for when the source is a memberwise source, and the target is TableCell
+/// Mapper for when the source is a memberwise source, and the target is TableRow
 /// In this case, we actually need to use a DictionaryDocument type.
 /// </summary>
-public class MemberwiseTableCellMapperOperator : MapperOperator
+public class TableRowMapperOperator : MapperOperator
 {
     private MapperOperator? runtimeOperator = null;
 
@@ -20,7 +20,7 @@ public class MemberwiseTableCellMapperOperator : MapperOperator
     /// <param name="targetType">The target <see cref="BuildType"/> instance.</param>
     /// <param name="parent">An optional parent <see cref="MapperOperator"/> instance.</param>
     /// <param name="onLog">Optional logging callback.</param>
-    public MemberwiseTableCellMapperOperator(MapperBuilder builder, BuildType sourceType, BuildType targetType, MapperOperator? parent = null, MapperOperatorLogDelegate? onLog = null) : base(builder, sourceType, targetType, parent, onLog)
+    public TableRowMapperOperator(MapperBuilder builder, BuildType sourceType, BuildType targetType, MapperOperator? parent = null, MapperOperatorLogDelegate? onLog = null) : base(builder, sourceType, targetType, parent, onLog)
     {
     }
 
@@ -44,7 +44,7 @@ public class MemberwiseTableCellMapperOperator : MapperOperator
     {
         return SourceType.MemberResolver.HasMembers
             && SourceType.Type != typeof(DateTime)
-            && TargetType.Type == typeof(TableCell);
+            && TargetType.Type == typeof(TableRow);
     }
 
     private void GetRuntimeOperator(object? source)
@@ -53,7 +53,7 @@ public class MemberwiseTableCellMapperOperator : MapperOperator
         if (this.runtimeOperator == null)
         {
             // Switch target type to use DictionaryDocument
-            this.runtimeOperator = Builder.GetMapperOperator(new SourceTarget(sourceRunTimeType, typeof(DictionaryDocument)), this);
+            this.runtimeOperator = Builder.GetMapperOperator(new SourceTarget(sourceRunTimeType, typeof(TableRow)), this);
         }
     }
 

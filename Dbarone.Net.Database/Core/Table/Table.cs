@@ -9,6 +9,11 @@ public class Table : IList<TableRow>
 {
     IList<TableRow> RawValue = new List<TableRow>();
 
+    /// <summary>
+    /// If set, the table has a fixed schema. Otherwise the table is schemaless.
+    /// </summary>
+    public TableSchema Schema { get; set; }
+
     public Table(List<TableRow> array)
     {
         if (array == null) throw new ArgumentNullException(nameof(array));
