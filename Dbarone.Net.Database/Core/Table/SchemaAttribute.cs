@@ -31,23 +31,28 @@ public class SchemaAttribute
     /// Creates a new SchemaAttribute from a <see cref="DictionaryDocument"/> instance.
     /// </summary>
     /// <param name="dictionaryDocument"></param>
-    public SchemaAttribute(DictionaryDocument dictionaryDocument)
+    public static SchemaAttribute FromTableRow(TableRow row)
     {
-        this.AttributeId = (short)dictionaryDocument["AttributeId"].AsInt16;
-        this.AttributeName = dictionaryDocument["AttributeName"].AsString;
-        this.Element = new SchemaElement(dictionaryDocument["Element"].AsDocument);
+        var sa = new SchemaAttribute(
+            row["attributeId"],
+            row["attributeName"],
+            (DocumentType)(int)row["documentType"],
+            row["allowNull"]
+        );
+        return sa;
     }
 
     /// <summary>
     /// Converts the current SchemaAttribute to a <see cref="DictionaryDocument"/> instance.
     /// </summary>
     /// <returns></returns>
-    public DictionaryDocument ToDictionaryDocument()
+    public TableRow ToTableRow()
     {
-        DictionaryDocument dd = new DictionaryDocument();
-        dd["AttributeId"] = new TableCell(AttributeId);
-        dd["AttributeName"] = new TableCell(AttributeName);
-        dd["Element"] = Element.ToDictionaryDocument();
-        return dd;
+        TableRow tr = new TableRow();
+        tr.Add("attributeId", this.AttributeId);
+        tr.Add("attributeName", this.AttributeName);
+        tr.Add("documentType", (int)this.DocumentType);
+        tr.Add("allowNull", this.AllowNull);
+        return tr;
     }
 }

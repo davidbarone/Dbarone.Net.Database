@@ -13,7 +13,7 @@ namespace Dbarone.Net.Database;
 /// </summary>
 public class TableRow : IDictionary<string, TableCell>, IComparable<TableRow>, IEquatable<TableRow>
 {
-    private IDictionary<string, TableCell> RawValue = new Dictionary<string, TableCell>(StringComparer.OrdinalIgnoreCase);
+    public IDictionary<string, TableCell> RawValue = new Dictionary<string, TableCell>(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
     /// Creates an empty document.
