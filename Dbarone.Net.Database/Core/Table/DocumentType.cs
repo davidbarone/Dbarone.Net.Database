@@ -11,22 +11,32 @@ public enum DocumentType : int
     Null = 0,
 
     /// <summary>
+    /// Boolean (true/false) data type.
+    /// </summary>
+    Boolean = 1,
+
+    /// <summary>
     /// Whole numbers that can be positive or negative. Can vary from 1 to 8 bytes.
     /// </summary>
-    Integer = 1,
+    Integer = 2,
 
     /// <summary>
     /// Floating point numbers, stored as 8-byte IEEE floating point number.
     /// </summary>
-    Real = 2,
+    Real = 3,
+
+    /// <summary>
+    /// Datetime data type
+    /// </summary>
+    DateTime = 4,
 
     /// <summary>
     /// A variable-length byte-array.
     /// </summary>
-    Blob = 3,
+    Blob = 5,
 
     /// <summary>
     /// Text strings using a database encoding (UTF-8, UTF-16 etc)
     /// </summary>
-    Text = 4,
+    Text = 6,
 }

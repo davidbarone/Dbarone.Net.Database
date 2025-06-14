@@ -8,7 +8,7 @@ public class DocumentSerializer : IDocumentSerializer
 {
     #region Serialize
 
-    private void Serialize(GenericBuffer buffer, DocumentValue document, SchemaElement? schema = null, TextEncoding textEncoding = TextEncoding.UTF8)
+    private void Serialize(GenericBuffer buffer, Table document, SchemaElement? schema = null, TextEncoding textEncoding = TextEncoding.UTF8)
     {
         switch (document.Type)
         {

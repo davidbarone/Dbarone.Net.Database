@@ -47,6 +47,12 @@ public class TableCell : IComparable<TableCell>, IEquatable<TableCell>
         this.RawValue = value;
     }
 
+    public TableCell(DateTime value)
+    {
+        this.Type = DocumentType.DateTime;
+        this.RawValue = value;
+    }
+
     public TableCell(String value)
     {
         this.Type = value == null ? DocumentType.Null : DocumentType.Text;
@@ -66,6 +72,7 @@ public class TableCell : IComparable<TableCell>, IEquatable<TableCell>
         if (value == null) this.Type = DocumentType.Null;
         else if (value is Int64) this.Type = DocumentType.Integer;
         else if (value is Double) this.Type = DocumentType.Real;
+        else if (value is DateTime) this.Type = DocumentType.DateTime;
         else if (value is String) this.Type = DocumentType.Text;
         else if (value is Byte[]) this.Type = DocumentType.Blob;
     }
@@ -82,6 +89,8 @@ public class TableCell : IComparable<TableCell>, IEquatable<TableCell>
 
     public double AsReal => Convert.ToDouble(this.RawValue);
 
+    public DateTime AsDateTime => Convert.ToDateTime(this.RawValue);
+
     #endregion
 
     #region IsTypes
@@ -91,6 +100,8 @@ public class TableCell : IComparable<TableCell>, IEquatable<TableCell>
     public bool IsInteger => this.Type == DocumentType.Integer;
 
     public bool IsReal => this.Type == DocumentType.Real;
+
+    public bool IsDateTime => this.Type == DocumentType.DateTime;
 
     public bool IsBlob => this.Type == DocumentType.Blob;
 
@@ -366,7 +377,6 @@ public class TableCell : IComparable<TableCell>, IEquatable<TableCell>
         return new TableCell(value);
     }
 
-
     // DateTime
     public static implicit operator DateTime(TableCell value)
     {
@@ -376,7 +386,7 @@ public class TableCell : IComparable<TableCell>, IEquatable<TableCell>
     // DateTime?
     public static implicit operator DateTime?(TableCell value)
     {
-        return value.Type == DocumentType.Null ? null : DateTime.FromBinary(value.AsInteger);
+        return value.Type == DocumentType.Null ? null : value.AsDateTime;
     }
 
     // DateTime
@@ -560,6 +570,7 @@ public class TableCell : IComparable<TableCell>, IEquatable<TableCell>
 
             case DocumentType.Integer: return this.AsInteger.CompareTo(other.AsInteger);
             case DocumentType.Real: return this.AsReal.CompareTo(other.AsReal);
+            case DocumentType.DateTime: return this.AsDateTime.CompareTo(other.AsDateTime);
             case DocumentType.Text: return collation.Compare(this.AsText, other.AsText);
             case DocumentType.Blob: return this.BinaryCompare(this.AsBlob, other.AsBlob);
             default: throw new NotImplementedException();

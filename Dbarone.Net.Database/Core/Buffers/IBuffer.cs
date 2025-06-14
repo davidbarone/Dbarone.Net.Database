@@ -60,7 +60,7 @@ public interface IBuffer_TO_BE_DELETED_COPY_OF_SERIALISATION_ONE
     public byte[] ReadBytes(int index, int length);
     public DateTime ReadDateTime(int index);
     public string ReadString(int index, int length, TextEncoding textEncoding = TextEncoding.UTF8);
-    public object Read(DocumentType documentType, int index, int? length = null, TextEncoding textEncoding = TextEncoding.UTF8);
+    public object Read(DocumentType documentType, int? length = null, TextEncoding textEncoding = TextEncoding.UTF8);
 
     #endregion
 

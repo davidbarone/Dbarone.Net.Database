@@ -47,21 +47,10 @@ public interface IBuffer
     #region Read methods
 
     public bool ReadBool();
-    public Byte ReadByte();
-    public SByte ReadSByte();
-    public char ReadChar();
-    public Int16 ReadInt16();
-    public UInt16 ReadUInt16();
-    public Int32 ReadInt32();
-    public UInt32 ReadUInt32();
     public Int64 ReadInt64();
-    public UInt64 ReadUInt64();
     public Double ReadDouble();
-    public Decimal ReadDecimal();
-    public Single ReadSingle();
-    public Guid ReadGuid();
-    public byte[] ReadBytes(int length);
     public DateTime ReadDateTime();
+    public byte[] ReadBytes(int length);
     public string ReadString(int length, TextEncoding textEncoding = TextEncoding.UTF8);
     public object Read(DocumentType dataType, int? length = null, TextEncoding textEncoding = TextEncoding.UTF8);
 
@@ -69,25 +58,13 @@ public interface IBuffer
 
     #region Write methods
 
-    public int Write(bool value);
-    public int Write(byte value);
-    public int Write(sbyte value);
-    public int Write(char value);
-    public int Write(Int16 value);
-    public int Write(UInt16 value);
-    public int Write(Int32 value);
-    public int Write(UInt32 value);
-    public int Write(Int64 value);
-    public int Write(UInt64 value);
-    public int Write(Double value);
-    public int Write(Single value);
-    public int Write(Decimal value);
-    public int Write(Guid value);
-    public int Write(byte[] value);
-    public int Write(DateTime value);
-    public int Write(string value, TextEncoding textEncoding = TextEncoding.UTF8);
-    public int Write(object value, TextEncoding textEncoding = TextEncoding.UTF8);
+    public void Write(bool value);
+    public void Write(Int64 value);
+    public void Write(Double value);
+    public void Write(DateTime value);
+    public void Write(byte[] value);
+    public void Write(string value, TextEncoding textEncoding = TextEncoding.UTF8);
+    public void Write(object value, TextEncoding textEncoding = TextEncoding.UTF8);
 
     #endregion
-
 }

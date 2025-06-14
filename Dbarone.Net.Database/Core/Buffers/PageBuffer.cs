@@ -1,6 +1,6 @@
-namespace Dbarone.Net.Database;
 using System.Text;
-using Dbarone.Net.Document;
+
+namespace Dbarone.Net.Database;
 
 /// <summary>
 /// Represents a generic memory buffer.
@@ -10,6 +10,18 @@ public class PageBuffer : IBuffer
     protected MemoryStream Stream;
     protected byte[] _buffer;
 
+    public long Position
+    {
+        get
+        {
+            return (int)this.Stream.Position;
+        }
+        set
+        {
+            this.Stream.Position = value;
+        }
+    }
+
     /// <summary>
     /// Bytes (0,4) denote the page id.
     /// </summary>
@@ -17,7 +29,7 @@ public class PageBuffer : IBuffer
     {
         get
         {
-            return this.ReadInt32(0);
+            return this.ReadInt64(0);
         }
         set
         {
@@ -87,38 +99,18 @@ public class PageBuffer : IBuffer
         return buffer;
     }
 
-    public int Size
-    {
-        get
-        {
-            return this.InternalBuffer.Length;
-        }
-    }
+    public long Length => this.InternalBuffer.Length;
 
     #region Read methods
 
-    public bool ReadBool(int index)
+    public bool ReadBool()
     {
-        return InternalBuffer[index] != 0;
+        return InternalBuffer[this.Position] != 0;
     }
 
-    public byte ReadByte(int index)
+    public VarInt ReadVarInt()
     {
-        return InternalBuffer[index];
-    }
-
-    public sbyte ReadSByte(int index)
-    {
-        return (sbyte)InternalBuffer[index];
-    }
-
-    public char ReadChar(int index)
-    {
-        return BitConverter.ToChar(InternalBuffer, index);
-    }
-
-    public VarInt ReadVarInt(int index)
-    {
+        var index = this.Position;
         int i = 0;
         byte[] bytes = new byte[4];
         Byte b;
@@ -131,127 +123,59 @@ public class PageBuffer : IBuffer
         return new VarInt(bytes[0..i]);
     }
 
-    public Int16 ReadInt16(int index)
+    public Int64 ReadInt64()
     {
-        return BitConverter.ToInt16(InternalBuffer, index);
+        return BitConverter.ToInt64(InternalBuffer, (int)this.Position);
     }
 
-    public UInt16 ReadUInt16(int index)
+    public Double ReadDouble()
     {
-        return BitConverter.ToUInt16(InternalBuffer, index);
+        return BitConverter.ToDouble(InternalBuffer, (int)this.Position);
     }
 
-    public Int32 ReadInt32(int index)
-    {
-        return BitConverter.ToInt32(InternalBuffer, index);
-    }
-
-    public UInt32 ReadUInt32(int index)
-    {
-        return BitConverter.ToUInt32(InternalBuffer, index);
-    }
-
-    public Int64 ReadInt64(int index)
-    {
-        return BitConverter.ToInt64(InternalBuffer, index);
-    }
-
-    public UInt64 ReadUInt64(int index)
-    {
-        return BitConverter.ToUInt64(InternalBuffer, index);
-    }
-
-    public Double ReadDouble(int index)
-    {
-        return BitConverter.ToDouble(InternalBuffer, index);
-    }
-
-    public Single ReadSingle(int index)
-    {
-        return BitConverter.ToSingle(InternalBuffer, index);
-    }
-
-    public Decimal ReadDecimal(int index)
-    {
-        var a = this.ReadInt32(index);
-        var b = this.ReadInt32(index + 4);
-        var c = this.ReadInt32(index + 8);
-        var d = this.ReadInt32(index + 12);
-        return new Decimal(new int[] { a, b, c, d });
-    }
-
-    public Guid ReadGuid(int index)
-    {
-        return new Guid(this.ReadBytes(index, 16));
-    }
-
-    public byte[] ReadBytes(int index, int length)
+    public byte[] ReadBytes(int length)
     {
         var bytes = new byte[length];
-        Buffer.BlockCopy(InternalBuffer, index, bytes, 0, length);
+        Buffer.BlockCopy(InternalBuffer, (int)this.Position, bytes, 0, length);
         return bytes;
     }
 
-    public DateTime ReadDateTime(int index)
+    public DateTime ReadDateTime()
     {
-        return DateTime.FromBinary(this.ReadInt64(index));
+        return DateTime.FromBinary(this.ReadInt64());
     }
 
-    public string ReadString(int index, int length, TextEncoding textEncoding = TextEncoding.UTF8)
+    public string ReadString(int length, TextEncoding textEncoding = TextEncoding.UTF8)
     {
         if (textEncoding == TextEncoding.UTF8)
         {
-            return Encoding.UTF8.GetString(InternalBuffer, index, length);
+            return Encoding.UTF8.GetString(InternalBuffer, (int)this.Position, length);
         }
         else if (textEncoding == TextEncoding.Latin1)
         {
-            return Encoding.Latin1.GetString(InternalBuffer, index, length);
+            return Encoding.Latin1.GetString(InternalBuffer, (int)this.Position, length);
         }
         throw new Exception("Unable to read string encoding.");
     }
 
-    public object Read(DocumentType documentType, int index, int? length = null, TextEncoding textEncoding = TextEncoding.UTF8)
+    public object Read(DocumentType documentType, int? length = null, TextEncoding textEncoding = TextEncoding.UTF8)
     {
         switch (documentType)
         {
             case DocumentType.Boolean:
-                return ReadBool(index);
-            case DocumentType.Byte:
-                return ReadByte(index);
-            case DocumentType.SByte:
-                return ReadSByte(index);
-            case DocumentType.Char:
-                return ReadChar(index);
-            case DocumentType.Decimal:
-                return ReadDecimal(index);
-            case DocumentType.Double:
-                return ReadDouble(index);
-            case DocumentType.Single:
-                return ReadSingle(index);
-            case DocumentType.VarInt:
-                return ReadVarInt(index);
-            case DocumentType.Int16:
-                return ReadInt16(index);
-            case DocumentType.UInt16:
-                return ReadUInt16(index);
-            case DocumentType.Int32:
-                return ReadInt32(index);
-            case DocumentType.UInt32:
-                return ReadUInt32(index);
-            case DocumentType.Int64:
-                return ReadInt64(index);
-            case DocumentType.UInt64:
-                return ReadUInt64(index);
+                return ReadBool();
+            case DocumentType.Real:
+                return ReadDouble();
+            case DocumentType.Integer:
+                return ReadInt64();
             case DocumentType.DateTime:
-                return ReadDateTime(index);
-            case DocumentType.String:
+                return ReadDateTime();
+            case DocumentType.Text:
                 if (length == null) { throw new Exception("Length required (1)."); }
-                return ReadString(index, length.Value, textEncoding);
-            case DocumentType.Guid:
-                return ReadGuid(index);
+                return ReadString(length.Value, textEncoding);
             case DocumentType.Blob:
                 if (length == null) { throw new Exception("Length required (2)."); }
-                return ReadBytes(index, length.Value);
+                return ReadBytes(length.Value);
         }
         throw new Exception($"Invalid data type.");
     }
@@ -260,134 +184,44 @@ public class PageBuffer : IBuffer
 
     #region Write methods
 
-    public void Write(bool value, int index)
+    public void Write(bool value)
     {
         var bytes = BitConverter.GetBytes(value);
-        this.Stream.Position = index;
         this.Stream.Write(bytes, 0, bytes.Length);
     }
 
-    public void Write(byte value, int index)
-    {
-        // BitConverter.GetBytes(Byte) treats the byte value as a ushort, so returns 2 bytes.
-        // Section 6.1.2 of the C# language spec
-        // Take 1st byte only.
-        var bytes = BitConverter.GetBytes((ushort)value).Take(1).ToArray();
-        this.Stream.Position = index;
-        this.Stream.Write(bytes, 0, bytes.Length);
-    }
-
-    public void Write(sbyte value, int index)
-    {
-        var bytes = BitConverter.GetBytes((short)value).Take(1).ToArray();
-        this.Stream.Position = index;
-        this.Stream.Write(bytes, 0, bytes.Length);
-    }
-
-    public void Write(char value, int index)
+    public void Write(Int64 value)
     {
         var bytes = BitConverter.GetBytes(value);
-        this.Stream.Position = index;
         this.Stream.Write(bytes, 0, bytes.Length);
     }
 
-    public void Write(VarInt value, int index)
-    {
-        this.Stream.Position = index;
-        this.Stream.Write(value.Bytes, 0, value.Size);
-    }
-
-    public void Write(Int16 value, int index)
+    public void Write(Double value)
     {
         var bytes = BitConverter.GetBytes(value);
-        this.Stream.Position = index;
         this.Stream.Write(bytes, 0, bytes.Length);
     }
 
-    public void Write(UInt16 value, int index)
+    public void Write(DateTime value)
     {
-        var bytes = BitConverter.GetBytes(value);
-        this.Stream.Position = index;
-        this.Stream.Write(bytes, 0, bytes.Length);
+        this.Write(value.ToBinary());
     }
 
-    public void Write(Int32 value, int index)
+    public void Write(byte[] value)
     {
-        var bytes = BitConverter.GetBytes(value);
-        this.Stream.Position = index;
-        this.Stream.Write(bytes, 0, bytes.Length);
+        Buffer.BlockCopy(value, 0, this.InternalBuffer, (int)this.Position, value.Length);
     }
 
-    public void Write(UInt32 value, int index)
-    {
-        var bytes = BitConverter.GetBytes(value);
-        this.Stream.Position = index;
-        this.Stream.Write(bytes, 0, bytes.Length);
-    }
-
-    public void Write(Int64 value, int index)
-    {
-        var bytes = BitConverter.GetBytes(value);
-        this.Stream.Position = index;
-        this.Stream.Write(bytes, 0, bytes.Length);
-    }
-
-    public void Write(UInt64 value, int index)
-    {
-        var bytes = BitConverter.GetBytes(value);
-        this.Stream.Position = index;
-        this.Stream.Write(bytes, 0, bytes.Length);
-    }
-
-    public void Write(Double value, int index)
-    {
-        var bytes = BitConverter.GetBytes(value);
-        this.Stream.Position = index;
-        this.Stream.Write(bytes, 0, bytes.Length);
-    }
-
-    public void Write(Single value, int index)
-    {
-        var bytes = BitConverter.GetBytes(value);
-        this.Stream.Position = index;
-        this.Stream.Write(bytes, 0, bytes.Length);
-    }
-
-    public void Write(Decimal value, int index)
-    {
-        // Split Decimal into 4 ints
-        var bits = Decimal.GetBits(value);
-        this.Write(bits[0], index);
-        this.Write(bits[1], index + 4);
-        this.Write(bits[2], index + 8);
-        this.Write(bits[3], index + 12);
-    }
-
-    public void Write(Guid value, int index)
-    {
-        this.Write(value.ToByteArray(), index);
-    }
-
-    public void Write(byte[] value, int index)
-    {
-        Buffer.BlockCopy(value, 0, this.InternalBuffer, index, value.Length);
-    }
-
-    public void Write(DateTime value, int index)
-    {
-        this.Write(value.ToBinary(), index);
-    }
-
-    public void Write(string value, int index, TextEncoding textEncoding = TextEncoding.UTF8)
+    public void Write(string value, TextEncoding textEncoding = TextEncoding.UTF8)
     {
         if (textEncoding == TextEncoding.UTF8)
         {
             // GetBytes writes directly to the buffer.
-            var bytes = Encoding.UTF8.GetBytes(value, 0, value.Length, this.InternalBuffer, index);
+            var bytes = Encoding.UTF8.GetBytes(value, 0, value.Length, this.InternalBuffer, (int)this.Position);
         }
         else if (textEncoding == TextEncoding.Latin1)
         {
-            var bytes = Encoding.Latin1.GetBytes(value, 0, value.Length, this.InternalBuffer, index);
+            var bytes = Encoding.Latin1.GetBytes(value, 0, value.Length, this.InternalBuffer, (int)this.Position);
         }
         else
         {
@@ -395,7 +229,7 @@ public class PageBuffer : IBuffer
         }
     }
 
-    public void Write(object value, int index, TextEncoding textEncoding = TextEncoding.UTF8)
+    public void Write(object value, TextEncoding textEncoding = TextEncoding.UTF8)
     {
         var type = value.GetType();
         if (type.IsEnum)
@@ -404,79 +238,31 @@ public class PageBuffer : IBuffer
         }
         if (type == typeof(bool))
         {
-            Write((bool)value, index);
-        }
-        else if (type == typeof(byte))
-        {
-            Write((byte)value, index);
-        }
-        else if (type == typeof(sbyte))
-        {
-            Write((sbyte)value, index);
-        }
-        else if (type == typeof(char))
-        {
-            Write((char)value, index);
-        }
-        else if (type == typeof(decimal))
-        {
-            Write((decimal)value, index);
-        }
-        else if (type == typeof(double))
-        {
-            Write((double)value, index);
-        }
-        else if (type == typeof(Single))
-        {
-            Write((Single)value, index);
-        }
-        else if (type == typeof(VarInt))
-        {
-            Write((VarInt)value, index);
-        }
-        else if (type == typeof(Int16))
-        {
-            Write((Int16)value, index);
-        }
-        else if (type == typeof(UInt16))
-        {
-            Write((UInt16)value, index);
-        }
-        else if (type == typeof(Int32))
-        {
-            Write((Int32)value, index);
-        }
-        else if (type == typeof(UInt32))
-        {
-            Write((UInt32)value, index);
+            Write((bool)value);
         }
         else if (type == typeof(Int64))
         {
-            Write((Int64)value, index);
+            Write((Int64)value);
         }
-        else if (type == typeof(UInt64))
+        else if (type == typeof(double))
         {
-            Write((UInt64)value, index);
+            Write((double)value);
         }
         else if (type == typeof(DateTime))
         {
-            Write((DateTime)value, index);
+            Write((DateTime)value);
         }
         else if (type == typeof(string))
         {
-            Write((string)value, index, textEncoding);
-        }
-        else if (type == typeof(Guid))
-        {
-            Write((Guid)value, index);
+            Write((string)value, textEncoding);
         }
         else if (type == typeof(byte[]))
         {
-            Write((byte[])value, index);
+            Write((byte[])value);
         }
-        else if (type == typeof(DateTime))
+        else
         {
-            Write((DateTime)value, index);
+            throw new Exception($"Type {type.Name} is not supported for buffer writing.");
         }
     }
 
