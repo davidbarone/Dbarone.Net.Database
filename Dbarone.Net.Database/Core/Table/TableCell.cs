@@ -81,15 +81,12 @@ public class TableCell : IComparable<TableCell>, IEquatable<TableCell>
 
     #region Convert types
 
-    public Byte[] AsBlob => this.RawValue as Byte[];
-
-    public string AsText => (string)this.RawValue;
-
+    public bool AsBoolean => (bool)this.RawValue;
     public Int64 AsInteger => Convert.ToInt64(this.RawValue);
-
     public double AsReal => Convert.ToDouble(this.RawValue);
-
     public DateTime AsDateTime => Convert.ToDateTime(this.RawValue);
+    public Byte[] AsBlob => this.RawValue as Byte[];
+    public string AsText => (string)this.RawValue;
 
     #endregion
 

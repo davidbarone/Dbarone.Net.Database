@@ -33,10 +33,10 @@ public enum DocumentType : int
     /// <summary>
     /// A variable-length byte-array.
     /// </summary>
-    Blob = 5,
+    Blob = 6,
 
     /// <summary>
     /// Text strings using a database encoding (UTF-8, UTF-16 etc)
     /// </summary>
-    Text = 6,
+    Text = 7,
 }
