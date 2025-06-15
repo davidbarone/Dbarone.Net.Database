@@ -11,7 +11,7 @@ public class EngineTests
         var engine = Engine.Create(new CreateDatabaseOptions
         {
             PageSize = 11,
-            TextEncoding = Document.TextEncoding.UTF8
+            TextEncoding = TextEncoding.UTF8
         });
         Assert.NotNull(engine);
     }

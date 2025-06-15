@@ -6,7 +6,7 @@ namespace Dbarone.Net.Database.Tests;
 public class PageBufferTests
 {
     private const int testValue = 0b10101010;
-    private const int testIndex = 100;
+    private const int testIndex = 100;  // to delete?
     private int pageSize = 8192;
 
     [Fact]
@@ -14,7 +14,7 @@ public class PageBufferTests
     {
         var buffer = new byte[] { 10, 20, 30 };
         var pb = new PageBuffer(buffer);
-        Assert.Equal(3, pb.Size);
+        Assert.Equal(3, pb.Length);
     }
 
     [Fact]
@@ -25,22 +25,6 @@ public class PageBufferTests
         Assert.Equal(10, pb[0]);
     }
 
-    [Fact]
-    public void TestBufferRead()
-    {
-        var buffer = new byte[] { 10, 20, 30 };
-        var pb = new PageBuffer(buffer);
-        Assert.Equal(30, pb.ReadByte(2));
-    }
-
-    [Fact]
-    public void TestBufferWrite()
-    {
-        var buffer = new byte[] { 10, 20, 30 };
-        var pb = new PageBuffer(buffer);
-        pb.Write((byte)100, 2);
-        Assert.Equal(100, pb[2]);
-    }
 
     [Fact]
     public void TestBufferFill()
@@ -48,7 +32,7 @@ public class PageBufferTests
         var buffer = new byte[] { 10, 20, 30 };
         var pb = new PageBuffer(buffer);
         pb.Fill(0, 3, (byte)100);
-        Assert.Equal(3, pb.Size);
+        Assert.Equal(3, pb.Length);
         Assert.Equal(100, pb[0]);
         Assert.Equal(100, pb[1]);
         Assert.Equal(100, pb[2]);
@@ -60,7 +44,7 @@ public class PageBufferTests
         var buffer = new byte[] { 10, 20, 30 };
         var pb = new PageBuffer(buffer);
         pb.Clear(0, 3);
-        Assert.Equal(3, pb.Size);
+        Assert.Equal(3, pb.Length);
         Assert.Equal(0, pb[0]);
         Assert.Equal(0, pb[1]);
         Assert.Equal(0, pb[2]);
@@ -72,7 +56,7 @@ public class PageBufferTests
         var buffer = new byte[] { 10, 20, 30, 40, 50, 60, 70, 80 };
         var pb = new PageBuffer(buffer);
         var slice = pb.Slice(2, 3);
-        Assert.Equal(8, pb.Size);
+        Assert.Equal(8, pb.Length);
         Assert.Equal(30, slice[0]);
         Assert.Equal(40, slice[1]);
         Assert.Equal(50, slice[2]);
@@ -84,7 +68,7 @@ public class PageBufferTests
         byte[] buffer = new byte[pageSize];
         var pb = new PageBuffer(buffer);
         pb.Fill(0, pageSize, testValue);
-        Assert.Equal(pageSize, pb.Size);
+        Assert.Equal(pageSize, pb.Length);
         Assert.All(pb.ToArray(), (b) => Assert.Equal(testValue, b));
     }
 
@@ -94,76 +78,13 @@ public class PageBufferTests
         // Arrange
         byte[] buffer = new byte[pageSize];
         IBuffer pb = new PageBuffer(buffer);
-        pb.Write(true, testIndex);
+        pb.Write(true);
 
         // Act
-        var actual = pb.ReadBool(testIndex);
+        var actual = pb.ReadBool();
 
         // Assert
         Assert.True(actual);
-    }
-
-    [Fact]
-    public void TestBuffer_WriteByte()
-    {
-        // Arrange
-        byte[] buffer = new byte[pageSize];
-        IBuffer pb = new PageBuffer(buffer);
-        pb.Write((byte)testValue, testIndex);
-
-        // Act
-        var actual = pb.ReadByte(testIndex);
-
-        // Assert
-        Assert.Equal(testValue, actual);
-    }
-
-    [Fact]
-    public void TestBuffer_WriteSByte()
-    {
-        // Arrange
-        var value = (sbyte)55;
-        byte[] buffer = new byte[pageSize];
-        IBuffer pb = new PageBuffer(buffer);
-        pb.Write(value, testIndex);
-
-        // Act
-        var actual = pb.ReadSByte(testIndex);
-
-        // Assert
-        Assert.Equal(value, actual);
-    }
-
-    [Fact]
-    public void TestBuffer_WriteChar()
-    {
-        // Arrange
-        var value = (char)55;
-        byte[] buffer = new byte[pageSize];
-        IBuffer pb = new PageBuffer(buffer);
-        pb.Write(value, testIndex);
-
-        // Act
-        var actual = pb.ReadChar(testIndex);
-
-        // Assert
-        Assert.Equal(value, actual);
-    }
-
-    [Fact]
-    public void TestBuffer_WriteDecimal()
-    {
-        // Arrange
-        var value = (decimal)123.45;
-        byte[] buffer = new byte[pageSize];
-        IBuffer pb = new PageBuffer(buffer);
-        pb.Write(value, testIndex);
-
-        // Act
-        var actual = pb.ReadDecimal(testIndex);
-
-        // Assert
-        Assert.Equal(value, actual);
     }
 
     [Fact]
@@ -173,90 +94,10 @@ public class PageBufferTests
         var value = (double)123.45;
         byte[] buffer = new byte[pageSize];
         IBuffer pb = new PageBuffer(buffer);
-        pb.Write(value, testIndex);
+        pb.Write(value);
 
         // Act
-        var actual = pb.ReadDouble(testIndex);
-
-        // Assert
-        Assert.Equal(value, actual);
-    }
-
-    [Fact]
-    public void TestBuffer_WriteSingle()
-    {
-        // Arrange
-        var value = (Single)123.45;
-        byte[] buffer = new byte[pageSize];
-        IBuffer pb = new PageBuffer(buffer);
-        pb.Write(value, testIndex);
-
-        // Act
-        var actual = pb.ReadSingle(testIndex);
-
-        // Assert
-        Assert.Equal(value, actual);
-    }
-
-    [Fact]
-    public void TestBuffer_WriteInt16()
-    {
-        // Arrange
-        var value = (Int16)12345;
-        byte[] buffer = new byte[pageSize];
-        IBuffer pb = new PageBuffer(buffer);
-        pb.Write(value, testIndex);
-
-        // Act
-        var actual = pb.ReadInt16(testIndex);
-
-        // Assert
-        Assert.Equal(value, actual);
-    }
-
-    [Fact]
-    public void TestBuffer_WriteUInt16()
-    {
-        // Arrange
-        var value = (UInt16)12345;
-        byte[] buffer = new byte[pageSize];
-        IBuffer pb = new PageBuffer(buffer);
-        pb.Write(value, testIndex);
-
-        // Act
-        var actual = pb.ReadUInt16(testIndex);
-
-        // Assert
-        Assert.Equal(value, actual);
-    }
-
-    [Fact]
-    public void TestBuffer_WriteInt32()
-    {
-        // Arrange
-        var value = (Int32)12345;
-        byte[] buffer = new byte[pageSize];
-        IBuffer pb = new PageBuffer(buffer);
-        pb.Write(value, testIndex);
-
-        // Act
-        var actual = pb.ReadInt32(testIndex);
-
-        // Assert
-        Assert.Equal(value, actual);
-    }
-
-    [Fact]
-    public void TestBuffer_WriteUInt32()
-    {
-        // Arrange
-        var value = (UInt32)12345;
-        byte[] buffer = new byte[pageSize];
-        IBuffer pb = new PageBuffer(buffer);
-        pb.Write(value, testIndex);
-
-        // Act
-        var actual = pb.ReadUInt32(testIndex);
+        var actual = pb.ReadDouble();
 
         // Assert
         Assert.Equal(value, actual);
@@ -269,26 +110,10 @@ public class PageBufferTests
         var value = (Int64)12345;
         byte[] buffer = new byte[pageSize];
         IBuffer pb = new PageBuffer(buffer);
-        pb.Write(value, testIndex);
+        pb.Write(value);
 
         // Act
-        var actual = pb.ReadInt64(testIndex);
-
-        // Assert
-        Assert.Equal(value, actual);
-    }
-
-    [Fact]
-    public void TestBuffer_WriteUInt64()
-    {
-        // Arrange
-        var value = (UInt64)12345;
-        byte[] buffer = new byte[pageSize];
-        IBuffer pb = new PageBuffer(buffer);
-        pb.Write(value, testIndex);
-
-        // Act
-        var actual = pb.ReadUInt64(testIndex);
+        var actual = pb.ReadInt64();
 
         // Assert
         Assert.Equal(value, actual);
@@ -301,26 +126,10 @@ public class PageBufferTests
         var value = DateTime.Now.Date;
         byte[] buffer = new byte[pageSize];
         IBuffer pb = new PageBuffer(buffer);
-        pb.Write(value, testIndex);
+        pb.Write(value);
 
         // Act
-        var actual = pb.ReadDateTime(testIndex);
-
-        // Assert
-        Assert.Equal(value, actual);
-    }
-
-    [Fact]
-    public void TestBuffer_WriteGuid()
-    {
-        // Arrange
-        var value = Guid.NewGuid(); ;
-        byte[] buffer = new byte[pageSize];
-        IBuffer pb = new PageBuffer(buffer);
-        pb.Write(value, testIndex);
-
-        // Act
-        var actual = pb.ReadGuid(testIndex);
+        var actual = pb.ReadDateTime();
 
         // Assert
         Assert.Equal(value, actual);
@@ -333,10 +142,10 @@ public class PageBufferTests
         var value = "foo bar";
         byte[] buffer = new byte[pageSize];
         IBuffer pb = new PageBuffer(buffer);
-        pb.Write(value, testIndex);
+        pb.Write(value);
 
         // Act
-        var actual = pb.ReadString(testIndex, value.Length);
+        var actual = pb.ReadString(value.Length);
 
         // Assert
         Assert.Equal(value, actual);
@@ -349,10 +158,10 @@ public class PageBufferTests
         var value = new byte[8] { 55, 55, 55, 55, 55, 55, 55, 55 };
         byte[] buffer = new byte[pageSize];
         IBuffer pb = new PageBuffer(buffer);
-        pb.Write(value, testIndex);
+        pb.Write(value);
 
         // Act
-        var actual = pb.ReadBytes(testIndex, value.Length);
+        var actual = pb.ReadBytes(value.Length);
 
         // Assert
         Assert.Equal(value, actual);

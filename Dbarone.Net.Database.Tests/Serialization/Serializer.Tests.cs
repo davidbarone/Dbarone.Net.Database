@@ -10,7 +10,7 @@ public class SerializerTests()
         try
         {
             BootData bd = new BootData();
-            Serializer s = new Serializer(512, Dbarone.Net.Document.TextEncoding.UTF8);
+            Serializer s = new Serializer(512, TextEncoding.UTF8);
             var bytes = s.Serialize(bd);
             Assert.True(bytes.Length > 0);
         }
@@ -26,7 +26,7 @@ public class SerializerTests()
         BootData bd1 = new BootData();
         bd1.Magic = "xxx";
         bd1.PageSize = 1234;
-        Serializer s = new Serializer(512, Dbarone.Net.Document.TextEncoding.UTF8);
+        Serializer s = new Serializer(512, TextEncoding.UTF8);
         var bytes = s.Serialize(bd1);
 
         // Deserialize
