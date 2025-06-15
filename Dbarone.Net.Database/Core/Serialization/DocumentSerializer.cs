@@ -1,4 +1,5 @@
 using System.Data;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Dbarone.Net.Document;
 using Microsoft.VisualBasic;
@@ -109,7 +110,6 @@ public class DocumentSerializer : IDocumentSerializer
         }
     }
 
-
     public byte[] Serialize(Table table, TextEncoding textEncoding = TextEncoding.UTF8)
     {
         var buf = new GenericBuffer();
@@ -118,14 +118,14 @@ public class DocumentSerializer : IDocumentSerializer
         buf.Write((byte)219);   // 0xDB
 
         // Write schema
-        if (schema != null)
+        if (table.Schema != null)
         {
             // Validate document first:
-            schema.Validate(document);
+            table.Schema.ValidateTable(table);
 
             // If got here, document is valid - we can write schema to serialised header.
             buf.Write((byte)101);   // Schema header present
-            this.Serialize(buf, schema.ToDictionaryDocument(), null, textEncoding);
+            this.SerializeTable(buf, table.Schema.ToTable(), textEncoding);
         }
         else
         {
@@ -133,7 +133,7 @@ public class DocumentSerializer : IDocumentSerializer
         }
 
         // Write data
-        this.Serialize(buf, document, schema, textEncoding);
+        this.SerializeTable(buf, table, textEncoding);
 
         // End byte
         buf.Write((byte)219);   // 0xDB
@@ -145,69 +145,68 @@ public class DocumentSerializer : IDocumentSerializer
 
     #region Deserialize
 
-    private TableRow DeserializeRow()
+    public Table DeserializeTable(GenericBuffer buf, TextEncoding textEncoding = TextEncoding.UTF8)
     {
-            case DocumentType.Document:
+        Table table = new Table();
+        var hasSchema = false;  // need to fill this out
+        var rows = 0;   // need to fill this bit out
 
-            DictionaryDocument dict = new DictionaryDocument();
-
-            // Next byte is schema flag
-            byte schemaByte = buf.ReadByte();
-
-            if (schemaByte == 100)
-            {
-                // no schema
-                for (int i = 0; i < serialType.Length; i++)
-                {
-                    // key
-                    string key = this.Deserialize(buf, null, textEncoding);
-                    // value
-                    var value = this.Deserialize(buf, null, textEncoding);
-                    dict[key] = value;
-                }
-                return dict;
-            }
-            else if (schemaByte == 101)
-            {
-                if (schema is null)
-                {
-                    throw new Exception("Schema required to decode idx value");
-                }
-
-                if (schema.Attributes is null)
-                {
-                    throw new Exception("Schema attributes required to decode idx values");
-                }
-                // no schema
-                for (int i = 0; i < serialType.Length; i++)
-                {
-                    // key
-                    short idx = this.Deserialize(buf, schema, textEncoding);
-
-                    SchemaElement? innerAttribute = null;
-                    if (!(schema is null) && !(schema.Attributes is null))
-                    {
-                        string key = schema.Attributes.First(a => a.AttributeId == idx).AttributeName;
-                        innerAttribute = schema.Attributes.First(a => a.AttributeName.Equals(key, StringComparison.Ordinal)).Element;
-                        var value = this.Deserialize(buf, innerAttribute, textEncoding);
-                        dict[key] = value;
-                    }
-                    else
-                    {
-                        throw new Exception("Invalid idx");
-                    }
-                }
-                return dict;
-            }
-            else
-            {
-                throw new Exception("Unexpected Schema type byte mark");
-            }
-
+        for (int i = 0; i < rows; i++)
+        {
+            var row = this.DeserializeRow(buf, textEncoding);
+            table.Add(row);
         }
+        return table;
+    }
 
+    private TableRow DeserializeRow(GenericBuffer buf, TextEncoding textEncoding = TextEncoding.UTF8)
+    {
+        TableRow row = new TableRow();
 
-    private TableCell DeserializeCell(GenericBuffer buf, SchemaElement? schema, TextEncoding textEncoding = TextEncoding.UTF8)
+        // Next byte is schema flag
+        var hasSchema = buf.ReadBool();
+        var fields = buf.ReadInt64();
+
+        if (!hasSchema)
+        {
+            // no schema
+            for (int i = 0; i < fields; i++)
+            {
+                // key
+                string key = this.DeserializeCell(buf, textEncoding);
+
+                // value
+                var value = this.DeserializeCell(buf, textEncoding);
+                row[key] = value;
+            }
+            return row;
+        }
+        else
+        {
+            // has schema
+            for (int i = 0; i < fields; i++)
+            {
+                // key
+                short idx = 123;
+                TableSchema schema = new TableSchema(); // to do...
+
+                if (!(schema is null) && !(schema.Attributes is null))
+                {
+                    string key = schema.Attributes.First(a => a.AttributeId == idx).AttributeName;
+                    var innerAttribute = schema.Attributes.First(a => a.AttributeName.Equals(key, StringComparison.Ordinal));
+                    var value = this.DeserializeCell(buf, textEncoding);
+                    row[key] = value;
+                }
+                else
+                {
+                    throw new Exception("Invalid idx");
+                }
+            }
+            return row;
+        }
+    }
+
+    private TableCell DeserializeCell(GenericBuffer buf, TextEncoding textEncoding = TextEncoding.UTF8)
     {
         var varInt = buf.ReadVarInt();
         var serialType = new SerialType(varInt);
@@ -235,56 +234,37 @@ public class DocumentSerializer : IDocumentSerializer
         }
     }
 
-    public void DeserializeTable()
-    {
-            case DocumentType.Array:
-            List<DocumentValue> elements = new List<DocumentValue>();
-
-            SchemaElement? innerElement = null;
-            if (!(schema is null) && !(schema.Element is null))
-            {
-                innerElement = schema.Element;
-            }
-            for (int i = 0; i < serialType.Length; i++)
-            {
-                var docValue = this.Deserialize(buf, innerElement, textEncoding);
-                elements.Add(docValue);
-            }
-            return new DocumentArray(elements);
-
-        }
-
-    public DocumentValue Deserialize(byte[] buffer, TextEncoding textEncoding = TextEncoding.UTF8)
+    public Table Deserialize(byte[] buffer, TextEncoding textEncoding = TextEncoding.UTF8)
     {
         var buf = new GenericBuffer(buffer);
 
         // Magic bytes
-        var headerByte1 = buf.ReadByte();   // 0xDB
+        var headerByte1 = buf.ReadInt64();   // 0xDB
         if (headerByte1 != 0xDB)
         {
             throw new Exception("Invalid serialization format.");
         }
 
         // Check for schema header
-        var schemaByte = buf.ReadByte();
-        SchemaElement? schema = null;
+        var hasSchema = buf.ReadBool();
+        TableSchema schema = null;
 
-        if (schemaByte == 101)
+        if (hasSchema)
         {
-            var schemaDocument = this.Deserialize(buf, null, textEncoding).AsDocument;
-            schema = new SchemaElement(schemaDocument);
+            var schemaTable = this.DeserializeTable(buf, textEncoding);
+            schema = TableSchema.FromTable(schemaTable);
         }
 
-        DocumentValue result = this.Deserialize(buf, schema, textEncoding);
+        Table table = this.DeserializeTable(buf, textEncoding); // to do - add in schema
 
         // Magic footer byte
-        var footerByte1 = buf.ReadByte();   // 0xDB
+        var footerByte1 = buf.ReadInt64();   // 0xDB
         if (footerByte1 != 0xDB)
         {
             throw new Exception("Invalid serialization format.");
         }
 
-        return result;
+        return table;
     }
 
     #endregion
@@ -295,8 +275,8 @@ public class DocumentSerializer : IDocumentSerializer
     {
         var buf = new GenericBuffer();
         // save string only - to get length in bytes
-        var len = buf.Write(value);
-        buf.Position = 0;
+        buf.Write(value);
+        int len = (int)buf.Position; // get length of bytes written.
         var bytes = buf.ReadBytes(len);
         return bytes;
     }

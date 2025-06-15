@@ -14,6 +14,8 @@ public class Table : IList<TableRow>
     /// </summary>
     public TableSchema Schema { get; set; }
 
+    public Table() { }
+
     public Table(List<TableRow> array)
     {
         if (array == null) throw new ArgumentNullException(nameof(array));
