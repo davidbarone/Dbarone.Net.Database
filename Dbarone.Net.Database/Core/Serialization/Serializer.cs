@@ -41,7 +41,7 @@ public class Serializer : ISerializer
     public byte[] Serialize(Table table)
     {
         IDocumentSerializer ser = new DocumentSerializer();
-        var bytes = ser.Serialize(table, null, TextEncoding);
+        var bytes = ser.Serialize(table, TextEncoding);
         Assert.LessThanEquals(bytes.Length, PageSize);
         return bytes;
     }
@@ -67,7 +67,7 @@ public class Serializer : ISerializer
     public byte[] Serialize(object obj)
     {
         // Map to TableCell
-        var dict = (DictionaryDocument)Mapper.Map(typeof(DictionaryDocument), obj)!;
+        var dict = (TableRow)Mapper.Map(typeof(TableRow), obj)!;
 
         // Deserialise to TableCell
         var bytes = Serialize(dict);
@@ -77,6 +77,7 @@ public class Serializer : ISerializer
 
     public PageBuffer Serialize(Page page)
     {
+        /*
         // Create DocumentArray for the cells
         var arr = page.CellBuffers.Select(cb => (DictionaryDocument)cb);
         DocumentArray da = new DocumentArray(arr);
@@ -91,10 +92,13 @@ public class Serializer : ISerializer
         var bytes = Serialize(dict);
         Assert.LessThanEquals(bytes.Length, PageSize);
         return new PageBuffer(bytes);
+        */
+        return null;    // to do
     }
 
     public Page Deserialize(PageBuffer buffer)
     {
+        /*
         var bytes = buffer.ToArray();
         var dict = Deserialize(bytes);
 
@@ -113,6 +117,8 @@ public class Serializer : ISerializer
         page.CellBuffers = arr.Select(c => Serialize(c)).ToArray();
 
         return page;
+        */
+        return null;    // to do
     }
 
     public bool IsPageOverflow(Page page, Table? table = null, object? cell = null)

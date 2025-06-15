@@ -156,7 +156,7 @@ public class Engine : IEngine
             FileShare.None,
             512);
 
-        ISerializer serializer = new Serializer(512, Document.TextEncoding.UTF8);
+        ISerializer serializer = new Serializer(512, TextEncoding.UTF8);
         this.BufferManager = new DiskBufferManager(this._stream, 512, serializer);
         var boot = this.BufferManager.GetBootData();
 

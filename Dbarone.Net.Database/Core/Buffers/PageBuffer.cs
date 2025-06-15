@@ -29,7 +29,8 @@ public class PageBuffer : IBuffer
     {
         get
         {
-            return this.ReadInt64(0);
+            this.ReadInt64();
+            return 0;   // to do
         }
         set
         {
@@ -44,11 +45,12 @@ public class PageBuffer : IBuffer
     {
         get
         {
-            return (PageType)this.ReadByte(4);
+            this.ReadInt64();
+            return new PageType();    // to do;
         }
         set
         {
-            this.Write((byte)value, 4);
+            this.Write((Int64)value);   // to do
         }
     }
 
