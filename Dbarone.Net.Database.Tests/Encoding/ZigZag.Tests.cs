@@ -45,4 +45,32 @@ public class ZigZagTests
         ZigZag zz = new ZigZag(actualInput);
         Assert.Equal(expectedOutput, zz.Encoded);
     }
+
+    [Theory]
+    [InlineData(19, -10)]
+    [InlineData(17, -9)]
+    [InlineData(15, -8)]
+    [InlineData(13, -7)]
+    [InlineData(11, -6)]
+    [InlineData(9, -5)]
+    [InlineData(7, -4)]
+    [InlineData(5, -3)]
+    [InlineData(3, -2)]
+    [InlineData(1, -1)]
+    [InlineData(0, 0)]
+    [InlineData(2, 1)]
+    [InlineData(4, 2)]
+    [InlineData(6, 3)]
+    [InlineData(8, 4)]
+    [InlineData(10, 5)]
+    [InlineData(12, 6)]
+    [InlineData(14, 7)]
+    [InlineData(16, 8)]
+    [InlineData(18, 9)]
+    [InlineData(20, 10)]
+    public void TestZigZagDecoding(ulong encoded, long expectedDecode)
+    {
+        ZigZag zz = new ZigZag(new VarInt(encoded));
+        Assert.Equal(expectedDecode, zz.Decoded);
+    }
 }
