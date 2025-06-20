@@ -35,6 +35,12 @@ public class TableCell : IComparable<TableCell>, IEquatable<TableCell>
         this.RawValue = null;
     }
 
+    public TableCell(bool value)
+    {
+        this.Type = DocumentType.Boolean;
+        this.RawValue = value;
+    }
+
     public TableCell(Int64 value)
     {
         this.Type = DocumentType.Integer;
@@ -70,6 +76,7 @@ public class TableCell : IComparable<TableCell>, IEquatable<TableCell>
         this.RawValue = value;
 
         if (value == null) this.Type = DocumentType.Null;
+        else if (value is Boolean) this.Type = DocumentType.Boolean;
         else if (value is Int64) this.Type = DocumentType.Integer;
         else if (value is Double) this.Type = DocumentType.Real;
         else if (value is DateTime) this.Type = DocumentType.DateTime;
@@ -81,18 +88,20 @@ public class TableCell : IComparable<TableCell>, IEquatable<TableCell>
 
     #region Convert types
 
-    public bool AsBoolean => (bool)this.RawValue;
+    public bool AsBoolean => (Boolean)this.RawValue!;
     public Int64 AsInteger => Convert.ToInt64(this.RawValue);
     public double AsReal => Convert.ToDouble(this.RawValue);
     public DateTime AsDateTime => Convert.ToDateTime(this.RawValue);
     public Byte[] AsBlob => this.RawValue as Byte[];
-    public string AsText => (string)this.RawValue;
+    public string AsText => (string)this.RawValue!;
 
     #endregion
 
     #region IsTypes
 
     public bool IsNull => this.Type == DocumentType.Null;
+
+    public bool IsBoolean => this.Type == DocumentType.Boolean;
 
     public bool IsInteger => this.Type == DocumentType.Integer;
 
@@ -113,25 +122,25 @@ public class TableCell : IComparable<TableCell>, IEquatable<TableCell>
     // Boolean
     public static implicit operator Boolean(TableCell value)
     {
-        return value.AsInteger == 0 ? false : true;
+        return value.AsBoolean;
     }
 
     // Boolean?
     public static implicit operator Boolean?(TableCell value)
     {
-        return value.Type == DocumentType.Null ? null : value.AsInteger == 0 ? false : true;
+        return value.Type == DocumentType.Null ? null : value.AsBoolean;
     }
 
     // Boolean
     public static implicit operator TableCell(Boolean value)
     {
-        return new TableCell(value ? 1 : 0);
+        return new TableCell(value);
     }
 
     // Boolean?
     public static implicit operator TableCell(Boolean? value)
     {
-        return (value is null) ? new TableCell() : new TableCell(value.Value ? 1 : 0);
+        return (value is null) ? new TableCell() : new TableCell(value.Value);
     }
 
     // Byte
@@ -565,6 +574,7 @@ public class TableCell : IComparable<TableCell>, IEquatable<TableCell>
             case DocumentType.Null:
                 return 0;
 
+            case DocumentType.Boolean: return this.AsBoolean.CompareTo(other.AsBoolean);
             case DocumentType.Integer: return this.AsInteger.CompareTo(other.AsInteger);
             case DocumentType.Real: return this.AsReal.CompareTo(other.AsReal);
             case DocumentType.DateTime: return this.AsDateTime.CompareTo(other.AsDateTime);

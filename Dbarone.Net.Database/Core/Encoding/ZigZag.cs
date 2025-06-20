@@ -1,7 +1,7 @@
 namespace Dbarone.Net.Database;
 
 /// <summary>
-/// Provide compression for signed integers.
+/// Provides compression for signed integers, and uses VarInt encoding internally.
 /// </summary>
 /// <remarks>
 /// ZigZag compression works by converting signed integers to unsigned integers
