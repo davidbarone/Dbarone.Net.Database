@@ -1,4 +1,5 @@
 using System;
+using Dbarone.Net.Extensions;
 using Xunit;
 namespace Dbarone.Net.Database;
 
@@ -67,4 +68,61 @@ public class TableCellTests
         Assert.Equal(arrayValue, cell.RawValue);
         Assert.Equal(DocumentType.Blob, cell.Type);
     }
+
+    #region Implicit Operators
+
+    [Fact]
+    public void Test_TableCell_Implicit_Operator_Bool()
+    {
+        TableCell cell = true;
+        Assert.Equal(true, cell.RawValue);
+        Assert.Equal(DocumentType.Boolean, cell.Type);
+    }
+
+    [Fact]
+    public void Test_TableCell_Implicit_Operator_Int()
+    {
+        // all ints stored as long
+        TableCell cell = (short)123;
+        Assert.Equal((long)123, cell.RawValue);
+        Assert.Equal(DocumentType.Integer, cell.Type);
+    }
+
+    [Fact]
+    public void Test_TableCell_Implicit_Operator_Real()
+    {
+        // all reals stored as double
+        TableCell cell = (Single)123.45;
+        Assert.Equal((double)123.45, cell.RawValue);
+        Assert.Equal(DocumentType.Real, cell.Type);
+    }
+
+    [Fact]
+    public void Test_TableCell_Implicit_Operator_DateTime()
+    {
+        DateTime now = DateTime.Now;
+        TableCell cell = now;
+        Assert.Equal(now, cell.RawValue);
+        Assert.Equal(DocumentType.DateTime, cell.Type);
+    }
+
+    [Fact]
+    public void Test_TableCell_Implicit_Operator_Text()
+    {
+        var foo = "foobarbaz";
+        TableCell cell = foo;
+        Assert.Equal(foo, cell.RawValue);
+        Assert.Equal(DocumentType.Text, cell.Type);
+    }
+
+    [Fact]
+    public void Test_TableCell_Implicit_Operator_Blob()
+    {
+        var blob = new byte[] { 1, 2, 3, 4, 5 };
+        TableCell cell = blob;
+        Assert.Equal(blob, cell.RawValue);
+        Assert.Equal(DocumentType.Blob, cell.Type);
+    }
+
+    #endregion
 }
