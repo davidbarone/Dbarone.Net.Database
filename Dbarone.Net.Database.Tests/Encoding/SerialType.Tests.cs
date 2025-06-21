@@ -13,7 +13,7 @@ public class SerialTypeTests
     [InlineData(DocumentType.DateTime, null, 4)]
     [InlineData(DocumentType.Blob, 10, 26)]
     [InlineData(DocumentType.Text, 10, 27)]
-    public void TestVarInt(DocumentType DocumentType, int? length, int expected)
+    public void Test_SerialType(DocumentType DocumentType, int? length, int expected)
     {
         VarInt expectedVarInt = (VarInt)expected;
 

@@ -25,8 +25,8 @@ namespace Dbarone.Net.Database;
 /// 
 /// Serial Type     Document Type
 /// -----------     -------------
-/// N>=5,  N%5==0   Blob. Value is a byte array that is (N-5)/2 bytes long.
-/// N>=5,  N%5==1   String. Value is a string that is (N-5)/2 bytes long, stored in the text encoding of the database.
+/// N>=6,  N%2==0   Blob. Value is a byte array that is (N-6)/2 bytes long.
+/// N>=7,  N%2==1   String. Value is a string that is (N-7)/2 bytes long, stored in the text encoding of the database.
 /// </summary>
 public class SerialType
 {
@@ -77,7 +77,7 @@ public class SerialType
             {
                 throw new Exception("Length must be set.");
             }
-            this.Value = VariableStart + (length.Value * 2) + 1;
+            this.Value = VariableStart + (length.Value * 2);
         }
         else if (DocumentType == DocumentType.Text)
         {
@@ -85,7 +85,7 @@ public class SerialType
             {
                 throw new Exception("Length must be set.");
             }
-            this.Value = VariableStart + (length.Value * 2) + 2;
+            this.Value = VariableStart + (length.Value * 2) + 1;
         }
         else if ((int)DocumentType < VariableStart)
         {
