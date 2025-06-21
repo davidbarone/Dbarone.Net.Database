@@ -77,7 +77,7 @@ public class SerialType
             {
                 throw new Exception("Length must be set.");
             }
-            this.Value = VariableStart + (length.Value * 5) + 1;
+            this.Value = VariableStart + (length.Value * 2) + 1;
         }
         else if (DocumentType == DocumentType.Text)
         {
@@ -85,7 +85,7 @@ public class SerialType
             {
                 throw new Exception("Length must be set.");
             }
-            this.Value = VariableStart + (length.Value * 5) + 2;
+            this.Value = VariableStart + (length.Value * 2) + 2;
         }
         else if ((int)DocumentType < VariableStart)
         {
