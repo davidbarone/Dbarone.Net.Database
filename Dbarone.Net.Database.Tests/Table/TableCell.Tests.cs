@@ -5,6 +5,7 @@ namespace Dbarone.Net.Database;
 
 public class TableCellTests
 {
+    #region ctor
 
     [Fact]
     public void Test_TableCell_Ctor_Null()
@@ -27,7 +28,7 @@ public class TableCellTests
     public void Test_TableCell_Ctor_Int()
     {
         // all integer types treated as signed long.
-        ulong intValue = ulong.MaxValue;
+        long intValue = long.MaxValue;
         TableCell cell = intValue;
         Assert.Equal(intValue, cell.RawValue);
         Assert.Equal(DocumentType.Integer, cell.Type);
@@ -68,6 +69,100 @@ public class TableCellTests
         Assert.Equal(arrayValue, cell.RawValue);
         Assert.Equal(DocumentType.Blob, cell.Type);
     }
+
+    #endregion
+
+    #region Binary Operations
+
+    [Fact]
+    public void Test_TableCell_Operator_Add()
+    {
+        TableCell a = 4;
+        TableCell b = 3;
+        TableCell c = a + b;
+        Assert.Equal((long)7, (long)c);
+    }
+
+    [Fact]
+    public void Test_TableCell_Operator_Subtract()
+    {
+        TableCell a = 4;
+        TableCell b = 3;
+        TableCell c = a - b;
+        Assert.Equal((long)1, (long)c);
+    }
+
+    [Fact]
+    public void Test_TableCell_Operator_Multiply()
+    {
+        TableCell a = 4;
+        TableCell b = 3;
+        TableCell c = a * b;
+        Assert.Equal((long)12, (long)c);
+    }
+
+    [Fact]
+    public void Test_TableCell_Operator_Divide()
+    {
+        TableCell a = 12;
+        TableCell b = 3;
+        TableCell c = a / b;
+        Assert.Equal((double)4, (double)c);
+    }
+
+    #endregion
+
+    #region Comparison Operators
+
+    [Fact]
+    public void Test_TableCell_Operator_Equals()
+    {
+        TableCell a = 4;
+        TableCell b = 4;
+        Assert.True(a == b);
+    }
+
+    [Fact]
+    public void Test_TableCell_Operator_NotEquals()
+    {
+        TableCell a = 4;
+        TableCell b = 3;
+        Assert.True(a != b);
+    }
+
+    [Fact]
+    public void Test_TableCell_Operator_Greater()
+    {
+        TableCell a = 4;
+        TableCell b = 3;
+        Assert.True(a > b);
+    }
+
+    [Fact]
+    public void Test_TableCell_Operator_GreaterEquals()
+    {
+        TableCell a = 3;
+        TableCell b = 3;
+        Assert.True(a >= b);
+    }
+
+    [Fact]
+    public void Test_TableCell_Operator_Less()
+    {
+        TableCell a = 4;
+        TableCell b = 3;
+        Assert.True(b < a);
+    }
+
+    [Fact]
+    public void Test_TableCell_Operator_LessEquals()
+    {
+        TableCell a = 3;
+        TableCell b = 3;
+        Assert.True(b <= a);
+    }
+
+    #endregion
 
     #region Implicit Operators
 
