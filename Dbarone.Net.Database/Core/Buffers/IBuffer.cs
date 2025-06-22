@@ -1,11 +1,9 @@
-using Dbarone.Net.Document;
-
 namespace Dbarone.Net.Database;
 
 /// <summary>
 /// Describes operations that can be performed on a buffer.
 /// </summary>
-public interface IBuffer_TO_BE_DELETED_COPY_OF_SERIALISATION_ONE
+public interface IBuffer
 {
     /// <summary>
     /// Clears bytes in the buffer
@@ -39,51 +37,34 @@ public interface IBuffer_TO_BE_DELETED_COPY_OF_SERIALISATION_ONE
     /// <summary>
     /// Gets the size of the buffer.
     /// </summary>
-    public int Size { get; }
+    public long Length { get; }
+
+    /// <summary>
+    /// Gets / sets the current position in the stream for next read or write.
+    /// </summary>
+    public long Position { get; set; }
 
     #region Read methods
 
-    public bool ReadBool(int index);
-    public Byte ReadByte(int index);
-    public SByte ReadSByte(int index);
-    public char ReadChar(int index);
-    public Int16 ReadInt16(int index);
-    public UInt16 ReadUInt16(int index);
-    public Int32 ReadInt32(int index);
-    public UInt32 ReadUInt32(int index);
-    public Int64 ReadInt64(int index);
-    public UInt64 ReadUInt64(int index);
-    public Double ReadDouble(int index);
-    public Decimal ReadDecimal(int index);
-    public Single ReadSingle(int index);
-    public Guid ReadGuid(int index);
-    public byte[] ReadBytes(int index, int length);
-    public DateTime ReadDateTime(int index);
-    public string ReadString(int index, int length, TextEncoding textEncoding = TextEncoding.UTF8);
-    public object Read(DocumentType documentType, int? length = null, TextEncoding textEncoding = TextEncoding.UTF8);
+    public bool ReadBool();
+    public Int64 ReadInt64();
+    public Double ReadDouble();
+    public DateTime ReadDateTime();
+    public byte[] ReadBytes(int length);
+    public string ReadString(int length, TextEncoding textEncoding = TextEncoding.UTF8);
+    public object Read(DocumentType dataType, int? length = null, TextEncoding textEncoding = TextEncoding.UTF8);
 
     #endregion
 
     #region Write methods
 
-    public void Write(bool value, int index);
-    public void Write(byte value, int index);
-    public void Write(sbyte value, int index);
-    public void Write(char value, int index);
-    public void Write(Int16 value, int index);
-    public void Write(UInt16 value, int index);
-    public void Write(Int32 value, int index);
-    public void Write(UInt32 value, int index);
-    public void Write(Int64 value, int index);
-    public void Write(UInt64 value, int index);
-    public void Write(Double value, int index);
-    public void Write(Single value, int index);
-    public void Write(Decimal value, int index);
-    public void Write(Guid value, int index);
-    public void Write(byte[] value, int index);
-    public void Write(DateTime value, int index);
-    public void Write(string value, int index, TextEncoding textEncoding = TextEncoding.UTF8);
-    public void Write(object value, int index, TextEncoding textEncoding = TextEncoding.UTF8);
+    public int Write(bool value);
+    public int Write(Int64 value);
+    public int Write(Double value);
+    public int Write(DateTime value);
+    public int Write(byte[] value);
+    public int Write(string value, TextEncoding textEncoding = TextEncoding.UTF8);
+    public int Write(object value, TextEncoding textEncoding = TextEncoding.UTF8);
 
     #endregion
 }

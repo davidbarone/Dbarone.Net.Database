@@ -186,35 +186,40 @@ public class PageBuffer : IBuffer
 
     #region Write methods
 
-    public void Write(bool value)
+    public int Write(bool value)
     {
         var bytes = BitConverter.GetBytes(value);
         this.Stream.Write(bytes, 0, bytes.Length);
+        return 0;
     }
 
-    public void Write(Int64 value)
+    public int Write(Int64 value)
     {
         var bytes = BitConverter.GetBytes(value);
         this.Stream.Write(bytes, 0, bytes.Length);
+        return 0;
     }
 
-    public void Write(Double value)
+    public int Write(Double value)
     {
         var bytes = BitConverter.GetBytes(value);
         this.Stream.Write(bytes, 0, bytes.Length);
+        return 0;
     }
 
-    public void Write(DateTime value)
+    public int Write(DateTime value)
     {
         this.Write(value.ToBinary());
+        return 0;
     }
 
-    public void Write(byte[] value)
+    public int Write(byte[] value)
     {
         Buffer.BlockCopy(value, 0, this.InternalBuffer, (int)this.Position, value.Length);
+        return 0;
     }
 
-    public void Write(string value, TextEncoding textEncoding = TextEncoding.UTF8)
+    public int Write(string value, TextEncoding textEncoding = TextEncoding.UTF8)
     {
         if (textEncoding == TextEncoding.UTF8)
         {
@@ -229,9 +234,10 @@ public class PageBuffer : IBuffer
         {
             throw new Exception("Unable to write string encoding.");
         }
+        return 0;
     }
 
-    public void Write(object value, TextEncoding textEncoding = TextEncoding.UTF8)
+    public int Write(object value, TextEncoding textEncoding = TextEncoding.UTF8)
     {
         var type = value.GetType();
         if (type.IsEnum)
@@ -266,6 +272,7 @@ public class PageBuffer : IBuffer
         {
             throw new Exception($"Type {type.Name} is not supported for buffer writing.");
         }
+        return 0;
     }
 
     #endregion

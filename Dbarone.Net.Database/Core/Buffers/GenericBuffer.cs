@@ -113,7 +113,6 @@ public class GenericBuffer : IBuffer
         return result;
     }
 
-
     public VarInt ReadVarInt()
     {
         int start = (int)this.Position;
@@ -210,42 +209,42 @@ public class GenericBuffer : IBuffer
 
     #region Write methods
 
-    public void Write(bool value)
+    public int Write(bool value)
     {
         var bytes = BitConverter.GetBytes(value);
         this.Stream.Write(bytes, 0, bytes.Length);
-        //return bytes.Length;
+        return bytes.Length;
     }
 
-    public void Write(Int64 value)
+    public int Write(Int64 value)
     {
         var bytes = BitConverter.GetBytes(value);
         this.Stream.Write(bytes, 0, bytes.Length);
-        //return bytes.Length;
+        return bytes.Length;
     }
 
-    public void Write(Double value)
+    public int Write(Double value)
     {
         var bytes = BitConverter.GetBytes(value);
         this.Stream.Write(bytes, 0, bytes.Length);
-        //return bytes.Length;
+        return bytes.Length;
     }
 
-    public void Write(DateTime value)
+    public int Write(DateTime value)
     {
         var bin = value.ToBinary();
-        this.Write(bin);
+        return this.Write(bin);
     }
 
-    public void Write(byte[] value)
+    public int Write(byte[] value)
     {
         //var index = (int)this.Stream.Position;
         //Buffer.BlockCopy(value, 0, this.InternalBuffer, index, value.Length);
         this.Stream.Write(value, 0, value.Length);
-        //return value.Length;
+        return value.Length;
     }
 
-    public void Write(string value, TextEncoding textEncoding = TextEncoding.UTF8)
+    public int Write(string value, TextEncoding textEncoding = TextEncoding.UTF8)
     {
         var index = (int)this.Stream.Position;
         if (textEncoding == TextEncoding.UTF8)
@@ -255,7 +254,7 @@ public class GenericBuffer : IBuffer
 
             var bytes = Encoding.UTF8.GetBytes(value);
             Write(bytes);
-            //return bytes.Length;
+            return bytes.Length;
         }
         else if (textEncoding == TextEncoding.UTF16)
         {
@@ -264,7 +263,7 @@ public class GenericBuffer : IBuffer
 
             var bytes = Encoding.Unicode.GetBytes(value);
             Write(bytes);
-            //return bytes.Length;
+            return bytes.Length;
         }
         else if (textEncoding == TextEncoding.Latin1)
         {
@@ -272,7 +271,7 @@ public class GenericBuffer : IBuffer
 
             var bytes = Encoding.Latin1.GetBytes(value);
             Write(bytes);
-            //return bytes.Length;
+            return bytes.Length;
         }
         else
         {
@@ -280,7 +279,7 @@ public class GenericBuffer : IBuffer
         }
     }
 
-    public void Write(object value, TextEncoding textEncoding = TextEncoding.UTF8)
+    public int Write(object value, TextEncoding textEncoding = TextEncoding.UTF8)
     {
         var type = value.GetType();
         if (type.IsEnum)
@@ -290,27 +289,27 @@ public class GenericBuffer : IBuffer
 
         if (type == typeof(bool))
         {
-            Write((bool)value);
+            return Write((bool)value);
         }
         else if (type == typeof(Int64))
         {
-            Write((Int64)value);
+            return Write((Int64)value);
         }
         else if (type == typeof(double))
         {
-            Write((double)value);
+            return Write((double)value);
         }
         else if (type == typeof(DateTime))
         {
-            Write((DateTime)value);
+            return Write((DateTime)value);
         }
         else if (type == typeof(string))
         {
-            Write((string)value, textEncoding);
+            return Write((string)value, textEncoding);
         }
         else if (type == typeof(byte[]))
         {
-            Write((byte[])value);
+            return Write((byte[])value);
         }
         throw new Exception("Shouldn't get here!");
     }
