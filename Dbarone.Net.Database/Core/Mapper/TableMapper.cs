@@ -33,14 +33,14 @@ public class Serializer : ISerializer
 
     public Table Deserialize(byte[] buffer)
     {
-        IDocumentSerializer ser = new DocumentSerializer();
+        ITableSerializer ser = new TableSerializer();
         var table = ser.Deserialize(buffer, TextEncoding);
         return table;
     }
 
     public byte[] Serialize(Table table)
     {
-        IDocumentSerializer ser = new DocumentSerializer();
+        ITableSerializer ser = new TableSerializer();
         var bytes = ser.Serialize(table, TextEncoding);
         Assert.LessThanEquals(bytes.Length, PageSize);
         return bytes;

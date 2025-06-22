@@ -6,7 +6,7 @@ using Microsoft.VisualBasic;
 
 namespace Dbarone.Net.Database;
 
-public class DocumentSerializer : ITableSerializer
+public class TableSerializer : ITableSerializer
 {
     #region Public methods
 
