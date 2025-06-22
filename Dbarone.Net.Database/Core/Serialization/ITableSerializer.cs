@@ -1,9 +1,9 @@
 namespace Dbarone.Net.Database;
 
 /// <summary>
-/// Interface for serialising and deserialising DocumentValue objects.
+/// Interface for serialising and deserialising Table objects.
 /// </summary>
-public interface IDocumentSerializer
+public interface ITableSerializer
 {
     /// <summary>
     /// Serialise a <see cref="Table"/> instance. 
