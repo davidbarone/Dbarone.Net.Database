@@ -30,5 +30,5 @@ public class ZigZag
 
     public long Decoded { get; set; }
 
-    VarInt VarInt { get; set; }
+    public VarInt VarInt { get; set; }
 }

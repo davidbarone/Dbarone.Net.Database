@@ -98,7 +98,7 @@ public class TableSerializer : ITableSerializer
             throw new Exception("row is null!");
         }
         var columns = row.Count();
-        buffer.Write(new SerialType(DocumentType.Integer));
+        buffer.Write(new SerialType(DocumentType.Integer).Value);
         buffer.Write(columns);
 
         // 2 ways of writing out dictionary documents - with/without attached schema
@@ -235,8 +235,8 @@ public class TableSerializer : ITableSerializer
 
     private TableCell DeserializeCell(GenericBuffer buf, TextEncoding textEncoding = TextEncoding.UTF8)
     {
-        var varInt = buf.ReadVarInt();
-        var serialType = new SerialType(varInt);
+        var i = buf.ReadInt64();
+        var serialType = new SerialType(i);
         switch (serialType.DocumentType)
         {
             case DocumentType.Null:
@@ -269,8 +269,9 @@ public class TableSerializer : ITableSerializer
     {
         var buf = new GenericBuffer();
         // save string only - to get length in bytes
-        buf.Write(value);
+        buf.Write(value, textEncoding);
         int len = (int)buf.Position; // get length of bytes written.
+        buf.Position = 0;   // reset
         var bytes = buf.ReadBytes(len);
         return bytes;
     }

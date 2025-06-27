@@ -44,6 +44,8 @@ public class SerialType
 
     private const int VariableStart = (int)DocumentType.Blob;
 
+    public SerialType(ulong value) : this(new VarInt(value)) { }
+
     public SerialType(VarInt value)
     {
         if (value.Value < VariableStart)

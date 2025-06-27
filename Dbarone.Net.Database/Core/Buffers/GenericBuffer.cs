@@ -113,26 +113,12 @@ public class GenericBuffer : IBuffer
         return result;
     }
 
-    public VarInt ReadVarInt()
-    {
-        int start = (int)this.Position;
-        byte[] bytes = new byte[4];
-        Byte b;
-        do
-        {
-            b = InternalBuffer[(int)this.Position];
-            bytes[(int)this.Position - start] = b;
-            this.Position++;
-        } while ((b & 128) != 0);
-        return new VarInt(bytes[0..((int)this.Position - start)]);
-    }
-
     public Int64 ReadInt64()
     {
-        var index = (int)this.Stream.Position;
-        var result = BitConverter.ToInt64(InternalBuffer, index);
-        this.Position += sizeof(Int64);
-        return result;
+        // Integers stored as VarInts - decoded using ZigZag
+        VarInt vi = ReadVarInt();
+        ZigZag zz = new ZigZag(vi);
+        return zz.Decoded;
     }
 
     public Double ReadDouble()
@@ -218,7 +204,9 @@ public class GenericBuffer : IBuffer
 
     public int Write(Int64 value)
     {
-        var bytes = BitConverter.GetBytes(value);
+        // All integers written using ZigZag compression
+        ZigZag zz = new ZigZag(value);
+        var bytes = zz.VarInt.Bytes;
         this.Stream.Write(bytes, 0, bytes.Length);
         return bytes.Length;
     }
@@ -315,4 +303,22 @@ public class GenericBuffer : IBuffer
     }
 
     #endregion
+
+    #region Private Methods
+
+    private VarInt ReadVarInt()
+    {
+        int start = (int)this.Position;
+        byte[] bytes = new byte[4];
+        Byte b;
+        do
+        {
+            b = InternalBuffer[(int)this.Position];
+            bytes[(int)this.Position - start] = b;
+            this.Position++;
+        } while ((b & 128) != 0);
+        return new VarInt(bytes[0..((int)this.Position - start)]);
+    }
+
+    #endregion Private Methods
 }
