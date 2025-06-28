@@ -249,3 +249,5 @@ Testing Order
     - Serialising objects
     - Serialising pages
 
+## TO DO
+Mapper - to/from dictionary

@@ -7,7 +7,7 @@ namespace Dbarone.Net.Database.Tests;
 public class TableSerializerTests
 {
     [Fact]
-    public void SerializeTableTest()
+    public void SerializeTableNoSchemaTest()
     {
         Table t = new Table();
 

@@ -106,4 +106,10 @@ public class Table : IList<TableRow>
             yield return value;
         }
     }
+
+    /// <summary>
+    /// Validates the table if a schema is set.
+    /// </summary>
+    /// <returns>Returns true if the data conforms to the schema. Otherwise, throws an exception.</returns>
+    public bool IsValid => this.Schema is not null ? this.Schema.ValidateTable(this) : true;
 }

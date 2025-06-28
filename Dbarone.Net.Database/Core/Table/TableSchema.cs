@@ -22,6 +22,8 @@ public class TableSchema
             attributeName,
             documentType,
             allowNull);
+
+        this.Attributes = this.Attributes.Union(new SchemaAttribute[] { schemaAttribute });
     }
 
 
@@ -59,25 +61,22 @@ public class TableSchema
         }
 
         var schemaAttributes = this.Attributes.Select(a => a.AttributeName);
+        var notNullableSchemaAttributes = this.Attributes.Where(a => !a.AllowNull).Select(a => a.AttributeName);
+
         var dict = row.RawValue;
         var documentAttributes = dict.Keys;
 
         // attributes can be missing in document if the schema AllowNull is set.
-        var attributesMissingInDocument = schemaAttributes
-            .Except(documentAttributes)
-            .Where(
-                    a => this.Attributes.First(f => f.AttributeName.Equals(a, StringComparison.Ordinal)).AllowNull
-            );
-        var attributesMissingInSchema = documentAttributes.Except(schemaAttributes);
-
+        var attributesMissingInDocument = notNullableSchemaAttributes.Except(documentAttributes);
         if (attributesMissingInDocument.Any())
         {
-            throw new Exception($"Attribute {attributesMissingInDocument.First()} is not defined in the document.");
+            throw new Exception($"Attribute: {attributesMissingInDocument.First()} is not defined in the document.");
         }
 
+        var attributesMissingInSchema = documentAttributes.Except(schemaAttributes);
         if (attributesMissingInSchema.Any())
         {
-            throw new Exception($"Attribute {attributesMissingInSchema.First()} is not defined in the schema.");
+            throw new Exception($"Attribute: {attributesMissingInSchema.First()} is not defined in the schema.");
         }
 
         var validAttributes = schemaAttributes.Intersect(documentAttributes);
@@ -87,9 +86,13 @@ public class TableSchema
         {
             var cell = dict[attribute];
             var attr = this.Attributes.First(a => a.AttributeName.Equals(attribute, StringComparison.Ordinal));
-            if (attr.DocumentType != cell.Type)
+            if (attr.AllowNull && cell.Type == DocumentType.Null)
             {
-                throw new Exception("Invalid type");
+                // valid null
+            }
+            else if (attr.DocumentType != cell.Type)
+            {
+                throw new Exception($"Attribute: {attr.AttributeName} contains value: {cell.ToString()} which is an invalid data type.");
             }
         }
         return true;

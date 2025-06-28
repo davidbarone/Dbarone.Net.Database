@@ -535,7 +535,11 @@ public class TableCell : IComparable<TableCell>, IEquatable<TableCell>
         else return left.AsReal / right.AsReal;
     }
 
-    public override string ToString()
+    /// <summary>
+    /// TO DO: DELETE THIS?
+    /// </summary>
+    /// <returns></returns>
+    public string ToStringJson()
     {
         return JsonSerializer.Serialize(this);
     }
@@ -653,6 +657,8 @@ public class TableCell : IComparable<TableCell>, IEquatable<TableCell>
         return false;
     }
 
+    #endregion
+
     public override int GetHashCode()
     {
         var hash = 17;
@@ -661,5 +667,16 @@ public class TableCell : IComparable<TableCell>, IEquatable<TableCell>
         return hash;
     }
 
-    #endregion
+    public override string ToString()
+    {
+        var value = this.RawValue;
+        if (value is not null)
+        {
+            return value.ToString()!;
+        }
+        else
+        {
+            return "null";
+        }
+    }
 }
