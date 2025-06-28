@@ -156,4 +156,22 @@ public class TableSchemaTests
         var exception = Assert.Throws<Exception>(() => t.IsValid);
         Assert.Equal("Attribute: text is not defined in the document.", exception.Message);
     }
+
+    [Fact]
+    public void TestNoSchemaIsValid()
+    {
+        Table t = new Table();
+
+        // no schema set - any data should be valid.
+
+        TableRow r = new TableRow();
+        r["integer"] = 123;
+        r["text"] = null;
+        r["datetime"] = DateTime.Now;
+
+        t.Add(r);
+
+        // manual validation
+        Assert.True(t.IsValid);
+    }
 }
