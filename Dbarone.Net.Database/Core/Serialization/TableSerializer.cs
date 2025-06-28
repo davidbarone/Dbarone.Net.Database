@@ -53,16 +53,16 @@ public class TableSerializer : ITableSerializer
         }
 
         // Check for schema header
-        var hasSchema = buf.ReadBool();
+        var schemaFlag = buf.ReadInt64();
         TableSchema? schema = null;
 
-        if (hasSchema)
+        if (schemaFlag != 0)
         {
-            var schemaTable = this.DeserializeTable(buf, textEncoding);
+            var schemaTable = this.DeserializeTable(buf, null, textEncoding);
             schema = TableSchema.FromTable(schemaTable);
         }
 
-        Table table = this.DeserializeTable(buf, textEncoding); // to do - add in schema
+        Table table = this.DeserializeTable(buf, schema, textEncoding); // to do - add in schema
 
         // Magic footer byte
         var footerByte1 = buf.ReadInt64();   // 0xDB
@@ -82,7 +82,6 @@ public class TableSerializer : ITableSerializer
     {
         var rows = table.Count();
         // write the row count
-        buffer.Write(new SerialType(DocumentType.Integer).Value);
         buffer.Write(rows);
 
         foreach (var row in table)
@@ -98,7 +97,6 @@ public class TableSerializer : ITableSerializer
             throw new Exception("row is null!");
         }
         var columns = row.Count();
-        buffer.Write(new SerialType(DocumentType.Integer).Value);
         buffer.Write(columns);
 
         // 2 ways of writing out dictionary documents - with/without attached schema
@@ -171,30 +169,28 @@ public class TableSerializer : ITableSerializer
 
     #region Private Deserialize Methods
 
-    private Table DeserializeTable(GenericBuffer buf, TextEncoding textEncoding = TextEncoding.UTF8)
+    private Table DeserializeTable(GenericBuffer buf, TableSchema? schema = null, TextEncoding textEncoding = TextEncoding.UTF8)
     {
         Table table = new Table();
 
-        // 1st field is schema flag
-        long hasSchema = buf.ReadInt64();
         long rows = buf.ReadInt64();
 
         for (int i = 0; i < rows; i++)
         {
-            var row = this.DeserializeRow(buf, hasSchema, textEncoding);
+            var row = this.DeserializeRow(buf, schema, textEncoding);
             table.Add(row);
         }
         return table;
     }
 
-    private TableRow DeserializeRow(GenericBuffer buf, long schemaFlag, TextEncoding textEncoding = TextEncoding.UTF8)
+    private TableRow DeserializeRow(GenericBuffer buf, TableSchema? schema = null, TextEncoding textEncoding = TextEncoding.UTF8)
     {
         TableRow row = new TableRow();
 
         // First field is field-count
         var fields = buf.ReadInt64();
 
-        if (schemaFlag == 0)
+        if (schema is null)
         {
             // no schema
             for (int i = 0; i < fields; i++)
@@ -215,7 +211,6 @@ public class TableSerializer : ITableSerializer
             {
                 // key
                 short idx = 123;
-                TableSchema schema = new TableSchema(); // to do...
 
                 if (!(schema is null) && !(schema.Attributes is null))
                 {

@@ -131,7 +131,6 @@ public class GenericBuffer : IBuffer
 
     public DateTime ReadDateTime()
     {
-        var index = (int)this.Stream.Position;
         var result = DateTime.FromBinary(this.ReadInt64());
         return result;
     }
@@ -309,7 +308,7 @@ public class GenericBuffer : IBuffer
     private VarInt ReadVarInt()
     {
         int start = (int)this.Position;
-        byte[] bytes = new byte[4];
+        byte[] bytes = new byte[9]; // max length of varint for ulong is 9 bytes
         Byte b;
         do
         {
