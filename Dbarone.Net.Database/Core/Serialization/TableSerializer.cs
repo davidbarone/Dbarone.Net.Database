@@ -17,23 +17,6 @@ public class TableSerializer : ITableSerializer
         // Magic byte
         buf.Write((byte)219);   // 0xDB
 
-        // Write schema
-        if (table.Schema != null)
-        {
-            // Validate document first:
-            if (table.IsValid)
-            {
-                // If got here, document is valid - we can write schema to serialised header.
-                buf.Write(1);   // Schema header present
-                var schemaAsTable = table.Schema.ToTable();
-                this.SerializeTable(buf, schemaAsTable, textEncoding);
-            }
-        }
-        else
-        {
-            buf.Write(0);   // No schema header present
-        }
-
         // Write data
         this.SerializeTable(buf, table, textEncoding);
 
@@ -54,17 +37,7 @@ public class TableSerializer : ITableSerializer
             throw new Exception("Invalid serialization format.");
         }
 
-        // Check for schema header
-        var schemaFlag = buf.ReadInt64();
-        TableSchema? schema = null;
-
-        if (schemaFlag != 0)
-        {
-            var schemaTable = this.DeserializeTable(buf, null, textEncoding);
-            schema = TableSchema.FromTable(schemaTable);
-        }
-
-        Table table = this.DeserializeTable(buf, schema, textEncoding); // to do - add in schema
+        Table table = this.DeserializeTable(buf, textEncoding); // to do - add in schema
 
         // Magic footer byte
         var footerByte1 = buf.ReadInt64();   // 0xDB
@@ -82,8 +55,25 @@ public class TableSerializer : ITableSerializer
 
     private void SerializeTable(GenericBuffer buffer, Table table, TextEncoding textEncoding = TextEncoding.UTF8)
     {
-        var rows = table.Count();
+        // Write schema
+        if (table.Schema != null)
+        {
+            // Validate document first:
+            if (table.IsValid)
+            {
+                // If got here, document is valid - we can write schema to serialised header.
+                buffer.Write(1);   // Schema header present
+                var schemaAsTable = table.Schema.ToTable();
+                this.SerializeTable(buffer, schemaAsTable, textEncoding);
+            }
+        }
+        else
+        {
+            buffer.Write(0);   // No schema header present
+        }
+
         // write the row count
+        var rows = table.Count();
         buffer.Write(rows);
 
         foreach (var row in table)
@@ -171,9 +161,19 @@ public class TableSerializer : ITableSerializer
 
     #region Private Deserialize Methods
 
-    private Table DeserializeTable(GenericBuffer buf, TableSchema? schema = null, TextEncoding textEncoding = TextEncoding.UTF8)
+    private Table DeserializeTable(GenericBuffer buf, TextEncoding textEncoding = TextEncoding.UTF8)
     {
         Table table = new Table();
+
+        // Check for schema header
+        var schemaFlag = buf.ReadInt64();
+        TableSchema? schema = null;
+
+        if (schemaFlag != 0)
+        {
+            var schemaTable = this.DeserializeTable(buf, textEncoding);
+            schema = TableSchema.FromTable(schemaTable);
+        }
 
         long rows = buf.ReadInt64();
 
@@ -182,6 +182,8 @@ public class TableSerializer : ITableSerializer
             var row = this.DeserializeRow(buf, schema, textEncoding);
             table.Add(row);
         }
+
+        table.Schema = schema;
         return table;
     }
 

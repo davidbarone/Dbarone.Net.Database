@@ -12,7 +12,7 @@ public class Table : IList<TableRow>
     /// <summary>
     /// If set, the table has a fixed schema. Otherwise the table is schemaless.
     /// </summary>
-    public TableSchema Schema { get; set; }
+    public TableSchema? Schema { get; set; }
 
     public Table() { }
 
