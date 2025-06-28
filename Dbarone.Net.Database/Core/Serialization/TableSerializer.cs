@@ -21,11 +21,13 @@ public class TableSerializer : ITableSerializer
         if (table.Schema != null)
         {
             // Validate document first:
-            table.Schema.ValidateTable(table);
-
-            // If got here, document is valid - we can write schema to serialised header.
-            buf.Write(1);   // Schema header present
-            this.SerializeTable(buf, table.Schema.ToTable(), textEncoding);
+            if (table.IsValid)
+            {
+                // If got here, document is valid - we can write schema to serialised header.
+                buf.Write(1);   // Schema header present
+                var schemaAsTable = table.Schema.ToTable();
+                this.SerializeTable(buf, schemaAsTable, textEncoding);
+            }
         }
         else
         {
@@ -86,7 +88,7 @@ public class TableSerializer : ITableSerializer
 
         foreach (var row in table)
         {
-            this.SerializeRow(buffer, row, textEncoding);
+            this.SerializeRow(buffer, row, textEncoding, table.Schema);
         }
     }
 
@@ -204,27 +206,22 @@ public class TableSerializer : ITableSerializer
             }
             return row;
         }
-        else
+        else if (schema.Attributes is not null)
         {
             // has schema
             for (int i = 0; i < fields; i++)
             {
                 // key
-                short idx = 123;
-
-                if (!(schema is null) && !(schema.Attributes is null))
-                {
-                    string key = schema.Attributes.First(a => a.AttributeId == idx).AttributeName;
-                    var innerAttribute = schema.Attributes.First(a => a.AttributeName.Equals(key, StringComparison.Ordinal));
-                    var value = this.DeserializeCell(buf, textEncoding);
-                    row[key] = value;
-                }
-                else
-                {
-                    throw new Exception("Invalid idx");
-                }
+                short idx = this.DeserializeCell(buf, textEncoding);
+                string key = schema.Attributes.First(a => a.AttributeId == idx).AttributeName;
+                var value = this.DeserializeCell(buf, textEncoding);
+                row[key] = value;
             }
             return row;
+        }
+        else
+        {
+            throw new Exception("Cannot deserialize. Schema attributes not set.");
         }
     }
 
