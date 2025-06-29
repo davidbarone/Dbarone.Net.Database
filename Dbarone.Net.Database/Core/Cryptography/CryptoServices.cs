@@ -15,6 +15,7 @@ public class CryptoServices
             var passwordBytes = Encoding.UTF8.GetBytes(password);
             var keyBytes = SHA256.Create().ComputeHash(passwordBytes).Take(128 / 8).ToArray();
             aes.Key = keyBytes;
+            //aes.Padding = PaddingMode.Zeros;
             if (mode == CryptoStreamMode.Write)
             {
                 // write IV to start of stream
