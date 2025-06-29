@@ -18,12 +18,12 @@ public interface IStorage
     /// Reads a page from disk.
     /// </summary>
     /// <param name="pageId">The page id.</param>
-    /// <returns>A PageBuffer object representing the page.</returns>
-    PageBuffer StorageRead(int pageId);
+    /// <returns>A GenericBuffer object representing the page.</returns>
+    GenericBuffer StorageRead(int pageId);
 
     /// <summary>
     /// Writes / flushes a page back to disk.
     /// </summary>
-    /// <param name="page">The page data (as a PageBuffer).</param>
-    void StorageWrite(PageBuffer page);
+    /// <param name="page">The page data (as a GenericBuffer).</param>
+    void StorageWrite(GenericBuffer page);
 }

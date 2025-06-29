@@ -95,8 +95,8 @@ public class Engine : IEngine
             options = new CreateDatabaseOptions();
         }
 
-        ISerializer serializer = new Serializer(options.PageSize, options.TextEncoding);
-        this.BufferManager = new MemoryBufferManager(options.PageSize, serializer);
+        //ISerializer serializer = new Serializer(options.PageSize, options.TextEncoding);
+        //this.BufferManager = new MemoryBufferManager(options.PageSize, serializer);
     }
 
     /// <summary>
@@ -128,8 +128,8 @@ public class Engine : IEngine
 
 
         // Reconfigure the buffer manager with the actual page size + encoding for this database.
-        var serializer = new Serializer(options.PageSize, options.TextEncoding);
-        this.BufferManager = new DiskBufferManager(this._stream, options.PageSize, serializer);
+        //var serializer = new Serializer(options.PageSize, options.TextEncoding);
+        //this.BufferManager = new DiskBufferManager(this._stream, options.PageSize, serializer);
     }
 
     /// <summary>
@@ -156,8 +156,8 @@ public class Engine : IEngine
             FileShare.None,
             512);
 
-        ISerializer serializer = new Serializer(512, TextEncoding.UTF8);
-        this.BufferManager = new DiskBufferManager(this._stream, 512, serializer);
+        //ISerializer serializer = new Serializer(512, TextEncoding.UTF8);
+        //this.BufferManager = new DiskBufferManager(this._stream, 512, serializer);
         var boot = this.BufferManager.GetBootData();
 
         // Reconfigure the buffer manager with the actual page size + encoding for this database.
@@ -167,8 +167,8 @@ public class Engine : IEngine
             readOnly ? FileAccess.Read : FileAccess.Write | FileAccess.Read,
             FileShare.None,
             boot.PageSize);
-        serializer = new Serializer(boot.PageSize, boot.TextEncoding);
-        this.BufferManager = new DiskBufferManager(this._stream, boot.PageSize, serializer);
+        //serializer = new Serializer(boot.PageSize, boot.TextEncoding);
+        //this.BufferManager = new DiskBufferManager(this._stream, boot.PageSize, serializer);
     }
 
     public void Dispose()

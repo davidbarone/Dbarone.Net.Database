@@ -1,29 +1,18 @@
 using Dbarone.Net.Document;
+using System.Collections;
 
 namespace Dbarone.Net.Database;
 
 /// <summary>
-/// Defines serialization methods available.
+/// Defines mapping operations between Table objects and sequences of POCO objects.
 /// </summary>
-public interface ISerializer
+public interface ITableMapper
 {
-    /// <summary>
-    /// Serialises a document to a byte array.
-    /// </summary>
-    /// <param name="value">The document to be serialised.</param>
-    /// <param name="textEncoding">The optional text encoding to use for serialisation.</param>
-    /// <returns>Returns a serialised byte array representing the document.</returns>
-    byte[] Serialize(Table table);
+    public IEnumerable Map(Table table, Type toElementType);
 
-    Table Deserialize(byte[] buffer);
+    public IEnumerable<T> Map<T>(Table table);
 
-    public byte[] Serialize(object obj);
+    public Table Map<T>(IEnumerable<T> data);
 
-    public object Deserialize(byte[] buffer, Type toType);
-
-    public PageBuffer Serialize(Page page);
-
-    public Page Deserialize(PageBuffer buffer);
-
-    public bool IsPageOverflow(Page page, Table? table = null, object? cell = null);
+    public Table Map(IEnumerable data);
 }

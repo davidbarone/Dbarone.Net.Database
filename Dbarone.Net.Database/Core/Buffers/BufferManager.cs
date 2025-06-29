@@ -12,7 +12,7 @@ public abstract class BufferManager : IBufferManager, IStorage
     protected int PageSize { get; set; }
     protected Dictionary<int, Page> Cache = new Dictionary<int, Page>();
 
-    public ISerializer Serializer { get; set; }
+    //public ISerializer Serializer { get; set; }
 
     public int Count
     {
@@ -23,17 +23,17 @@ public abstract class BufferManager : IBufferManager, IStorage
     /// Creates a new buffer manager with a given page size.
     /// </summary>
     /// <param name="pageSize"></param>
-    public BufferManager(int pageSize, ISerializer serializer)
+    public BufferManager(int pageSize/*, ISerializer serializer*/)
     {
         this.PageSize = pageSize;
-        this.Serializer = serializer;
+        //this.Serializer = serializer;
     }
 
     #region IStorage
 
-    public abstract PageBuffer StorageRead(int pageId);
+    public abstract GenericBuffer StorageRead(int pageId);
 
-    public abstract void StorageWrite(PageBuffer page);
+    public abstract void StorageWrite(GenericBuffer page);
 
     public abstract int StoragePageCount();
 
@@ -63,8 +63,8 @@ public abstract class BufferManager : IBufferManager, IStorage
             var page = Cache[key];
             if (page.IsDirty)
             {
-                var pageBuffer = Serializer.Serialize(page);
-                this.StorageWrite(pageBuffer);
+                var genericBuffer = new GenericBuffer(new byte[] { });  // Serializer.Serialize(page);
+                this.StorageWrite(genericBuffer);
                 page.IsDirty = false;
             }
         }
@@ -83,12 +83,12 @@ public abstract class BufferManager : IBufferManager, IStorage
         var nextPageId = nextBufferPageId > nextStoragePageId ? nextBufferPageId : nextStoragePageId;
 
         byte[] buffer = new byte[this.PageSize];
-        var pb = new PageBuffer(buffer);
-        pb.PageId = nextPageId;
-        pb.PageType = pageType;
-        var page = Serializer.Deserialize(pb);
+        var pb = new GenericBuffer(buffer);
+        //pb.PageId = nextPageId;
+        //pb.PageType = pageType;
+        var page = new Page(0, PageType.Empty); // Serializer.Deserialize(pb);
         page.IsDirty = true;
-        this.Cache[pb.PageId] = page;
+        //this.Cache[pb.PageId] = page;
         return page;
     }
 
@@ -122,7 +122,7 @@ public abstract class BufferManager : IBufferManager, IStorage
         {
             // cache miss - read from disk + add to buffer cache
             var buffer = StorageRead(pageId);
-            var page = Serializer.Deserialize(buffer);
+            var page = new Page(0, PageType.Empty);  // Serializer.Deserialize(buffer);
             this.Cache[pageId] = page;
             return page;
         }

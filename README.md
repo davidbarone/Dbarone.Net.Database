@@ -240,7 +240,7 @@ Testing Order
 
 - Dbarone.Net.Database
   - IBuffer
-    - PageBuffer
+    - genericBuffer
   - IStorage
   - IBufferManager
     - DiskBufferManager

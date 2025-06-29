@@ -4,9 +4,9 @@ using Dbarone.Net.Document;
 namespace Dbarone.Net.Database;
 
 /// <summary>
-/// Member resolver for documents.
+/// Member resolver for TableRow objects.
 /// </summary>
-public class DocumentMemberResolver : AbstractMemberResolver, IMemberResolver
+public class TableRowMemberResolver : AbstractMemberResolver, IMemberResolver
 {
     /// <summary>
     /// Set to true for document types.
@@ -116,7 +116,7 @@ public class DocumentMemberResolver : AbstractMemberResolver, IMemberResolver
     /// <returns>Returns true if the current IMemberResolver can resolve members of the specified type.</returns>
     public override bool CanResolveMembersForType(Type type)
     {
-        return type.IsAssignableTo(typeof(TableCell));
+        return type.IsAssignableTo(typeof(TableRow));
     }
 
     /// <summary>

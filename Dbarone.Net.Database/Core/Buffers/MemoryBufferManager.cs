@@ -2,23 +2,23 @@ using Dbarone.Net.Database;
 
 public class MemoryBufferManager : BufferManager, IBufferManager
 {
-    PageBuffer[] Pages = new PageBuffer[0];
+    GenericBuffer[] Pages = new GenericBuffer[0];
 
-    public MemoryBufferManager(int pageSize, ISerializer serializer) : base(pageSize, serializer) { }
+    public MemoryBufferManager(int pageSize/*, ISerializer serializer*/) : base(pageSize/*, serializer*/) { }
 
     public override int StoragePageCount()
     {
         return Pages.Count();
     }
 
-    public override PageBuffer StorageRead(int pageId)
+    public override GenericBuffer StorageRead(int pageId)
     {
         return Pages[pageId];
     }
 
-    public override void StorageWrite(PageBuffer page)
+    public override void StorageWrite(GenericBuffer page)
     {
-        var id = page.PageId;
+        var id = 0;// page.PageId;
         if (id >= Pages.Count())
         {
             Array.Resize(ref Pages, id);

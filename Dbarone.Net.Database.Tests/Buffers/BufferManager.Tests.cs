@@ -11,16 +11,16 @@ public class BufferManagerTests
 
     public void BufferManager_Instantiate()
     {
-        ISerializer serializer = new Serializer(1024, TextEncoding.UTF8);
-        BufferManager bm = new MemoryBufferManager(pageSize, serializer);
+        //ISerializer serializer = new Serializer(1024, TextEncoding.UTF8);
+        BufferManager bm = new MemoryBufferManager(pageSize/*, serializer*/);
         Assert.Equal(0, bm.MaxPageId);
         Assert.Equal(0, bm.Count);
     }
 
     public void BufferManager_CreatePage()
     {
-        ISerializer serializer = new Serializer(1024, TextEncoding.UTF8);
-        BufferManager bm = new MemoryBufferManager(pageSize, serializer);
+        //ISerializer serializer = new Serializer(1024, TextEncoding.UTF8);
+        BufferManager bm = new MemoryBufferManager(pageSize/*, serializer*/);
         var page = bm.Create(PageType.Boot);
         Assert.Equal(PageType.Boot, page.PageType);
         Assert.Equal(1, bm.MaxPageId);
@@ -30,10 +30,10 @@ public class BufferManagerTests
 
     public void BufferManager_StorageWrite()
     {
-        ISerializer serializer = new Serializer(1024, TextEncoding.UTF8);
-        BufferManager bm = new MemoryBufferManager(pageSize, serializer);
+        //ISerializer serializer = new Serializer(1024, TextEncoding.UTF8);
+        BufferManager bm = new MemoryBufferManager(pageSize/*, serializer*/);
         var page = bm.Create(PageType.Boot);
-        bm.StorageWrite(bm.Serializer.Serialize(page));
+        //bm.StorageWrite(bm.Serializer.Serialize(page));
         Assert.Equal(PageType.Boot, page.PageType);
         Assert.Equal(1, bm.MaxPageId);
         Assert.Equal(1, bm.Count);

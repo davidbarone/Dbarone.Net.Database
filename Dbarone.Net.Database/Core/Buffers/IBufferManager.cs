@@ -8,7 +8,7 @@ public interface IBufferManager : IStorage
     /// <summary>
     /// Serializes pages to/from byte streams and provides other serialization services
     /// </summary>
-    public ISerializer Serializer { get; set; }
+    //public ISerializer Serializer { get; set; }
 
     /// <summary>
     /// Gets the maximum page id either in cache or on disk.

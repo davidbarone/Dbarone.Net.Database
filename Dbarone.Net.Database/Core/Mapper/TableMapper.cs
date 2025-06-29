@@ -10,139 +10,43 @@ namespace Dbarone.Net.Database;
 /// <summary>
 /// Base class for Serializer. A serializer perform serialize and deserialize functions to convert .NET objects to and from byte[] arrays.
 /// </summary>
-public class Serializer : ISerializer
+public class TableMapper : ITableMapper
 {
-    private int PageSize { get; set; }
-    private TextEncoding TextEncoding { get; set; } = TextEncoding.UTF8;
-    ObjectMapper Mapper { get; set; }
-
-    public Serializer(int pageSize, TextEncoding textEncoding = TextEncoding.UTF8)
+    public IEnumerable Map(Table table, Type toType)
     {
-        this.PageSize = pageSize;
-        this.TextEncoding = textEncoding;
-
         // Build mapper
         var conf = new MapperConfiguration()
                     .SetAutoRegisterTypes(true)
-                    .RegisterResolvers<DocumentMemberResolver>()
+                    .RegisterResolvers<TableRowMemberResolver>()
+                    .RegisterResolvers<DictionaryMemberResolver>()
                     .RegisterOperator<TableMapperOperator>()
                     .RegisterOperator<TableRowMapperOperator>();
 
-        Mapper = new ObjectMapper(conf);
+        var mapper = new ObjectMapper(conf);
+        return (IEnumerable)mapper.Map(toType, table)!;
     }
 
-    public Table Deserialize(byte[] buffer)
+    public IEnumerable<T> Map<T>(Table table)
     {
-        ITableSerializer ser = new TableSerializer();
-        var table = ser.Deserialize(buffer, TextEncoding);
-        return table;
+        throw new NotImplementedException();
     }
 
-    public byte[] Serialize(Table table)
+    public Table Map<T>(IEnumerable<T> data)
     {
-        ITableSerializer ser = new TableSerializer();
-        var bytes = ser.Serialize(table, TextEncoding);
-        Assert.LessThanEquals(bytes.Length, PageSize);
-        return bytes;
+        throw new NotImplementedException();
     }
 
-    public object Deserialize(byte[] buffer, Type toType)
+    public Table Map(IEnumerable data)
     {
-        // Deserialise to TableCell
-        var docValue = Deserialize(buffer);
+        // Build mapper
+        var conf = new MapperConfiguration()
+                    .SetAutoRegisterTypes(true)
+                    .RegisterResolvers<TableRowMemberResolver>()
+                    .RegisterResolvers<DictionaryMemberResolver>()
+                    .RegisterOperator<TableMapperOperator>()
+                    .RegisterOperator<TableRowMapperOperator>();
 
-        // Map to POCO
-        try
-        {
-            var obj = Mapper.Map(toType, docValue);
-            return obj;
-        }
-        catch (Exception ex)
-        {
-            var a = ex;
-            return null;
-        }
-    }
-
-    public byte[] Serialize(object obj)
-    {
-        // Map to TableCell
-        var dict = (TableRow)Mapper.Map(typeof(TableRow), obj)!;
-
-        // Deserialise to TableCell
-        var bytes = Serialize(dict);
-        Assert.LessThanEquals(bytes.Length, PageSize);
-        return bytes;
-    }
-
-    public PageBuffer Serialize(Page page)
-    {
-        /*
-        // Create DocumentArray for the cells
-        var arr = page.CellBuffers.Select(cb => (DictionaryDocument)cb);
-        DocumentArray da = new DocumentArray(arr);
-
-        DictionaryDocument dict = new DictionaryDocument();
-        dict["PageId"] = page.PageId;
-        dict["PageType"] = (byte)page.PageType;
-        dict["Header"] = (DictionaryDocument)Mapper.Map(typeof(DictionaryDocument), page.Header)!;
-        dict["Cells"] = new DocumentArray(Mapper.Map<IEnumerable<object>, List<DictionaryDocument>>(page.Cells)!);
-
-        // Deserialise to TableCell
-        var bytes = Serialize(dict);
-        Assert.LessThanEquals(bytes.Length, PageSize);
-        return new PageBuffer(bytes);
-        */
-        return null;    // to do
-    }
-
-    public Page Deserialize(PageBuffer buffer)
-    {
-        /*
-        var bytes = buffer.ToArray();
-        var dict = Deserialize(bytes);
-
-        Page page = new Page(dict["PageId"], (PageType)(int)dict["PageType"]);
-        page.IsDirty = false;
-
-        DictionaryDocument header = dict["Header"].AsDocument;
-        DocumentArray arr = dict["Cells"].AsArray;
-
-        if (page.PageType == PageType.Boot)
-        {
-            page.Header = Mapper.Map<DictionaryDocument, BootData>(dict["Header"].AsDocument)!;
-        }
-
-        page.HeaderBuffer = Serialize(header);
-        page.CellBuffers = arr.Select(c => Serialize(c)).ToArray();
-
-        return page;
-        */
-        return null;    // to do
-    }
-
-    public bool IsPageOverflow(Page page, Table? table = null, object? cell = null)
-    {
-        var remaining = PageSize;
-        remaining -= 5;     // pageid is int and pagetype is byte
-        if (table is not null)
-        {
-            // new data object to replace old one - calculate size and deduct from remaining
-            remaining = remaining - Serialize(table).Length;
-        }
-        if (cell is not null)
-        {
-            // new cell
-            remaining = remaining - Serialize(cell).Length;
-        }
-        if (remaining < 2)
-        {
-            // allow buffer of 2 for serialtype to expand.
-            return false;
-        }
-        else
-        {
-            return true;
-        }
+        var mapper = new ObjectMapper(conf);
+        return (Table)mapper.Map(typeof(Table), data)!;
     }
 }
