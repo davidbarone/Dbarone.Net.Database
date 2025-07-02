@@ -5,7 +5,7 @@ namespace Dbarone.Net.Database;
 /// </summary>
 public interface IPageHydrater
 {
-    Page Hydrate(IBuffer buffer);
+    Page Hydrate(IBuffer buffer, ITableSerializer serializer, TextEncoding textEncoding = TextEncoding.UTF8);
 
-    IBuffer Dehydrate(Page page);
+    IBuffer Dehydrate(Page page, ITableSerializer serializer, TextEncoding textEncoding = TextEncoding.UTF8);
 }

@@ -12,7 +12,21 @@ public class Page
 
     public int PageId { get; set; }
     public PageType PageType { get; set; }
+    public int? PrevPageId { get; set; }
+    public int? NextPageId { get; set; }
+    public int? ParentPageId { get; set; }
     public bool IsDirty { get; set; } = false;
+
+    /// <summary>
+    /// Size of data table serialised at point of reading the page in.
+    /// </summary>
+    public int DataLength { get; set; }
+
+    /// <summary>
+    /// Main data in page
+    /// </summary>
+    public Table Data { get; set; }
+
     public List<object> Cells { get; set; } = new List<object>();
     public byte[][] CellBuffers { get; set; } = new byte[0][];
 
@@ -27,6 +41,7 @@ public class Page
 
     #endregion
 
+    public Page() { }
     public Page(int pageId, PageType pageType)
     {
         this.PageId = pageId;
