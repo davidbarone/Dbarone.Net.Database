@@ -10,13 +10,13 @@ public class PageHydrater : IPageHydrater
 
         // serialise the header fields:
         GenericBuffer buffer = new GenericBuffer();
-        buffer.Write(page.PageId);
-        buffer.Write((int)page.PageType);
-        buffer.Write(page.PrevPageId is null ? (int)-1 : page.PrevPageId);
-        buffer.Write(page.NextPageId is null ? (int)-1 : page.NextPageId);
-        buffer.Write(page.ParentPageId is null ? (int)-1 : page.ParentPageId);
+        buffer.Write((long)page.PageId);
+        buffer.Write((long)page.PageType);
+        buffer.Write(page.PrevPageId is null ? (long)-1 : (long)page.PrevPageId);
+        buffer.Write(page.NextPageId is null ? (long)-1 : (long)page.NextPageId);
+        buffer.Write(page.ParentPageId is null ? (long)-1 : (long)page.ParentPageId);
         buffer.Write(page.IsDirty);
-        buffer.Write(page.DataLength);
+        buffer.Write((long)page.DataLength);
 
         buffer.Position = 100;
         buffer.Write(bytes);
