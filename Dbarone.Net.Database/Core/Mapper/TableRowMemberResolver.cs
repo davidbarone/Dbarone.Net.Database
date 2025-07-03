@@ -8,12 +8,11 @@ namespace Dbarone.Net.Database;
 /// </summary>
 public class TableRowMemberResolver : AbstractMemberResolver, IMemberResolver
 {
-    /// <summary>
-    /// Set to true for document types.
-    /// </summary>
     public override bool DeferBuild => true;
 
-    public override bool IsEnumerable => true;
+    public override bool IsEnumerable => false;
+
+    public override bool HasMembers => true;
 
     /// <summary>
     /// Returns a getter delegate that gets a member value for an object.
@@ -68,7 +67,7 @@ public class TableRowMemberResolver : AbstractMemberResolver, IMemberResolver
                 }
                 else
                 {
-                    objDict[memberName] = (TableCell)value;
+                    objDict[memberName] = new TableCell(value);
                 }
             }
             else
@@ -88,7 +87,7 @@ public class TableRowMemberResolver : AbstractMemberResolver, IMemberResolver
     /// <returns>Returns the member type.</returns>
     public override Type GetMemberType(Type type, string memberName, MapperOptions options)
     {
-        return typeof(TableCell);
+        return typeof(object);
     }
 
     /// <summary>
@@ -116,11 +115,7 @@ public class TableRowMemberResolver : AbstractMemberResolver, IMemberResolver
     /// <returns>Returns true if the current IMemberResolver can resolve members of the specified type.</returns>
     public override bool CanResolveMembersForType(Type type)
     {
-        return type.IsAssignableTo(typeof(TableRow));
+        return type == (typeof(TableRow));
     }
 
-    /// <summary>
-    /// Returns true if types supported by this resolver have members.
-    /// </summary>
-    public override bool HasMembers => true;
 }

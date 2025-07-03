@@ -32,7 +32,7 @@ public class TableMapperOperator : EnumerableMapperOperator
         // Children
         Dictionary<string, MapperOperator> children = new Dictionary<string, MapperOperator>();
         var fromElementType = SourceType.EnumerableElementType;
-        var toElementType = typeof(TableCell);
+        var toElementType = typeof(TableRow);
 
         if (fromElementType == null)
         {

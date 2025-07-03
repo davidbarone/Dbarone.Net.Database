@@ -49,4 +49,26 @@ public class TableMapper : ITableMapper
         var mapper = new ObjectMapper(conf);
         return (Table)mapper.Map(typeof(Table), data)!;
     }
+
+    public IEnumerable<IDictionary<string, object>> Map(Table table)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Table MapFromDictionary(IEnumerable<IDictionary<string, object>> data)
+    {
+        // Build mapper
+        var conf = new MapperConfiguration()
+                    .SetAutoRegisterTypes(true)
+                    .RegisterResolvers<TableResolver>()
+                    .RegisterResolvers<TableRowMemberResolver>()
+                    .RegisterResolvers<DictionaryMemberResolver>();
+        //.RegisterOperator<TableMapperOperator>()
+        //.RegisterOperator<TableRowMapperOperator>();
+
+        var mapper = new ObjectMapper(conf);
+        var op = mapper.GetMapperOperator<IEnumerable<IDictionary<string, object>>, Table>();
+        var obj = op.Map(data);
+        return (Table)obj!;
+    }
 }
