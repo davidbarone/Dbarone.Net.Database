@@ -8,16 +8,16 @@ namespace Dbarone.Net.Database;
 /// </summary>
 public interface ITableMapper
 {
-    public IEnumerable Map(Table table, Type toElementType);
+    public IEnumerable MapTableToIEnumerable(Table table, Type toElementType);
 
-    public IEnumerable<IDictionary<string, object>> Map(Table table);
+    public IEnumerable<IDictionary<string, object>> MapTableToIEnumerableDictionary(Table table);
 
-    public IEnumerable<T> Map<T>(Table table);
+    public IEnumerable<T> MapTableToIEnumerable<T>(Table table);
 
 
-    public Table Map<T>(IEnumerable<T> data);
+    public Table MapIEnumerableToTable<T>(IEnumerable<T> data);
 
-    public Table MapFromDictionary(IEnumerable<IDictionary<string, object>> data);
+    public Table MapIEnumerableDictionaryToTable(IEnumerable<IDictionary<string, object>> data);
 
-    public Table Map(IEnumerable data);
+    public Table MapIEnumerableToTable(IEnumerable data);
 }

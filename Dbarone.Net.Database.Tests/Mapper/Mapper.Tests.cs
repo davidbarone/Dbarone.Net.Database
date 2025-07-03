@@ -32,8 +32,9 @@ public class MapperTests
         };
 
         TableMapper mapper = new TableMapper();
-        var table = mapper.MapFromDictionary(dictList);
+        var table = mapper.MapIEnumerableDictionaryToTable(dictList);
 
         Assert.Equal(2, table.Count);   // should have 2 rows.
+        Assert.Equal("bar", table[0]["text"]);
     }
 }

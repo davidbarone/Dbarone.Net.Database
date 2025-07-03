@@ -12,7 +12,7 @@ namespace Dbarone.Net.Database;
 /// </summary>
 public class TableMapper : ITableMapper
 {
-    public IEnumerable Map(Table table, Type toType)
+    public IEnumerable MapTableToIEnumerable(Table table, Type toType)
     {
         // Build mapper
         var conf = new MapperConfiguration()
@@ -26,17 +26,17 @@ public class TableMapper : ITableMapper
         return (IEnumerable)mapper.Map(toType, table)!;
     }
 
-    public IEnumerable<T> Map<T>(Table table)
+    public IEnumerable<T> MapTableToIEnumerable<T>(Table table)
     {
         throw new NotImplementedException();
     }
 
-    public Table Map<T>(IEnumerable<T> data)
+    public Table MapIEnumerableToTable<T>(IEnumerable<T> data)
     {
         throw new NotImplementedException();
     }
 
-    public Table Map(IEnumerable data)
+    public Table MapIEnumerableToTable(IEnumerable data)
     {
         // Build mapper
         var conf = new MapperConfiguration()
@@ -50,12 +50,12 @@ public class TableMapper : ITableMapper
         return (Table)mapper.Map(typeof(Table), data)!;
     }
 
-    public IEnumerable<IDictionary<string, object>> Map(Table table)
+    public IEnumerable<IDictionary<string, object>> MapTableToIEnumerableDictionary(Table table)
     {
         throw new NotImplementedException();
     }
 
-    public Table MapFromDictionary(IEnumerable<IDictionary<string, object>> data)
+    public Table MapIEnumerableDictionaryToTable(IEnumerable<IDictionary<string, object>> data)
     {
         // Build mapper
         var conf = new MapperConfiguration()
