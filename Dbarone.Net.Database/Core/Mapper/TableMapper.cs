@@ -62,8 +62,8 @@ public class TableMapper : ITableMapper
                     .SetAutoRegisterTypes(true)
                     .RegisterResolvers<TableResolver>()
                     .RegisterResolvers<TableRowMemberResolver>()
-                    .RegisterResolvers<DictionaryMemberResolver>();
-        //.RegisterOperator<TableMapperOperator>()
+                    .RegisterResolvers<DictionaryMemberResolver>()
+                    .RegisterOperator<TableMapperOperator>();
         //.RegisterOperator<TableRowMapperOperator>();
 
         var mapper = new ObjectMapper(conf);
