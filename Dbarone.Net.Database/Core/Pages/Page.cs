@@ -1,6 +1,5 @@
 namespace Dbarone.Net.Database;
 using Dbarone.Net.Assertions;
-using Dbarone.Net.Proxy;
 using Dbarone.Net.Document;
 
 /// <summary>
