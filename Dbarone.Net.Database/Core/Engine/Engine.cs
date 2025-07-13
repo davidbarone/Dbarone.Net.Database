@@ -1,8 +1,8 @@
 namespace Dbarone.Net.Database;
 using Dbarone.Net.Database.Mapper;
 using System.Linq;
-using Dbarone.Net.Extensions.Object;
 using Dbarone.Net.Assertions;
+using Dbarone.Net.Extensions;
 
 /// <summary>
 /// The internal (private) database implementation.

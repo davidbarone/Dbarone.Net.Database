@@ -1,8 +1,6 @@
 namespace Dbarone.Net.Database;
 using Dbarone.Net.Assertions;
 using Dbarone.Net.Database.Mapper;
-using Dbarone.Net.Extensions.String;
-using Dbarone.Net.Extensions.Object;
 
 /// <summary>
 /// In memory cache of pages as they are modified or read from disk. Dirty pages are written back to disk with a CHECKPOINT command.
