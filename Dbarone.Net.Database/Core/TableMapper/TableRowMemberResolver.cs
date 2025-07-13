@@ -1,4 +1,4 @@
-using Dbarone.Net.Mapper;
+using Dbarone.Net.Database.Mapper;
 using Dbarone.Net.Document;
 
 namespace Dbarone.Net.Database;

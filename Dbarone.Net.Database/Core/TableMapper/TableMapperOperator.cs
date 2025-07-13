@@ -1,5 +1,5 @@
 using Dbarone.Net.Document;
-using Dbarone.Net.Mapper;
+using Dbarone.Net.Database.Mapper;
 using Dbarone.Net.Extensions;
 using System.Collections;
 

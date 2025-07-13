@@ -1,26 +1,24 @@
-using Dbarone.Net.Document;
-using Dbarone.Net.Mapper;
-using Dbarone.Net.Extensions;
+using Dbarone.Net.Database.Mapper;
 
-namespace Dbarone.Net.Database;
+namespace Dbarone.Net.Database.Mapper;
 
 /// <summary>
-/// Mapper for when the source is a memberwise source, and the target is TableRow
-/// In this case, we actually need to use a DictionaryDocument type.
+/// Operator for when the source type is object. This includes dynamic property types (which are generally
+/// represented as Object data type). For these types, we defer the actual mapping until runtime.
 /// </summary>
-public class TableRowMapperOperator : MapperOperator
+public class ObjectSourceMapperOperator : MapperOperator
 {
     private MapperOperator? runtimeOperator = null;
 
     /// <summary>
-    /// Creates a new <see cref="MemberwiseTableCellTargetMapperOperator"/> instance.
+    /// Creates a new <see cref="ObjectSourceMapperOperator"/> instance.
     /// </summary>
     /// <param name="builder">The <see cref="MapperBuilder"/> instance.</param>
     /// <param name="sourceType">The source <see cref="BuildType"/> instance.</param>
     /// <param name="targetType">The target <see cref="BuildType"/> instance.</param>
     /// <param name="parent">An optional parent <see cref="MapperOperator"/> instance.</param>
     /// <param name="onLog">Optional logging callback.</param>
-    public TableRowMapperOperator(MapperBuilder builder, BuildType sourceType, BuildType targetType, MapperOperator? parent = null, MapperOperatorLogDelegate? onLog = null) : base(builder, sourceType, targetType, parent, onLog)
+    public ObjectSourceMapperOperator(MapperBuilder builder, BuildType sourceType, BuildType targetType, MapperOperator? parent = null, MapperOperatorLogDelegate? onLog = null) : base(builder, sourceType, targetType, parent, onLog)
     {
     }
 
@@ -42,18 +40,19 @@ public class TableRowMapperOperator : MapperOperator
     /// <returns>Returns true when the source declared type is 'object'.</returns>
     public override bool CanMap()
     {
-        return SourceType.MemberResolver.HasMembers
-            && SourceType.Type != typeof(DateTime)
-            && TargetType.Type == typeof(TableRow);
+        return SourceType.Type == typeof(object);
     }
 
     private void GetRuntimeOperator(object? source)
     {
-        var sourceRunTimeType = (source is null) ? this.SourceType.Type : source.GetType();
+        // If source is null, use the target type as the source type as there is no other type we can use.
+        var sourceRunTimeType = (source is null) ? this.TargetType.Type : source.GetType();
+
+        // Only set the operator once (using first source object)
         if (this.runtimeOperator == null)
         {
-            // Switch target type to use DictionaryDocument
-            this.runtimeOperator = Builder.GetMapperOperator(new SourceTarget(sourceRunTimeType, typeof(TableRow)), this);
+            ResetChildren();    // Clears the empty [*, ] child with null runtimeOperator
+            this.runtimeOperator = Builder.GetMapperOperator(new SourceTarget(sourceRunTimeType, this.TargetType.Type), this);
         }
     }
 

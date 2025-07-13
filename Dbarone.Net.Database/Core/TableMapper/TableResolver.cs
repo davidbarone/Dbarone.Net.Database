@@ -1,5 +1,5 @@
 using Dbarone.Net.Database;
-using Dbarone.Net.Mapper;
+using Dbarone.Net.Database.Mapper;
 
 public class TableResolver : AbstractMemberResolver, IMemberResolver
 {

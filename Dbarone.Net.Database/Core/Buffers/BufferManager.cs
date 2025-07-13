@@ -1,6 +1,6 @@
 namespace Dbarone.Net.Database;
 using Dbarone.Net.Assertions;
-using Dbarone.Net.Mapper;
+using Dbarone.Net.Database.Mapper;
 using Dbarone.Net.Extensions.String;
 using Dbarone.Net.Extensions.Object;
 
