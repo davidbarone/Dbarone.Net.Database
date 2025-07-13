@@ -52,7 +52,22 @@ public class TableMapper : ITableMapper
 
     public IEnumerable<IDictionary<string, object>> MapTableToIEnumerableDictionary(Table table)
     {
-        throw new NotImplementedException();
+        // Build mapper
+        var conf = new MapperConfiguration()
+                    .SetAutoRegisterTypes(true)
+                    .RegisterResolvers<TableResolver>()
+                    .RegisterResolvers<TableRowMemberResolver>()
+                    .RegisterResolvers<DictionaryMemberResolver>()
+                    .RegisterOperator<TableMapperOperator>();
+        //.RegisterOperator<TableRowMapperOperator>();
+
+        // Converter to map TableCell to Object for dictionary values.
+        conf.RegisterConverter<TableCell, object>((tc) => tc.RawValue!);
+
+        var mapper = new ObjectMapper(conf);
+        var op = mapper.GetMapperOperator<Table, IEnumerable<Dictionary<string, object>>>();
+        var obj = op.Map(table);
+        return (IEnumerable<IDictionary<string, object>>)obj!;
     }
 
     public Table MapIEnumerableDictionaryToTable(IEnumerable<IDictionary<string, object>> data)
