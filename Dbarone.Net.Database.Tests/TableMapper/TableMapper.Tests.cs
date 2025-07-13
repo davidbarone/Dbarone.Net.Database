@@ -4,7 +4,7 @@ using System;
 using Dbarone.Net.Database;
 using System.Linq;
 
-public class MapperTests
+public class TableMapperTests
 {
     public class TableRowPoco
     {

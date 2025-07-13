@@ -10,7 +10,9 @@ public abstract class BufferManager : IBufferManager, IStorage
     protected int PageSize { get; set; }
     protected Dictionary<int, Page> Cache = new Dictionary<int, Page>();
 
-    //public ISerializer Serializer { get; set; }
+    public IPageHydrater PageHydrater { get; set; }
+    public ITableSerializer TableSerializer { get; set; }
+    public TextEncoding TextEncoding { get; set; } = TextEncoding.UTF8;
 
     public int Count
     {
@@ -21,17 +23,19 @@ public abstract class BufferManager : IBufferManager, IStorage
     /// Creates a new buffer manager with a given page size.
     /// </summary>
     /// <param name="pageSize"></param>
-    public BufferManager(int pageSize/*, ISerializer serializer*/)
+    public BufferManager(int pageSize, IPageHydrater pageHydrater, ITableSerializer tableSerializer, TextEncoding textEncoding = TextEncoding.UTF8)
     {
         this.PageSize = pageSize;
-        //this.Serializer = serializer;
+        this.PageHydrater = pageHydrater;
+        this.TableSerializer = tableSerializer;
+        this.TextEncoding = textEncoding;
     }
 
     #region IStorage
 
-    public abstract GenericBuffer StorageRead(int pageId);
+    public abstract IBuffer StorageRead(int pageId);
 
-    public abstract void StorageWrite(GenericBuffer page);
+    public abstract void StorageWrite(IBuffer page);
 
     public abstract int StoragePageCount();
 
@@ -61,7 +65,8 @@ public abstract class BufferManager : IBufferManager, IStorage
             var page = Cache[key];
             if (page.IsDirty)
             {
-                var genericBuffer = new GenericBuffer(new byte[] { });  // Serializer.Serialize(page);
+                // serialise
+                var genericBuffer = PageHydrater.Dehydrate(page, TableSerializer, TextEncoding);
                 this.StorageWrite(genericBuffer);
                 page.IsDirty = false;
             }
@@ -120,7 +125,7 @@ public abstract class BufferManager : IBufferManager, IStorage
         {
             // cache miss - read from disk + add to buffer cache
             var buffer = StorageRead(pageId);
-            var page = new Page(0, PageType.Empty);  // Serializer.Deserialize(buffer);
+            var page = PageHydrater.Hydrate(buffer, TableSerializer, TextEncoding);
             this.Cache[pageId] = page;
             return page;
         }

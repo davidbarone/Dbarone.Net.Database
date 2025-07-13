@@ -7,7 +7,7 @@ public class DiskBufferManager : BufferManager, IBufferManager
 {
     private Stream Stream;
 
-    public DiskBufferManager(Stream stream, int pageSize/*, ISerializer serializer*/) : base(pageSize/*, serializer*/)
+    public DiskBufferManager(Stream stream, int pageSize, IPageHydrater pageHydrater, ITableSerializer tableSerializer, TextEncoding textEncoding = TextEncoding.UTF8) : base(pageSize, pageHydrater, tableSerializer, textEncoding)
     {
         this.Stream = stream;
     }
@@ -22,7 +22,7 @@ public class DiskBufferManager : BufferManager, IBufferManager
     /// </summary>
     /// <param name="pageId">The page id.</param>
     /// <returns>Returns the page buffer.</returns>
-    public override GenericBuffer StorageRead(int pageId)
+    public override IBuffer StorageRead(int pageId)
     {
         byte[] buffer = new byte[Global.PageSize];
         int start = (pageId * Global.PageSize);
@@ -40,7 +40,7 @@ public class DiskBufferManager : BufferManager, IBufferManager
     /// Physical write to store.
     /// </summary>
     /// <param name="page">The page to write.</param>
-    public override void StorageWrite(GenericBuffer page)
+    public override void StorageWrite(IBuffer page)
     {
         var buffer = page.ToArray();
         Assert.Equals(buffer.Length, this.PageSize);

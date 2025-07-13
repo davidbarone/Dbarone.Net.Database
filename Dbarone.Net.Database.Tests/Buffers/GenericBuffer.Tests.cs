@@ -5,7 +5,6 @@ namespace Dbarone.Net.Database;
 
 public class GenericBufferTests
 {
-
     [Fact]
     public void TestCreateBufferSize()
     {
