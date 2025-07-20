@@ -121,6 +121,13 @@ public class Page
 
     public Page()
     {
+    }
+
+    /// <summary>
+    /// Sets defaults for page
+    /// </summary>
+    public void InitialiseHeader()
+    {
         // Initialise header
         TableRow row = new TableRow();
         Table t = new Table(row);

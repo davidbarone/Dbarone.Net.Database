@@ -16,6 +16,7 @@ public class PageHydraterTests
         ITableSerializer ser = new TableSerializer();
 
         var page = new Page();
+        page.InitialiseHeader();
 
         // header
         page.PageId = 1;
