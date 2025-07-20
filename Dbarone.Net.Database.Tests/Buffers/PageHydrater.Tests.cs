@@ -19,12 +19,13 @@ public class PageHydraterTests
         page.IsDirty = true;
 
         // data
-        page.Data = new Table();
+        Table t = new Table();
         TableRow row = new TableRow();
         row["integer"] = 123;
         row["text"] = "foobar";
         row["datetime"] = new DateTime(2000, 1, 1);
-        page.Data.Add(row);
+        t.Add(row);
+        page.Data.Add(t);
 
         // dehydrate
         IPageHydrater hydrater = new PageHydrater();

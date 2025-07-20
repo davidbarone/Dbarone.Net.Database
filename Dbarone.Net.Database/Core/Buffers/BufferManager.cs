@@ -37,13 +37,13 @@ public abstract class BufferManager : IBufferManager, IStorage
 
     public abstract void StorageWrite(IBuffer page);
 
-    public abstract int StoragePageCount();
+    public abstract long StoragePageCount();
 
     #endregion
 
     #region IBufferManager
 
-    public int MaxPageId
+    public long MaxPageId
     {
         get
         {
@@ -136,8 +136,9 @@ public abstract class BufferManager : IBufferManager, IStorage
     /// </summary>
     public BootData GetBootData()
     {
-        var data = (BootData)this.Get(0).Header;
-        return data;
+        return null;
+        //var data = (BootData)this.Get(0).Header;
+        //return data;
     }
 
     #endregion

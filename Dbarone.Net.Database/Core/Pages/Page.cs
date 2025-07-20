@@ -7,14 +7,98 @@ using Dbarone.Net.Document;
 /// </summary>
 public class Page
 {
-    #region Header Fields
+    /// <summary>
+    /// Header is the first/only row on the first data table.
+    /// </summary>
+    public TableRow Header => this.Data[0][0];
 
-    public int PageId { get; set; }
-    public PageType PageType { get; set; }
-    public int? PrevPageId { get; set; }
-    public int? NextPageId { get; set; }
-    public int? ParentPageId { get; set; }
-    public bool IsDirty { get; set; } = false;
+    #region Standard Header Fields
+
+    public long PageId
+    {
+        get
+        {
+            return Header["PI"].AsInteger;
+        }
+        set
+        {
+            Header["PI"] = value;
+        }
+    }
+
+    public long TableCount
+    {
+        get
+        {
+            return Header["TC"].AsInteger;
+        }
+        set
+        {
+            Header["TC"] = value;
+        }
+    }
+
+    public PageType PageType
+    {
+        get
+        {
+            return (PageType)Header["PT"].AsInteger;
+        }
+        set
+        {
+            Header["PT"] = (long)value;
+        }
+    }
+
+    public int? PrevPageId
+    {
+        get
+        {
+            return Header["PP"].Type == DocumentType.Null ? null : (int?)Header["PP"].AsInteger;
+        }
+        set
+        {
+            Header["PP"] = value;
+        }
+    }
+
+    public int? NextPageId
+    {
+        get
+        {
+            return Header["NP"].Type == DocumentType.Null ? null : (int?)Header["NP"].AsInteger;
+        }
+        set
+        {
+            Header["NP"] = value;
+        }
+    }
+
+    public int? ParentPageId
+    {
+        get
+        {
+            return Header["RP"].Type == DocumentType.Null ? null : (int?)Header["RP"].AsInteger;
+        }
+        set
+        {
+            Header["RP"] = value;
+        }
+    }
+
+    public bool IsDirty
+    {
+        get
+        {
+            return Header["ID"].AsBoolean;
+        }
+        set
+        {
+            Header["ID"] = (bool)value;
+        }
+    }
+
+    public bool IsLeaf { get; set; } = false;   // only used for b-tree
 
     /// <summary>
     /// Size of data table serialised at point of reading the page in.
@@ -22,25 +106,21 @@ public class Page
     public int DataLength { get; set; }
 
     /// <summary>
-    /// Main data in page
+    /// Page data. Includes the header table. Must be at least 1 data table per page.
     /// </summary>
-    public Table Data { get; set; }
-
-    public List<object> Cells { get; set; } = new List<object>();
-    public byte[][] CellBuffers { get; set; } = new byte[0][];
+    public List<Table> Data { get; set; } = new List<Table>();
 
     /// <summary>
-    /// The metadata for the page.
+    /// Stores the byte arrays for each:
+    /// - Table (dimension #1)
+    /// - Row (dimension #2)
     /// </summary>
-    /// <remarks>
-    /// This object is specific for each page type.
-    /// </remarks>
-    public object Header { get; set; }
-    public byte[] HeaderBuffer { get; set; }
+    public List<List<byte[]>> Buffers { get; set; } = new List<List<byte[]>>();
 
     #endregion
 
     public Page() { }
+
     public Page(int pageId, PageType pageType)
     {
         this.PageId = pageId;

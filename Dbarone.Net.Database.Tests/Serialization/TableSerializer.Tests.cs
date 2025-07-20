@@ -28,10 +28,10 @@ public class TableSerializerTests
         ITableSerializer ser = new TableSerializer();
 
         // Serialize
-        var bytes = ser.Serialize(t);
+        var result = ser.Serialize(t);
 
         // Deserialize
-        var t2 = ser.Deserialize(bytes);
+        var t2 = ser.Deserialize(result.Buffer).Table;
 
         Assert.NotNull(t2);
         Assert.Equal(t.Count, t2.Count);
@@ -67,10 +67,10 @@ public class TableSerializerTests
         ITableSerializer ser = new TableSerializer();
 
         // Serialize
-        var bytes = ser.Serialize(t);
+        var result = ser.Serialize(t);
 
         // Deserialize
-        var t2 = ser.Deserialize(bytes);
+        var t2 = ser.Deserialize(result.Buffer).Table;
 
         Assert.NotNull(t2);
         Assert.Equal(t.Count, t2.Count);

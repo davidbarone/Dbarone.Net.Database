@@ -11,7 +11,7 @@ public interface ITableSerializer
     /// <param name="table">The instance to serialise.</param>
     /// <param name="textEncoding">The optional text encoding to use.</param>
     /// <returns>Returns a byte array.</returns>
-    byte[] Serialize(Table table, TextEncoding textEncoding = TextEncoding.UTF8);
+    (IBuffer Buffer, long Length) Serialize(Table table, TextEncoding textEncoding = TextEncoding.UTF8);
 
     /// <summary>
     /// Deserialise a buffer to a <see cref="Table"/> instance.
@@ -19,5 +19,5 @@ public interface ITableSerializer
     /// <param name="buffer">The buffer byte array</param>
     /// <param name="textEncoding">Optional text encoding to use.</param>
     /// <returns>Returns a Table instance.</returns>
-    Table Deserialize(byte[] buffer, TextEncoding textEncoding = TextEncoding.UTF8);
+    (Table Table, List<byte[]> RowBuffers) Deserialize(IBuffer buffer, TextEncoding textEncoding = TextEncoding.UTF8);
 }

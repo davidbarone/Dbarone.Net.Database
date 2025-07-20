@@ -12,9 +12,9 @@ public class DiskBufferManager : BufferManager, IBufferManager
         this.Stream = stream;
     }
 
-    public override int StoragePageCount()
+    public override long StoragePageCount()
     {
-        return (int)(this.Stream.Length / PageSize);
+        return (this.Stream.Length / PageSize);
     }
 
     /// <summary>

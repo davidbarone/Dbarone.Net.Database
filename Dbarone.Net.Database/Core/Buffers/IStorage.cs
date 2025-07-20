@@ -12,7 +12,7 @@ public interface IStorage
     /// Gets the number of pages currently in the storage.
     /// </summary>
     /// <returns></returns>
-    int StoragePageCount();
+    long StoragePageCount();
 
     /// <summary>
     /// Reads a page from disk.

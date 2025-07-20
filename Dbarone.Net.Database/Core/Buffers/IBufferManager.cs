@@ -13,7 +13,7 @@ public interface IBufferManager : IStorage
     /// <summary>
     /// Gets the maximum page id either in cache or on disk.
     /// </summary>
-    public int MaxPageId { get; }
+    public long MaxPageId { get; }
 
     /// <summary>
     /// Get the number of pages in the cache.
