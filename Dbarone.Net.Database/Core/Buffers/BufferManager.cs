@@ -66,7 +66,7 @@ public abstract class BufferManager : IBufferManager, IStorage
             if (page.IsDirty)
             {
                 // serialise
-                var genericBuffer = PageHydrater.Dehydrate(page, TableSerializer, TextEncoding);
+                var genericBuffer = PageHydrater.Dehydrate(page, TableSerializer, TextEncoding).Buffer;
                 this.StorageWrite(genericBuffer);
                 page.IsDirty = false;
             }

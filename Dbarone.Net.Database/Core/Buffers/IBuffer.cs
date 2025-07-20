@@ -32,7 +32,7 @@ public interface IBuffer
     /// <param name="index">The start of the byte array to return.</param>
     /// <param name="length">The length of the byte array to return.</param>
     /// <returns></returns>
-    public byte[] Slice(int index, int length);
+    public byte[] Slice(long index, long length);
 
     /// <summary>
     /// Gets the size of the buffer.

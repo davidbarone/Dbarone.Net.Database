@@ -11,6 +11,12 @@ namespace Dbarone.Net.Database;
 /// </remarks>
 public class ZigZag
 {
+    public static int SizeOf(long value)
+    {
+        ZigZag zz = new ZigZag(value);
+        return zz.VarInt.Size;
+    }
+
     public ZigZag(long value)
     {
         int sizeLong = sizeof(long);

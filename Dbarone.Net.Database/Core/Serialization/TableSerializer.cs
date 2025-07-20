@@ -14,36 +14,15 @@ public class TableSerializer : ITableSerializer
     {
         var buf = new GenericBuffer();
 
-        // Magic byte
-        buf.Write((byte)219);   // 0xDB
-
         // Write data
         this.SerializeTable(buf, table, textEncoding);
-
-        // End byte
-        buf.Write((byte)219);   // 0xDB
 
         return (Buffer: buf, Length: buf.Position);
     }
 
     public (Table Table, List<byte[]> RowBuffers) Deserialize(IBuffer buffer, TextEncoding textEncoding = TextEncoding.UTF8)
     {
-        // Magic bytes
-        var headerByte1 = buffer.ReadInt64();   // 0xDB
-        if (headerByte1 != 0xDB)
-        {
-            throw new Exception("Invalid serialization format.");
-        }
-
         var result = this.DeserializeTable(buffer, textEncoding); // to do - add in schema
-
-        // Magic footer byte
-        var footerByte1 = buffer.ReadInt64();   // 0xDB
-        if (footerByte1 != 0xDB)
-        {
-            throw new Exception("Invalid serialization format.");
-        }
-
         return result;
     }
 

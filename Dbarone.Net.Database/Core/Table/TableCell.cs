@@ -77,8 +77,17 @@ public class TableCell : IComparable<TableCell>, IEquatable<TableCell>
 
         if (value == null) this.Type = DocumentType.Null;
         else if (value is Boolean) this.Type = DocumentType.Boolean;
+        else if (value is Byte) this.Type = DocumentType.Integer;
+        else if (value is UInt16) this.Type = DocumentType.Integer;
+        else if (value is UInt32) this.Type = DocumentType.Integer;
+        else if (value is UInt64) this.Type = DocumentType.Integer;
+        else if (value is SByte) this.Type = DocumentType.Integer;
+        else if (value is Int16) this.Type = DocumentType.Integer;
+        else if (value is Int32) this.Type = DocumentType.Integer;
         else if (value is Int64) this.Type = DocumentType.Integer;
         else if (value is Double) this.Type = DocumentType.Real;
+        else if (value is Single) this.Type = DocumentType.Real;
+        else if (value is decimal) this.Type = DocumentType.Real;
         else if (value is DateTime) this.Type = DocumentType.DateTime;
         else if (value is String) this.Type = DocumentType.Text;
         else if (value is Byte[]) this.Type = DocumentType.Blob;

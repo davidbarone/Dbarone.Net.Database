@@ -95,11 +95,11 @@ public class GenericBuffer : IBuffer
         return buffer;
     }
 
-    public virtual byte[] Slice(int index, int length)
+    public virtual byte[] Slice(long index, long length)
     {
         // copy existing buffer
         var buffer = new byte[length];
-        Buffer.BlockCopy(InternalBuffer, index, buffer, 0, length);
+        Buffer.BlockCopy(InternalBuffer, (int)index, buffer, 0, (int)length);
         return buffer;
     }
 

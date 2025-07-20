@@ -119,7 +119,20 @@ public class Page
 
     #endregion
 
-    public Page() { }
+    public Page()
+    {
+        // Initialise header
+        TableRow row = new TableRow();
+        Table t = new Table(row);
+        this.Data.Add(t);
+        this.PageId = -1;
+        this.TableCount = 1;
+        this.PageType = PageType.Empty;
+        this.PrevPageId = null;
+        this.NextPageId = null;
+        this.ParentPageId = null;
+        this.IsDirty = false;
+    }
 
     public Page(int pageId, PageType pageType)
     {
@@ -134,5 +147,23 @@ public class Page
     {
         this.PageType = PageType.Empty;
         this.IsDirty = true;
+    }
+
+    /// <summary>
+    /// Calculates the number of used bytes in the page
+    /// </summary>
+    /// <returns></returns>
+    public int GetPageSize()
+    {
+        int size = 0;
+        // header
+        size += ZigZag.SizeOf(this.TableCount); // first byte is number of tables
+
+        for (int i = 1; i < this.TableCount; i++)
+        {
+            size += ZigZag.SizeOf(this.Data[i].Count);  // table0 should have 1 row only
+            this.Buffers[i].Sum(r => r.Length);         // Add up all the row sizes
+        }
+        return size;
     }
 }

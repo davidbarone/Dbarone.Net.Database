@@ -5,6 +5,12 @@ using Xunit;
 public class PageHydraterTests
 {
     [Fact]
+    public void TestGetPageSize()
+    {
+
+    }
+
+    [Fact]
     public void TestDehydrateAndHydrate()
     {
         ITableSerializer ser = new TableSerializer();
@@ -17,6 +23,7 @@ public class PageHydraterTests
         page.PrevPageId = 3;
         page.ParentPageId = 4;
         page.IsDirty = true;
+        var a = page.ParentPageId;
 
         // data
         Table t = new Table();
@@ -26,10 +33,11 @@ public class PageHydraterTests
         row["datetime"] = new DateTime(2000, 1, 1);
         t.Add(row);
         page.Data.Add(t);
+        page.TableCount = 2;
 
         // dehydrate
         IPageHydrater hydrater = new PageHydrater();
-        var buffer = hydrater.Dehydrate(page, ser, TextEncoding.UTF8);
+        var buffer = hydrater.Dehydrate(page, ser, TextEncoding.UTF8).Buffer;
 
         // hydrate
         var page2 = hydrater.Hydrate(buffer, ser, TextEncoding.UTF8);
