@@ -4,17 +4,8 @@ using Xunit;
 
 public class PageHydraterTests
 {
-    [Fact]
-    public void TestGetPageSize()
+    private Page CreateTestPage()
     {
-
-    }
-
-    [Fact]
-    public void TestDehydrateAndHydrate()
-    {
-        ITableSerializer ser = new TableSerializer();
-
         var page = new Page();
         page.InitialiseHeader();
 
@@ -35,6 +26,31 @@ public class PageHydraterTests
         t.Add(row);
         page.Data.Add(t);
         page.TableCount = 2;
+        return page;
+    }
+
+    [Fact]
+    public void TestGetPageSize()
+    {
+        ITableSerializer ser = new TableSerializer();
+
+        var page = CreateTestPage();
+
+        // dehydrate
+        IPageHydrater hydrater = new PageHydrater();
+        var result = hydrater.Dehydrate(page, ser, TextEncoding.UTF8);
+        var page2 = hydrater.Hydrate(result.Buffer, ser, TextEncoding.UTF8);
+
+        // Check that length of serialised string (expected length) equals GetPageSize (actual)
+        Assert.Equal(result.Length, page2.GetPageSize());
+    }
+
+    [Fact]
+    public void TestDehydrateAndHydrate()
+    {
+        ITableSerializer ser = new TableSerializer();
+
+        var page = CreateTestPage();
 
         // dehydrate
         IPageHydrater hydrater = new PageHydrater();

@@ -163,13 +163,17 @@ public class Page
     public int GetPageSize()
     {
         int size = 0;
-        // header
-        size += ZigZag.SizeOf(this.TableCount); // first byte is number of tables
 
-        for (int i = 1; i < this.TableCount; i++)
+        for (int i = 0; i < this.TableCount; i++)
         {
-            size += ZigZag.SizeOf(this.Data[i].Count);  // table0 should have 1 row only
-            this.Buffers[i].Sum(r => r.Length);         // Add up all the row sizes
+            // schema attribute
+            size += ZigZag.SizeOf(1);                   // there is 0/1 flag for schema at start of table
+
+            // row count
+            size += ZigZag.SizeOf(this.Data[i].Count);  // row count follows next
+
+            // data
+            size += this.Buffers[i].Sum(r => r.Length); // Then the row buffers
         }
         return size;
     }
