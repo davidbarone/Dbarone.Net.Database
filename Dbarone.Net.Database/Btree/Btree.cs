@@ -37,11 +37,13 @@ public class Btree
     public Page? Root { get; set; } = null;
     public string KeyColumn => Schema.Attributes.First(a => a.IsKey).AttributeName;
     public TableSchema Schema { get; set; }
+    int? Order { get; set; }
 
-    public Btree(IBufferManager bufferManager, TableSchema schema)
+    public Btree(IBufferManager bufferManager, TableSchema schema, int? order = null)
     {
         this.BufferManager = bufferManager;
         this.Schema = schema;
+        this.Order = order;
     }
 
 
@@ -115,10 +117,24 @@ public class Btree
     /// <returns></returns>
     private bool IsUnderflow(Page node)
     {
-        var pageSize = this.BufferManager.PageSize;
-        var used = node.GetPageSize();
-        var free = pageSize - used;
-        return free / pageSize < 0.5 ? true : false;
+        if (Order is not null)
+        {
+            if (node.GetHeader("LEAF").AsBoolean == true)
+            {
+                return node.Data[1].Count < Order / 2;
+            }
+            else
+            {
+                return node.Data[1].Count < (int)(Order / 2) - 1;
+            }
+        }
+        else
+        {
+            var pageSize = this.BufferManager.PageSize;
+            var used = node.GetPageSize();
+            var free = pageSize - used;
+            return free / pageSize < 0.5 ? true : false;
+        }
     }
 
     /// <summary>
@@ -128,10 +144,17 @@ public class Btree
     /// <returns></returns>
     private bool IsOverflow(Page node)
     {
-        var pageSize = this.BufferManager.PageSize;
-        var used = node.GetPageSize();
-        var free = pageSize - used;
-        return free < 0 ? true : false;
+        if (Order is not null)
+        {
+            return node.Data[1].Count >= Order;
+        }
+        else
+        {
+            var pageSize = this.BufferManager.PageSize;
+            var used = node.GetPageSize();
+            var free = pageSize - used;
+            return free < 0 ? true : false;
+        }
     }
 
     private TState TraverseNode<TState>(Page node, TState startingState, Func<TState, TableRow, TState> traverseFunction)
