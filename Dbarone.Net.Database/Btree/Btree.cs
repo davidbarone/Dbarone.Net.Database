@@ -69,7 +69,8 @@ public class Btree
     {
         if (Root == null)
         {
-            Root = BufferManager.Create(PageType.Btree);
+            Root = BufferManager.Create();
+            Root.SetHeader("LEAF", true);
             Root.InsertCell(1, 0, row);
         }
         else

@@ -6,11 +6,9 @@ public class PageHydraterTests
 {
     private Page CreateTestPage()
     {
-        var page = new Page();
-        page.InitialiseHeader();
+        var page = new Page(1);
 
         // header
-        page.PageId = 1;
         page.NextPageId = 2;
         page.PrevPageId = 3;
         page.ParentPageId = 4;

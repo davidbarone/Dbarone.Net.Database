@@ -6,7 +6,7 @@ public class MemoryBufferManager : BufferManager, IBufferManager
 
     public MemoryBufferManager(int pageSize, IPageHydrater pageHydrater, ITableSerializer tableSerializer, TextEncoding textEncoding = TextEncoding.UTF8) : base(pageSize, pageHydrater, tableSerializer, textEncoding) { }
 
-    public override long StoragePageCount()
+    public override int StoragePageCount()
     {
         return Pages.Count();
     }

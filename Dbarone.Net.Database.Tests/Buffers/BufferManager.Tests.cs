@@ -23,7 +23,7 @@ public class BufferManagerTests
         ITableSerializer tableSerializer = new TableSerializer();
         IPageHydrater pageHydrater = new PageHydrater();
         BufferManager bm = new MemoryBufferManager(pageSize, pageHydrater, tableSerializer, TextEncoding.UTF8);
-        var page = bm.Create(PageType.Boot);
+        var page = bm.Create();
         Assert.Equal(PageType.Boot, page.PageType);
         Assert.Equal(1, bm.MaxPageId);
         Assert.Equal(1, bm.Count);
@@ -35,7 +35,7 @@ public class BufferManagerTests
         ITableSerializer tableSerializer = new TableSerializer();
         IPageHydrater pageHydrater = new PageHydrater();
         BufferManager bm = new MemoryBufferManager(pageSize, pageHydrater, tableSerializer, TextEncoding.UTF8);
-        var page = bm.Create(PageType.Boot);
+        var page = bm.Create();
         //bm.StorageWrite(bm.Serializer.Serialize(page));
         Assert.Equal(PageType.Boot, page.PageType);
         Assert.Equal(1, bm.MaxPageId);

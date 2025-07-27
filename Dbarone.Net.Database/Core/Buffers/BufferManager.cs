@@ -37,13 +37,13 @@ public abstract class BufferManager : IBufferManager, IStorage
 
     public abstract void StorageWrite(IBuffer page);
 
-    public abstract long StoragePageCount();
+    public abstract int StoragePageCount();
 
     #endregion
 
     #region IBufferManager
 
-    public long MaxPageId
+    public int MaxPageId
     {
         get
         {
@@ -74,24 +74,27 @@ public abstract class BufferManager : IBufferManager, IStorage
     }
 
     /// <summary>
-    /// Create a page and return the new page id.
+    /// Create a page and returns it. The page is automatically added to the cache.
     /// </summary>
-    /// <param name="pageType">The page type to create.</param>
-    /// <returns>The page id created.</returns>
-    public Page Create(PageType pageType)
+    /// <returns>The new page.</returns>
+    public Page Create()
     {
         // Get max pageid in buffer
-        var nextBufferPageId = this.Cache.Values.Max(p => p.PageId) + 1;
+        var nextBufferPageId = 1;
+        if (this.Cache.Any())
+        {
+            nextBufferPageId = this.Cache.Values.Max(p => p.PageId) + 1;
+        }
+
+        // Get max pageid in storage
         var nextStoragePageId = StoragePageCount();
+
+        // Get higher of the 2
         var nextPageId = nextBufferPageId > nextStoragePageId ? nextBufferPageId : nextStoragePageId;
 
-        byte[] buffer = new byte[this.PageSize];
-        var pb = new GenericBuffer(buffer);
-        //pb.PageId = nextPageId;
-        //pb.PageType = pageType;
-        var page = new Page(0, PageType.Empty); // Serializer.Deserialize(pb);
+        var page = new Page(nextPageId); // Serializer.Deserialize(pb);
         page.IsDirty = true;
-        //this.Cache[pb.PageId] = page;
+        this.Cache[page.PageId] = page;
         return page;
     }
 

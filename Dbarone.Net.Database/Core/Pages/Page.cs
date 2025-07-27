@@ -14,11 +14,11 @@ public class Page
 
     #region Standard Header Fields
 
-    public long PageId
+    public int PageId
     {
         get
         {
-            return Header["PI"].AsInteger;
+            return (int)Header["PI"].AsInteger;
         }
         set
         {
@@ -26,11 +26,11 @@ public class Page
         }
     }
 
-    public long TableCount
+    public int TableCount
     {
         get
         {
-            return Header["TC"].AsInteger;
+            return (int)Header["TC"].AsInteger;
         }
         set
         {
@@ -134,24 +134,37 @@ public class Page
     /// <summary>
     /// Sets defaults for page
     /// </summary>
-    public void InitialiseHeader()
+    public void InitialiseHeader(int pageId, bool dirty = true)
     {
         // Initialise header
         TableRow row = new TableRow();
         Table t = new Table(row);
         this.Data.Add(t);
-        this.PageId = -1;
+        this.PageId = pageId;
         this.TableCount = 1;
         this.PageType = PageType.Empty;
         this.PrevPageId = null;
         this.NextPageId = null;
         this.ParentPageId = null;
-        this.IsDirty = false;
+        this.IsDirty = dirty;       // when initialising new page, defaults to dirty
     }
 
     public void InsertCell(int tableIndex, int rowIndex, TableRow row)
     {
+        if (tableIndex < 0)
+        {
+            throw new Exception("Invalid table index");
+        }
+        else if (tableIndex >= this.Data.Count)
+        {
+            this.Data.Insert(tableIndex, new Table());
+        }
         this.Data[tableIndex].Insert(rowIndex, row);
+    }
+
+    public Page(int pageId)
+    {
+        InitialiseHeader(pageId);
     }
 
     public Page(int pageId, PageType pageType)

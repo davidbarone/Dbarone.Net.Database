@@ -7,10 +7,8 @@ public class PageTests
     [Fact]
     public void TestHeadersGetSet()
     {
-        var page = new Page();
-        page.InitialiseHeader();
+        var page = new Page(123);
         page.TableCount = 2;
-        page.PageId = 123;
         page.NextPageId = 456;
         page.PageType = PageType.Empty;
 

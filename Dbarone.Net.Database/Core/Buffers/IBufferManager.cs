@@ -19,7 +19,7 @@ public interface IBufferManager : IStorage
     /// <summary>
     /// Gets the maximum page id either in cache or on disk.
     /// </summary>
-    public long MaxPageId { get; }
+    public int MaxPageId { get; }
 
     /// <summary>
     /// Get the number of pages in the cache.
@@ -31,7 +31,7 @@ public interface IBufferManager : IStorage
     /// </summary>
     /// <param name="pageType">The page type to create.</param>
     /// <returns>The page id created.</returns>
-    Page Create(PageType pageType);
+    Page Create();
 
     /// <summary>
     /// Gets a page.

@@ -46,7 +46,7 @@ public class Engine : IEngine
         }
 
         // Create boot page (page #0)
-        var bootPage = engine.BufferManager.Create(PageType.Boot);
+        var bootPage = engine.BufferManager.Create();
         //BootData header = (BootData)bootPage.Header;
         //header.CreationTime = DateTime.Now;
         //header.TextEncoding = options.TextEncoding;
