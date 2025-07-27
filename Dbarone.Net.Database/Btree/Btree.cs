@@ -92,10 +92,10 @@ public class Btree
         {
             while (i > 0 && GetKeyValue(row) < GetKeyValue(node.Data[1][i]))
             {
-                node.Data[1][i + 1] = node.Data[1][i];
+                node.InsertCell(1, i + 1, node.Data[1][i]);
                 i--;
             }
-            node.Data[1][i + 1] = row;
+            node.InsertCell(1, i + 1, row);
         }
     }
 
