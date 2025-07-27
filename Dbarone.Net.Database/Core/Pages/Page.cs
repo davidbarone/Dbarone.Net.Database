@@ -98,7 +98,15 @@ public class Page
         }
     }
 
-    public bool IsLeaf { get; set; } = false;   // only used for b-tree
+    public TableCell GetHeader(string name)
+    {
+        return Header[name];
+    }
+
+    public void SetHeader(string name, object value)
+    {
+        Header[name] = new TableCell(value);
+    }
 
     /// <summary>
     /// Size of data table serialised at point of reading the page in.
@@ -141,6 +149,11 @@ public class Page
         this.IsDirty = false;
     }
 
+    public void InsertCell(int tableIndex, int rowIndex, TableRow row)
+    {
+        this.Data[tableIndex].Insert(rowIndex, row);
+    }
+
     public Page(int pageId, PageType pageType)
     {
         this.PageId = pageId;
@@ -166,15 +179,22 @@ public class Page
 
         for (int i = 0; i < this.TableCount; i++)
         {
-            // schema attribute
-            size += ZigZag.SizeOf(1);                   // there is 0/1 flag for schema at start of table
-
-            // row count
-            size += ZigZag.SizeOf(this.Data[i].Count);  // row count follows next
-
-            // data
-            size += this.Buffers[i].Sum(r => r.Length); // Then the row buffers
+            size += GetTableSize(i);
         }
+        return size;
+    }
+
+    public int GetTableSize(int tableIndex)
+    {
+        // schema attribute
+        var size = ZigZag.SizeOf(1);                   // there is 0/1 flag for schema at start of table
+
+        // row count
+        size += ZigZag.SizeOf(this.Data[tableIndex].Count);  // row count follows next
+
+        // data
+        size += this.Buffers[tableIndex].Sum(r => r.Length); // Then the row buffers
+
         return size;
     }
 }

@@ -19,12 +19,15 @@ public class SchemaAttribute
 
     public Boolean AllowNull { get; set; }
 
-    public SchemaAttribute(short attributeId, string attributeName, DocumentType documentType, bool allowNull)
+    public Boolean IsKey { get; set; }
+
+    public SchemaAttribute(short attributeId, string attributeName, DocumentType documentType, bool allowNull, bool isKey)
     {
         this.AttributeId = attributeId;
         this.AttributeName = attributeName;
         this.DocumentType = documentType;
         this.AllowNull = allowNull;
+        this.IsKey = isKey;
     }
 
     /// <summary>
@@ -37,7 +40,8 @@ public class SchemaAttribute
             row["attributeId"],
             row["attributeName"],
             (DocumentType)(int)row["documentType"],
-            row["allowNull"]
+            row["allowNull"],
+            row["isKey"]
         );
         return sa;
     }
@@ -53,6 +57,7 @@ public class SchemaAttribute
         tr.Add("attributeName", this.AttributeName);
         tr.Add("documentType", (int)this.DocumentType);
         tr.Add("allowNull", this.AllowNull);
+        tr.Add("isKey", this.IsKey);
         return tr;
     }
 }

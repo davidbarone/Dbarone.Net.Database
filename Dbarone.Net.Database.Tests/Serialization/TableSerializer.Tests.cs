@@ -46,9 +46,9 @@ public class TableSerializerTests
     {
         Table t = new Table();
         t.Schema = new TableSchema();
-        t.Schema.AddAttribute("integer", DocumentType.Integer, false);
-        t.Schema.AddAttribute("text", DocumentType.Text, false);
-        t.Schema.AddAttribute("datetime", DocumentType.DateTime, false);
+        t.Schema.AddAttribute("integer", DocumentType.Integer, false, false);
+        t.Schema.AddAttribute("text", DocumentType.Text, false, false);
+        t.Schema.AddAttribute("datetime", DocumentType.DateTime, false, false);
 
         TableRow r1 = new TableRow();
         r1["text"] = "foo";

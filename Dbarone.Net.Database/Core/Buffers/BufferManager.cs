@@ -7,12 +7,12 @@ using Dbarone.Net.Database.Mapper;
 /// </summary>
 public abstract class BufferManager : IBufferManager, IStorage
 {
-    protected int PageSize { get; set; }
     protected Dictionary<int, Page> Cache = new Dictionary<int, Page>();
+    protected TextEncoding TextEncoding { get; set; } = TextEncoding.UTF8;
 
+    public int PageSize { get; set; }
     public IPageHydrater PageHydrater { get; set; }
     public ITableSerializer TableSerializer { get; set; }
-    public TextEncoding TextEncoding { get; set; } = TextEncoding.UTF8;
 
     public int Count
     {

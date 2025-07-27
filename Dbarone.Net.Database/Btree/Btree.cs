@@ -33,18 +33,119 @@ using Dbarone.Net.Database;
 
 public class Btree
 {
-    public void Search()
-    {
+    public IBufferManager BufferManager { get; set; }
+    public Page? Root { get; set; } = null;
+    public string KeyColumn => Schema.Attributes.First(a => a.IsKey).AttributeName;
+    public TableSchema Schema { get; set; }
 
+    public Btree(IBufferManager bufferManager, TableSchema schema)
+    {
+        this.BufferManager = bufferManager;
+        this.Schema = schema;
     }
 
+
+    public void Search()
+    {
+    }
+
+    /// <summary>
+    /// Traverses a tree
+    /// </summary>
+    public TState Traverse<TState>(TState startingState, Func<TState, TableRow, TState> traverseFunction)
+    {
+        if (Root is not null)
+        {
+            return TraverseNode(Root, startingState, traverseFunction);
+        }
+        throw new Exception("whoops");
+    }
+
+    /// <summary>
+    /// Inserts a new item into the tree
+    /// </summary>
+    /// <param name="row"></param>
     public void Insert(TableRow row)
     {
-
+        if (Root == null)
+        {
+            Root = BufferManager.Create(PageType.Btree);
+            Root.InsertCell(1, 0, row);
+        }
+        else
+        {
+            InsertNonFull(Root, row);
+        }
     }
 
     public void Delete()
     {
 
+    }
+
+    private void InsertNonFull(Page node, TableRow row)
+    {
+        int i = node.Data[1].Count - 1;
+
+        if (node.GetHeader("LEAF").AsBoolean == true)
+        {
+            while (i > 0 && GetKeyValue(row) < GetKeyValue(node.Data[1][i]))
+            {
+                node.Data[1][i + 1] = node.Data[1][i];
+                i--;
+            }
+            node.Data[1][i + 1] = row;
+        }
+    }
+
+    private TableCell GetKeyValue(TableRow row)
+    {
+        return row[KeyColumn];
+    }
+
+    private void SplitChild(Page parent, int index, Page child)
+    {
+    }
+
+    /// <summary>
+    /// Returns true if page storage is less than 50%
+    /// </summary>
+    /// <param name="node"></param>
+    /// <returns></returns>
+    private bool IsUnderflow(Page node)
+    {
+        var pageSize = this.BufferManager.PageSize;
+        var used = node.GetPageSize();
+        var free = pageSize - used;
+        return free / pageSize < 0.5 ? true : false;
+    }
+
+    /// <summary>
+    /// Returns true if page storage exceeds limit.
+    /// </summary>
+    /// <param name="node"></param>
+    /// <returns></returns>
+    private bool IsOverflow(Page node)
+    {
+        var pageSize = this.BufferManager.PageSize;
+        var used = node.GetPageSize();
+        var free = pageSize - used;
+        return free < 0 ? true : false;
+    }
+
+    private TState TraverseNode<TState>(Page node, TState startingState, Func<TState, TableRow, TState> traverseFunction)
+    {
+        int i;
+        for (i = 0; i < node.Data[1].Count(); i++)
+        {
+            if (node.GetHeader("LEAF").AsBoolean == true)
+            {
+                startingState = traverseFunction(startingState, node.Data[1][i]);
+            }
+            else
+            {
+            }
+        }
+        return startingState;
     }
 }

@@ -230,6 +230,58 @@ Naming conventions
 - Keywords (cannot be used as column name)
   - rowid
 
+
+## BTree Implementation
+A variant of the BTree algorithm is used
+https://www.geeksforgeeks.org/cpp/b-tree-implementation-in-cpp/
+https://www.sqlite.org/fileformat.html#b_tree_pages
+https://stackoverflow.com/questions/59469714/what-is-the-degree-of-b-tree-in-sqlite
+A BTree is a self balancing search tree structure where nodes can have multiple children. The BTree structure supports:
+- Searches
+- Sequential Access
+- Insertions
+- Deletions
+All in logarithmic time.
+
+There are 3 types of nodes:
+- Root
+- Internal / Interior
+- Leaf
+
+Root and internal pages store K keys with K+1 pointers to child b-tree pages. Pointers are simply the page id of the child page.
+
+Depth is defined as the distance of a node from the leaf nodes. All leaf nodes are at same depth, 1. An internal node is always of depth of 1 more than its children.
+
+Each node has at most 1 parent node. The root node is the only node without a parent. The root node together with all its descendents form a complete b-tree.
+
+A complete b-tree can comprise of a single node. In this case the single node is both a leaf and a root node.
+
+b-trees are identified by their root page id.
+
+General Properties of a B-Tree are:
+0. There are 3 types of node:
+    - root node - top level node in tree
+    - internal node - any node not root or leaf
+    - leaf node - contains actual data
+1. Order 'm' defines max number of children per page
+2. Order 'm' node can contain max m-1 keys
+3. All leaf nodes at same level / depth
+4. Keys of each node in B-Tree should be stored in ascending order
+5. All leaf nodes (except root) must have at least m/2 children
+6. All nodes except root node should have at least m/2-1 keys
+7. If root node is also leaf node (i.e. only node in tree), then no children and will have at t 1 key
+8. If root node is non-leaf node then will have at least 2 children and at least 1 key
+9. A non leaf node with n-1 key values should have n NON NULL children
+
+DBaronet.Net.Database adopts some variations to the above properties:
+1. The order 'm' is not fixed. Nodes are constrained to fit inside pages of fixed size (e.g. 4K, 8K). Additionally the row data is variable length. Hence instead of fixing the order, a node order is defined as the maximum number of rows that will fit into the fixed page size contraint
+2. Similarly, the property of all leaf nodes having at least m/2 children is also not appropriate given the fact that page sizes are fixed length, and each row of data is variable length. A cost function is implemented to check whether the page has more than 50% free space.
+3.  
+
+ Balance is maintained by ensuring that all leaf nodes are of the same level
+Order: Each 
+
+
 ## Notes
 Testing Order
 

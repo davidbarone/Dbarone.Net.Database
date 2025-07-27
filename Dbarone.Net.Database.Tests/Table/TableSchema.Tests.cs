@@ -10,8 +10,8 @@ public class TableSchemaTests
     {
         Table t = new Table();
         t.Schema = new TableSchema();
-        t.Schema.AddAttribute("integer", DocumentType.Integer, false);
-        t.Schema.AddAttribute("text", DocumentType.Text, false);
+        t.Schema.AddAttribute("integer", DocumentType.Integer, false, false);
+        t.Schema.AddAttribute("text", DocumentType.Text, false, false);
 
         TableRow r = new TableRow();
         r["integer"] = 123;
@@ -28,8 +28,8 @@ public class TableSchemaTests
     {
         Table t = new Table();
         t.Schema = new TableSchema();
-        t.Schema.AddAttribute("integer", DocumentType.Integer, false);
-        t.Schema.AddAttribute("text", DocumentType.Text, false);
+        t.Schema.AddAttribute("integer", DocumentType.Integer, false, false);
+        t.Schema.AddAttribute("text", DocumentType.Text, false, false);
 
         TableRow r = new TableRow();
         r["integer"] = 123;
@@ -47,8 +47,8 @@ public class TableSchemaTests
     {
         Table t = new Table();
         t.Schema = new TableSchema();
-        t.Schema.AddAttribute("integer", DocumentType.Integer, false);
-        t.Schema.AddAttribute("text", DocumentType.Text, false);
+        t.Schema.AddAttribute("integer", DocumentType.Integer, false, false);
+        t.Schema.AddAttribute("text", DocumentType.Text, false, false);
 
         TableRow r = new TableRow();
         r["integer"] = 123;
@@ -67,8 +67,8 @@ public class TableSchemaTests
     {
         Table t = new Table();
         t.Schema = new TableSchema();
-        t.Schema.AddAttribute("integer", DocumentType.Integer, false);
-        t.Schema.AddAttribute("text", DocumentType.Text, false);
+        t.Schema.AddAttribute("integer", DocumentType.Integer, false, false);
+        t.Schema.AddAttribute("text", DocumentType.Text, false, false);
 
         TableRow r = new TableRow();
         r["integer"] = 123;
@@ -86,8 +86,8 @@ public class TableSchemaTests
     {
         Table t = new Table();
         t.Schema = new TableSchema();
-        t.Schema.AddAttribute("integer", DocumentType.Integer, false);
-        t.Schema.AddAttribute("text", DocumentType.Text, true); // allow nulls
+        t.Schema.AddAttribute("integer", DocumentType.Integer, false, false);
+        t.Schema.AddAttribute("text", DocumentType.Text, true, false); // allow nulls
 
         TableRow r = new TableRow();
         r["integer"] = 123;
@@ -104,8 +104,8 @@ public class TableSchemaTests
     {
         Table t = new Table();
         t.Schema = new TableSchema();
-        t.Schema.AddAttribute("integer", DocumentType.Integer, false);
-        t.Schema.AddAttribute("text", DocumentType.Text, true); // allow nulls
+        t.Schema.AddAttribute("integer", DocumentType.Integer, false, false);
+        t.Schema.AddAttribute("text", DocumentType.Text, true, false); // allow nulls
 
         TableRow r = new TableRow();
         r["integer"] = 123;
@@ -123,8 +123,8 @@ public class TableSchemaTests
     {
         Table t = new Table();
         t.Schema = new TableSchema();
-        t.Schema.AddAttribute("integer", DocumentType.Integer, false);
-        t.Schema.AddAttribute("text", DocumentType.Text, false);
+        t.Schema.AddAttribute("integer", DocumentType.Integer, false, false);
+        t.Schema.AddAttribute("text", DocumentType.Text, false, false);
 
         TableRow r = new TableRow();
         r["integer"] = 123;
@@ -142,8 +142,8 @@ public class TableSchemaTests
     {
         Table t = new Table();
         t.Schema = new TableSchema();
-        t.Schema.AddAttribute("integer", DocumentType.Integer, false);
-        t.Schema.AddAttribute("text", DocumentType.Text, false);
+        t.Schema.AddAttribute("integer", DocumentType.Integer, false, false);
+        t.Schema.AddAttribute("text", DocumentType.Text, false, false);
 
         TableRow r = new TableRow();
         r["integer"] = 123;

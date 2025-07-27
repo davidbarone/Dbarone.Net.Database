@@ -20,6 +20,14 @@ public class TableSerializer : ITableSerializer
         return (Buffer: buf, Length: buf.Position);
     }
 
+
+    public (IBuffer Buffer, long Length) SerializeRow(TableRow row, TextEncoding textEncoding = TextEncoding.UTF8, TableSchema? schema = null)
+    {
+        IBuffer buffer = new GenericBuffer();
+        SerializeRowInternal(buffer, row, textEncoding, schema);
+        return (Buffer: buffer, Length: buffer.Length);
+    }
+
     public (Table Table, List<byte[]> RowBuffers) Deserialize(IBuffer buffer, TextEncoding textEncoding = TextEncoding.UTF8)
     {
         var result = this.DeserializeTable(buffer, textEncoding); // to do - add in schema
@@ -55,11 +63,11 @@ public class TableSerializer : ITableSerializer
 
         foreach (var row in table)
         {
-            this.SerializeRow(buffer, row, textEncoding, table.Schema);
+            this.SerializeRowInternal(buffer, row, textEncoding, table.Schema);
         }
     }
 
-    private void SerializeRow(GenericBuffer buffer, TableRow row, TextEncoding textEncoding = TextEncoding.UTF8, TableSchema? schema = null)
+    private void SerializeRowInternal(IBuffer buffer, TableRow row, TextEncoding textEncoding = TextEncoding.UTF8, TableSchema? schema = null)
     {
         if (row is null)
         {
@@ -94,7 +102,7 @@ public class TableSerializer : ITableSerializer
         }
     }
 
-    private void SerializeCell(GenericBuffer buffer, TableCell cell, TextEncoding textEncoding = TextEncoding.UTF8)
+    private void SerializeCell(IBuffer buffer, TableCell cell, TextEncoding textEncoding = TextEncoding.UTF8)
     {
         switch (cell.Type)
         {

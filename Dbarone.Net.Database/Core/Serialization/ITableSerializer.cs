@@ -13,6 +13,8 @@ public interface ITableSerializer
     /// <returns>Returns a byte array.</returns>
     (IBuffer Buffer, long Length) Serialize(Table table, TextEncoding textEncoding = TextEncoding.UTF8);
 
+    (IBuffer Buffer, long Length) SerializeRow(TableRow row, TextEncoding textEncoding = TextEncoding.UTF8, TableSchema? schema = null);
+
     /// <summary>
     /// Deserialise a buffer to a <see cref="Table"/> instance.
     /// </summary>

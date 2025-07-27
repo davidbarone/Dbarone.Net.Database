@@ -14,14 +14,15 @@ public class TableSchema
     /// </summary>
     public IEnumerable<SchemaAttribute> Attributes { get; set; } = new List<SchemaAttribute>();
 
-    public void AddAttribute(string attributeName, DocumentType documentType, bool allowNull)
+    public void AddAttribute(string attributeName, DocumentType documentType, bool allowNull, bool isKey)
     {
         var attributeId = (short)this.Attributes.Count();
         var schemaAttribute = new SchemaAttribute(
             attributeId,
             attributeName,
             documentType,
-            allowNull);
+            allowNull,
+            isKey);
 
         this.Attributes = this.Attributes.Union(new SchemaAttribute[] { schemaAttribute });
     }
