@@ -149,17 +149,22 @@ public class Page
         this.IsDirty = dirty;       // when initialising new page, defaults to dirty
     }
 
-    public void SetRow(TableIndexEnum tableIndex, int rowIndex, TableRow row)
+    public void SetRow(TableIndexEnum tableIndex, int rowIndex, TableRow row, IBuffer rowBuffer)
     {
         if (tableIndex < 0)
         {
             throw new Exception("Invalid table index");
         }
-        else if ((int)tableIndex >= this.Data.Count)
+        while ((int)tableIndex >= this.Data.Count())
         {
-            this.Data.Insert((int)tableIndex, new Table());
+            this.Data.Insert(this.Data.Count(), new Table());
+        }
+        while ((int)tableIndex >= this.Buffers.Count())
+        {
+            this.Buffers.Insert(this.Buffers.Count(), new List<byte[]>());
         }
         this.Data[(int)tableIndex].Insert(rowIndex, row);
+        this.Buffers[(int)tableIndex].Insert(rowIndex, rowBuffer.ToArray());
     }
 
     public TableRow GetRow(TableIndexEnum tableIndex, int rowIndex)

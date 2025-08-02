@@ -38,7 +38,7 @@ public class BinarySearch<T> where T : IComparable, IEquatable<T>
                 return mid;
             }
 
-            if (Array[mid].CompareTo(key) > 0)
+            if (Array[mid].CompareTo(key) < 0)
             {
                 left = mid + 1;
             }

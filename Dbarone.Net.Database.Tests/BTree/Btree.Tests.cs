@@ -16,11 +16,11 @@ public class BTreeTests
         return bt;
     }
 
+    [Theory]
     [InlineData([new int[] { 1 }])]
     [InlineData([new int[] { 1, 2 }])]
     [InlineData([new int[] { 2, 1 }])]
-    [Theory]
-    public void TestInsert(int[] data)
+    public void Insert(int[] data)
     {
         var bt = InitialiseBtree();
         foreach (var item in data)

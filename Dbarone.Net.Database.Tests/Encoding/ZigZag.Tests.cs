@@ -7,7 +7,6 @@ public class ZigZagTests
 {
     [Theory]
     [InlineData(-1, 18446744073709551615)]
-    [InlineData(-1, 18446744073709551488)]
     public void TestLongToUlongCast(long input, ulong output)
     {
         // note that casting a small negative number produces a large unsigned number
