@@ -18,7 +18,7 @@ public class PageHydrater : IPageHydrater
 
     public Page Hydrate(IBuffer buffer, ITableSerializer serializer, TextEncoding textEncoding = TextEncoding.UTF8)
     {
-        var page = new Page();
+        var page = new Page(serializer);
         buffer.Position = 0;
 
         var result0 = serializer.Deserialize(buffer, textEncoding);

@@ -7,6 +7,12 @@ using Dbarone.Net.Document;
 /// </summary>
 public class Page
 {
+    private ITableSerializer TableSerializer { get; set; }
+    public Page(ITableSerializer tableSerializer)
+    {
+        this.TableSerializer = tableSerializer;
+    }
+
     /// <summary>
     /// Header is the first/only row on the first data table.
     /// </summary>
@@ -127,10 +133,6 @@ public class Page
 
     #endregion
 
-    public Page()
-    {
-    }
-
     /// <summary>
     /// Sets defaults for page
     /// </summary>
@@ -149,8 +151,17 @@ public class Page
         this.IsDirty = dirty;       // when initialising new page, defaults to dirty
     }
 
-    public void SetRow(TableIndexEnum tableIndex, int rowIndex, TableRow row, IBuffer rowBuffer)
+    /// <summary>
+    /// Sets a data row in the page. Additionally, the byte array for the row is cached for checkpointing the page.
+    /// </summary>
+    /// <param name="tableIndex"></param>
+    /// <param name="rowIndex"></param>
+    /// <param name="row"></param>
+    /// <exception cref="Exception"></exception>
+    public void SetRow(TableIndexEnum tableIndex, int rowIndex, TableRow row)
     {
+        var bytes = TableSerializer.SerializeRow(row).Buffer.ToArray();
+
         if (tableIndex < 0)
         {
             throw new Exception("Invalid table index");
@@ -164,7 +175,7 @@ public class Page
             this.Buffers.Insert(this.Buffers.Count(), new List<byte[]>());
         }
         this.Data[(int)tableIndex].Insert(rowIndex, row);
-        this.Buffers[(int)tableIndex].Insert(rowIndex, rowBuffer.ToArray());
+        this.Buffers[(int)tableIndex].Insert(rowIndex, bytes);
     }
 
     public TableRow GetRow(TableIndexEnum tableIndex, int rowIndex)

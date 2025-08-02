@@ -82,7 +82,7 @@ public class Btree
         {
             Root = BufferManager.Create();
             Root.SetHeader("LEAF", true);
-            Root.SetRow(TableIndexEnum.BTREE_KEY, 0, row, BufferManager.TableSerializer.SerializeRow(row).Buffer);
+            Root.SetRow(TableIndexEnum.BTREE_KEY, 0, row);
         }
         else
         {
@@ -91,9 +91,9 @@ public class Btree
             {
                 var newRoot = BufferManager.Create();
                 newRoot.SetHeader("LEAF", true);
-                TableRow child = new TableRow();
-                child["PID"] = Root.PageId;
-                newRoot.SetRow(TableIndexEnum.BTREE_CHILD, 0, child, BufferManager.TableSerializer.SerializeRow(child).Buffer);
+                TableRow child = new TableRow(new Dictionary<string, object>() { { "PID", Root.PageId } });
+                newRoot.SetRow(TableIndexEnum.BTREE_CHILD, 0, child);
+                SplitChild(Root);
 
                 // Get index to insert child
                 int i = 0;
@@ -123,12 +123,10 @@ public class Btree
         {
             while (i > 0 && GetKeyValue(row) < GetKeyValue(node.GetRow(TableIndexEnum.BTREE_KEY, i)))
             {
-                var n = node.GetRow(TableIndexEnum.BTREE_KEY, i);
-                var b = BufferManager.TableSerializer.SerializeRow(n).Buffer;
-                node.SetRow(TableIndexEnum.BTREE_KEY, i + 1, n, b);
+                node.SetRow(TableIndexEnum.BTREE_KEY, i + 1, node.GetRow(TableIndexEnum.BTREE_KEY, i));
                 i--;
             }
-            node.SetRow(TableIndexEnum.BTREE_KEY, i + 1, row, BufferManager.TableSerializer.SerializeRow(row).Buffer);
+            node.SetRow(TableIndexEnum.BTREE_KEY, i + 1, row);
         }
         else
         {
@@ -173,43 +171,32 @@ public class Btree
             var degree = CalculateDegree(child);
             for (int j = 0; j < degree - 1; j++)
             {
-                var n = child.GetRow(TableIndexEnum.BTREE_KEY, j + degree);
-                var b = BufferManager.TableSerializer.SerializeRow(n).Buffer;
-                newNode.SetRow(TableIndexEnum.BTREE_KEY, j, n, b);
+                newNode.SetRow(TableIndexEnum.BTREE_KEY, j, child.GetRow(TableIndexEnum.BTREE_KEY, j + degree));
             }
             if (!child.GetHeader("LEAF").AsBoolean)
             {
                 for (int j = 0; j < degree; j++)
                 {
-                    var n = child.GetRow(TableIndexEnum.BTREE_CHILD, j + degree);
-                    var b = BufferManager.TableSerializer.SerializeRow(n).Buffer;
-                    newNode.SetRow(TableIndexEnum.BTREE_CHILD, j, n, b);
+                    newNode.SetRow(TableIndexEnum.BTREE_CHILD, j, child.GetRow(TableIndexEnum.BTREE_CHILD, j + degree));
                 }
             }
 
             // Make space in parent for new child in parent
             for (int j = parentPage.GetTable(TableIndexEnum.BTREE_KEY).Count(); j >= index + 1; j--)
             {
-                var n = parentPage.GetRow(TableIndexEnum.BTREE_CHILD, j);
-                var b = BufferManager.TableSerializer.SerializeRow(n).Buffer;
-                parentPage.SetRow(TableIndexEnum.BTREE_CHILD, j + 1, n, b);
+                parentPage.SetRow(TableIndexEnum.BTREE_CHILD, j + 1, parentPage.GetRow(TableIndexEnum.BTREE_CHILD, j));
             }
 
             // Add new child in parent
-            TableRow r = new TableRow();
-            r["PID"] = newNode.PageId;
-            parentPage.SetRow(TableIndexEnum.BTREE_CHILD, index + 1, r, BufferManager.TableSerializer.SerializeRow(r).Buffer);
+            TableRow r = new TableRow(new Dictionary<string, object> { { "PID", newNode.PageId } });
+            parentPage.SetRow(TableIndexEnum.BTREE_CHILD, index + 1, r);
 
             for (int j = parentPage.GetTable(TableIndexEnum.BTREE_KEY).Count() - 1; j >= index; j--)
             {
-                var n = parentPage.GetRow(TableIndexEnum.BTREE_KEY, j);
-                var b = BufferManager.TableSerializer.SerializeRow(n).Buffer;
-                parentPage.SetRow(TableIndexEnum.BTREE_KEY, j + 1, n, b);
+                parentPage.SetRow(TableIndexEnum.BTREE_KEY, j + 1, parentPage.GetRow(TableIndexEnum.BTREE_KEY, j));
             }
 
-            var n1 = child.GetRow(TableIndexEnum.BTREE_KEY, degree - 1);
-            var b1 = BufferManager.TableSerializer.SerializeRow(n1).Buffer;
-            parentPage.SetRow(TableIndexEnum.BTREE_KEY, index, n1, b1);
+            parentPage.SetRow(TableIndexEnum.BTREE_KEY, index, child.GetRow(TableIndexEnum.BTREE_KEY, degree - 1));
 
             // resize child node
             child.GetTable(TableIndexEnum.BTREE_KEY).Slice(0, degree - 1);

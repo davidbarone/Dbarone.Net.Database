@@ -36,6 +36,16 @@ public class TableRow : IDictionary<string, TableCell>, IComparable<TableRow>, I
         }
     }
 
+    public TableRow(IDictionary<string, object> dict) : this()
+    {
+        if (dict == null) throw new ArgumentNullException(nameof(dict));
+
+        foreach (var element in dict)
+        {
+            this[element.Key] = new TableCell(element.Value);
+        }
+    }
+
     /// <summary>
     /// Creates a new document using a dictionary of values.
     /// </summary>
