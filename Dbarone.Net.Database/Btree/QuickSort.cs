@@ -5,7 +5,7 @@
 /// Swap Method: Swaps two elements in the array.
 /// </summary>
 /// <typeparam name="T">The element type.</typeparam>
-public class QuickSort<T> where T : IComparable, IEquatable<T>
+public class QuickSort<T> where T : IComparable
 {
     public T[] Array { get; set; }
 
