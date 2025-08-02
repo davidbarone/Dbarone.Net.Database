@@ -99,6 +99,12 @@ public class Table : IList<TableRow>
 
     public void RemoveAt(int index) => this.RawValue.RemoveAt(index);
 
+
+    public void Slice(int start, int length)
+    {
+        this.RawValue = new List<TableRow>(RawValue.Skip(start).Take(length));
+    }
+
     IEnumerator IEnumerable.GetEnumerator()
     {
         foreach (var value in this.RawValue)

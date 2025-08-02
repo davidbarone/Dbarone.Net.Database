@@ -42,4 +42,24 @@ public class BufferManagerTests
         Assert.Equal(1, bm.Count);
         Assert.Equal(0, bm.StoragePageCount());
     }
+
+    [Fact]
+    public void TestCreateModifyAndGet()
+    {
+        ITableSerializer tableSerializer = new TableSerializer();
+        IPageHydrater pageHydrater = new PageHydrater();
+        BufferManager bm = new MemoryBufferManager(pageSize, pageHydrater, tableSerializer, TextEncoding.UTF8);
+
+        var page0 = bm.Create();
+        Assert.Equal(0, page0.PageId);
+        var page1 = bm.Create();
+        Assert.Equal(1, page1.PageId);
+        var page2 = bm.Create();
+        Assert.Equal(2, page2.PageId);
+        page2.NextPageId = 345;
+
+        // get page 2 again - next page should be 123
+        var test = bm.Get(2);
+        Assert.Equal(345, test.NextPageId);
+    }
 }

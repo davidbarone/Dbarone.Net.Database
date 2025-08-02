@@ -80,7 +80,7 @@ public abstract class BufferManager : IBufferManager, IStorage
     public Page Create()
     {
         // Get max pageid in buffer
-        var nextBufferPageId = 1;
+        var nextBufferPageId = 0;
         if (this.Cache.Any())
         {
             nextBufferPageId = this.Cache.Values.Max(p => p.PageId) + 1;
