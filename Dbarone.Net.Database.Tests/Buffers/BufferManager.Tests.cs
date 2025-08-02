@@ -8,47 +8,49 @@ public class BufferManagerTests
 {
     private int pageSize = 8192;
 
-
-    public void BufferManager_Instantiate()
+    [Fact]
+    public void Instantiate()
     {
         ITableSerializer tableSerializer = new TableSerializer();
         IPageHydrater pageHydrater = new PageHydrater();
-        BufferManager bm = new MemoryBufferManager(pageSize, pageHydrater, tableSerializer, TextEncoding.UTF8);
-        Assert.Equal(0, bm.MaxPageId);
+        BufferManager bm = new MemoryBufferManager(pageHydrater, tableSerializer, pageSize, TextEncoding.UTF8);
+        Assert.Equal(-1, bm.MaxPageId);
         Assert.Equal(0, bm.Count);
     }
 
-    public void BufferManager_CreatePage()
+    [Fact]
+    public void CreatePage()
     {
         ITableSerializer tableSerializer = new TableSerializer();
         IPageHydrater pageHydrater = new PageHydrater();
-        BufferManager bm = new MemoryBufferManager(pageSize, pageHydrater, tableSerializer, TextEncoding.UTF8);
+        BufferManager bm = new MemoryBufferManager(pageHydrater, tableSerializer, pageSize, TextEncoding.UTF8);
         var page = bm.Create();
-        Assert.Equal(PageType.Boot, page.PageType);
-        Assert.Equal(1, bm.MaxPageId);
+        Assert.Equal(PageType.Empty, page.PageType);
+        Assert.Equal(0, bm.MaxPageId);
         Assert.Equal(1, bm.Count);
-        Assert.Equal(0, bm.StoragePageCount());
+        Assert.Equal(0, bm.StoragePageCount()); // page not yet written
     }
 
-    public void BufferManager_StorageWrite()
+    [Fact]
+    public void StorageWrite()
     {
         ITableSerializer tableSerializer = new TableSerializer();
         IPageHydrater pageHydrater = new PageHydrater();
-        BufferManager bm = new MemoryBufferManager(pageSize, pageHydrater, tableSerializer, TextEncoding.UTF8);
+        BufferManager bm = new MemoryBufferManager(pageHydrater, tableSerializer, pageSize, TextEncoding.UTF8);
         var page = bm.Create();
         //bm.StorageWrite(bm.Serializer.Serialize(page));
-        Assert.Equal(PageType.Boot, page.PageType);
-        Assert.Equal(1, bm.MaxPageId);
+        Assert.Equal(PageType.Empty, page.PageType);
+        Assert.Equal(0, bm.MaxPageId);
         Assert.Equal(1, bm.Count);
         Assert.Equal(0, bm.StoragePageCount());
     }
 
     [Fact]
-    public void TestCreateModifyAndGet()
+    public void CreateModifyAndGet()
     {
         ITableSerializer tableSerializer = new TableSerializer();
         IPageHydrater pageHydrater = new PageHydrater();
-        BufferManager bm = new MemoryBufferManager(pageSize, pageHydrater, tableSerializer, TextEncoding.UTF8);
+        BufferManager bm = new MemoryBufferManager(pageHydrater, tableSerializer, pageSize, TextEncoding.UTF8);
 
         var page0 = bm.Create();
         Assert.Equal(0, page0.PageId);

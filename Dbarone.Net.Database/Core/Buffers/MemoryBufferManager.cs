@@ -4,7 +4,7 @@ public class MemoryBufferManager : BufferManager, IBufferManager
 {
     IBuffer[] Pages = new GenericBuffer[0];
 
-    public MemoryBufferManager(int pageSize, IPageHydrater pageHydrater, ITableSerializer tableSerializer, TextEncoding textEncoding = TextEncoding.UTF8) : base(pageSize, pageHydrater, tableSerializer, textEncoding) { }
+    public MemoryBufferManager(IPageHydrater pageHydrater, ITableSerializer tableSerializer, int? pageSize = null, TextEncoding textEncoding = TextEncoding.UTF8) : base(pageHydrater, tableSerializer, pageSize, textEncoding) { }
 
     public override int StoragePageCount()
     {

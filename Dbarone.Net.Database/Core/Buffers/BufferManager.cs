@@ -10,7 +10,7 @@ public abstract class BufferManager : IBufferManager, IStorage
     protected Dictionary<int, Page> Cache = new Dictionary<int, Page>();
     protected TextEncoding TextEncoding { get; set; } = TextEncoding.UTF8;
 
-    public int PageSize { get; set; }
+    public int? PageSize { get; set; }
     public IPageHydrater PageHydrater { get; set; }
     public ITableSerializer TableSerializer { get; set; }
 
@@ -23,11 +23,11 @@ public abstract class BufferManager : IBufferManager, IStorage
     /// Creates a new buffer manager with a given page size.
     /// </summary>
     /// <param name="pageSize"></param>
-    public BufferManager(int pageSize, IPageHydrater pageHydrater, ITableSerializer tableSerializer, TextEncoding textEncoding = TextEncoding.UTF8)
+    public BufferManager(IPageHydrater pageHydrater, ITableSerializer tableSerializer, int? pageSize = null, TextEncoding textEncoding = TextEncoding.UTF8)
     {
-        this.PageSize = pageSize;
         this.PageHydrater = pageHydrater;
         this.TableSerializer = tableSerializer;
+        this.PageSize = pageSize;
         this.TextEncoding = textEncoding;
     }
 
@@ -47,8 +47,8 @@ public abstract class BufferManager : IBufferManager, IStorage
     {
         get
         {
-            var maxBufferId = this.Cache.Values.Max(c => c.PageId);
-            var maxStorageId = StoragePageCount();
+            var maxBufferId = this.Cache.Any() ? this.Cache.Values.Max(c => c.PageId) : -1;
+            var maxStorageId = StoragePageCount() - 1;
             return maxBufferId > maxStorageId ? maxBufferId : maxStorageId;
         }
     }

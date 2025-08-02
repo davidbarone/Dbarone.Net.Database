@@ -9,7 +9,7 @@ public class BTreeTests
     {
         var ph = new PageHydrater();
         var ts = new TableSerializer();
-        var bm = new MemoryBufferManager(8192, ph, ts, TextEncoding.UTF8);
+        var bm = new MemoryBufferManager(ph, ts, 8192, TextEncoding.UTF8);
         var s = new TableSchema();
         s.AddAttribute("number", DocumentType.Integer, false, true);
         var bt = new Btree(bm, s);

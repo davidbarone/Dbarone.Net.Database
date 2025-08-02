@@ -8,13 +8,7 @@ public interface IBufferManager : IStorage
     public IPageHydrater PageHydrater { get; set; }
     public ITableSerializer TableSerializer { get; set; }
 
-
-    /// <summary>
-    /// Serializes pages to/from byte streams and provides other serialization services
-    /// </summary>
-    //public ISerializer Serializer { get; set; }
-
-    public int PageSize { get; }
+    public int? PageSize { get; }
 
     /// <summary>
     /// Gets the maximum page id either in cache or on disk.

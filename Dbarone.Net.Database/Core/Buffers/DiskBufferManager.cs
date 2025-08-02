@@ -7,14 +7,21 @@ public class DiskBufferManager : BufferManager, IBufferManager
 {
     private Stream Stream;
 
-    public DiskBufferManager(Stream stream, int pageSize, IPageHydrater pageHydrater, ITableSerializer tableSerializer, TextEncoding textEncoding = TextEncoding.UTF8) : base(pageSize, pageHydrater, tableSerializer, textEncoding)
+    public DiskBufferManager(Stream stream, IPageHydrater pageHydrater, ITableSerializer tableSerializer, int? pageSize = null, TextEncoding textEncoding = TextEncoding.UTF8) : base(pageHydrater, tableSerializer, pageSize, textEncoding)
     {
         this.Stream = stream;
     }
 
     public override int StoragePageCount()
     {
-        return (int)(this.Stream.Length / PageSize);
+        if (this.PageSize is not null)
+        {
+            return (int)(this.Stream.Length / PageSize.Value);
+        }
+        else
+        {
+            throw new Exception("PageSize not set");
+        }
     }
 
     /// <summary>

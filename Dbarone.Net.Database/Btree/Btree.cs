@@ -2,9 +2,7 @@ using Dbarone.Net.Database;
 
 /// <summary>
 /// Implementation of B-Tree algorithm.
-/// 
 /// https://www.geeksforgeeks.org/dsa/introduction-of-b-tree-2/
-/// 
 /// </summary>
 /// <remarks>
 /// Properties:
