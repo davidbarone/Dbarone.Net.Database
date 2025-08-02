@@ -7,7 +7,8 @@ public class PageTests
     [Fact]
     public void TestHeadersGetSet()
     {
-        var page = new Page(123);
+        TableSerializer ser = new TableSerializer();
+        var page = new Page(ser, 123);
         page.TableCount = 2;
         page.NextPageId = 456;
         page.PageType = PageType.Empty;

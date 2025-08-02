@@ -92,7 +92,7 @@ public abstract class BufferManager : IBufferManager, IStorage
         // Get higher of the 2
         var nextPageId = nextBufferPageId > nextStoragePageId ? nextBufferPageId : nextStoragePageId;
 
-        var page = new Page(nextPageId); // Serializer.Deserialize(pb);
+        var page = new Page(TableSerializer, nextPageId);
         page.IsDirty = true;
         this.Cache[page.PageId] = page;
         return page;

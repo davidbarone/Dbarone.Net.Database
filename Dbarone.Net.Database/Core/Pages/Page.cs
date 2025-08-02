@@ -13,6 +13,20 @@ public class Page
         this.TableSerializer = tableSerializer;
     }
 
+    public Page(ITableSerializer tableSerializer, int pageId)
+    {
+        this.TableSerializer = tableSerializer;
+        InitialiseHeader(pageId);
+    }
+
+    public Page(ITableSerializer tableSerializer, int pageId, PageType pageType)
+    {
+        this.TableSerializer = tableSerializer;
+        this.PageId = pageId;
+        this.PageType = pageType;
+    }
+
+
     /// <summary>
     /// Header is the first/only row on the first data table.
     /// </summary>
@@ -186,17 +200,6 @@ public class Page
     public Table GetTable(TableIndexEnum tableIndex)
     {
         return this.Data[(int)tableIndex];
-    }
-
-    public Page(int pageId)
-    {
-        InitialiseHeader(pageId);
-    }
-
-    public Page(int pageId, PageType pageType)
-    {
-        this.PageId = pageId;
-        this.PageType = pageType;
     }
 
     /// <summary>

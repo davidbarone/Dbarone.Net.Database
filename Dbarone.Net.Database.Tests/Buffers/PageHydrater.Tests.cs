@@ -4,9 +4,9 @@ using Xunit;
 
 public class PageHydraterTests
 {
-    private Page CreateTestPage()
+    private Page CreateTestPage(ITableSerializer tableSerializer)
     {
-        var page = new Page(1);
+        var page = new Page(tableSerializer, 1);
 
         // header
         page.NextPageId = 2;
@@ -32,7 +32,7 @@ public class PageHydraterTests
     {
         ITableSerializer ser = new TableSerializer();
 
-        var page = CreateTestPage();
+        var page = CreateTestPage(ser);
 
         // dehydrate
         IPageHydrater hydrater = new PageHydrater();
@@ -48,7 +48,7 @@ public class PageHydraterTests
     {
         ITableSerializer ser = new TableSerializer();
 
-        var page = CreateTestPage();
+        var page = CreateTestPage(ser);
 
         // dehydrate
         IPageHydrater hydrater = new PageHydrater();
