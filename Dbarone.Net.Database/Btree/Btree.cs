@@ -1,7 +1,6 @@
 using Dbarone.Net.Database;
 
 /// <summary>
-/// LATEST CHANGE V2
 /// Implementation of B-Tree algorithm.
 /// https://www.geeksforgeeks.org/dsa/introduction-of-b-tree-2/
 /// </summary>
