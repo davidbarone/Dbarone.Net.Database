@@ -188,8 +188,18 @@ public class Page
         {
             this.Buffers.Insert(this.Buffers.Count(), new List<byte[]>());
         }
-        this.Data[(int)tableIndex].Insert(rowIndex, row);
-        this.Buffers[(int)tableIndex].Insert(rowIndex, bytes);
+        if (rowIndex >= 0 && rowIndex < this.GetTable(tableIndex).Count())
+        {
+            // index exists - update
+            this.Data[(int)tableIndex][rowIndex] = row;
+            this.Buffers[(int)tableIndex][rowIndex] = bytes;
+        }
+        else
+        {
+            // doesn't exist - insert
+            this.Data[(int)tableIndex].Insert(rowIndex, row);
+            this.Buffers[(int)tableIndex].Insert(rowIndex, bytes);
+        }
     }
 
     public TableRow GetRow(TableIndexEnum tableIndex, int rowIndex)

@@ -39,6 +39,7 @@ public class BTreeTests
     [Theory]
     [InlineData([new int[] { 1, 2, 3, 4 }, 4, 1, "(0|L) (K:4 C:0) 1| 2| 3| 4|"])]
     [InlineData([new int[] { 1, 2, 3, 4, 5 }, 4, 3, "(1|R) (K:1 C:2) 2|0 |2\r\n(0|L) (K:2 C:0) 1| 2|\r\n(2|L) (K:3 C:0) 3| 4| 5|"])]
+    [InlineData([new int[] { 5, 4, 3, 2, 1 }, 4, 3, "(1|R) (K:1 C:2) 2|0 |2\r\n(0|L) (K:2 C:0) 1| 2|\r\n(2|L) (K:3 C:0) 3| 4| 5|"])]
     public void Insert_With_PageSplit(int[] data, int order, int expectedPageCount, string expectedTraverse)
     {
         var bt = InitialiseBtree(order);

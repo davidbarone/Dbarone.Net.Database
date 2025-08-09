@@ -130,7 +130,7 @@ public class Btree
         if (node.GetHeader("LEAF").AsBoolean == true)
         {
             // Page is leaf page
-            while (i > 0 && GetKeyValue(node.GetRow(TableIndexEnum.BTREE_KEY, i)) > GetKeyValue(row))
+            while (i >= 0 && GetKeyValue(node.GetRow(TableIndexEnum.BTREE_KEY, i)) > GetKeyValue(row))
             {
                 node.SetRow(TableIndexEnum.BTREE_KEY, i + 1, node.GetRow(TableIndexEnum.BTREE_KEY, i));
                 i--;
