@@ -64,7 +64,7 @@ public class Btree
     /// <summary>
     /// Traverses a tree
     /// </summary>
-    public TState Traverse<TState>(TState startingState, Func<TState, TableRow, TState> traverseFunction)
+    public TState Traverse<TState>(TState startingState, Func<TState, Page, int, int, TState> traverseFunction)
     {
         if (Root is not null)
         {
@@ -90,10 +90,12 @@ public class Btree
             InsertNonFull(Root, row);
             if (IsOverflow(Root))
             {
+                /*
                 var newRoot = BufferManager.Create();
                 newRoot.SetHeader("LEAF", true);
                 TableRow child = new TableRow(new Dictionary<string, object>() { { "PID", Root.PageId } });
                 newRoot.SetRow(TableIndexEnum.BTREE_CHILD, 0, child);
+                Root.ParentPageId = newRoot.PageId;
                 SplitChild(Root);
 
                 // Get index to insert child
@@ -107,6 +109,7 @@ public class Btree
                 var nodeToInsert = BufferManager.Get(pid);
                 InsertNonFull(nodeToInsert, row);
                 this.Root = newRoot;
+                */
             }
         }
     }
@@ -118,19 +121,30 @@ public class Btree
 
     private void InsertNonFull(Page node, TableRow row)
     {
+        // Note this method differs from classical 'InsertNonFull'
+        // In classical version, node assumed to be not full at this point so no full check made
+        // However, we need to check for full AFTER insert
+
         int i = node.GetTable(TableIndexEnum.BTREE_KEY).Count() - 1;
 
         if (node.GetHeader("LEAF").AsBoolean == true)
         {
-            while (i > 0 && GetKeyValue(row) < GetKeyValue(node.GetRow(TableIndexEnum.BTREE_KEY, i)))
+            // Page is leaf page
+            while (i > 0 && GetKeyValue(node.GetRow(TableIndexEnum.BTREE_KEY, i)) > GetKeyValue(row))
             {
                 node.SetRow(TableIndexEnum.BTREE_KEY, i + 1, node.GetRow(TableIndexEnum.BTREE_KEY, i));
                 i--;
             }
             node.SetRow(TableIndexEnum.BTREE_KEY, i + 1, row);
+
+            if (IsOverflow(node))
+            {
+                SplitChild(node);
+            }
         }
         else
         {
+            // Internal page
             while (i >= 0 && GetKeyValue(node.GetRow(TableIndexEnum.BTREE_KEY, i)) > GetKeyValue(row))
                 i--;
 
@@ -154,57 +168,94 @@ public class Btree
 
     private void SplitChild(Page child)
     {
+        Page parentPage;
+        int parentPageId = 0;
+        int index;
+
         if (child.ParentPageId is not null)
         {
-            int parentPageId = child.ParentPageId.Value;
-            var parentPage = BufferManager.Get(parentPageId);
-            var index = new BinarySearch<int>(
+            // child page already has a parent
+            parentPageId = child.ParentPageId.Value;
+            parentPage = BufferManager.Get(parentPageId);
+            index = new BinarySearch<int>(
                 parentPage
                 .GetTable(TableIndexEnum.BTREE_CHILD)
                 .Select(r => (int)r["PID"].AsInteger).ToArray()
             ).Search(child.PageId);
-
-            // create new node
-            var newNode = BufferManager.Create();
-            newNode.SetHeader("LEAF", child.GetHeader("LEAF").AsBoolean);
-
-            // copy items
-            var degree = CalculateDegree(child);
-            for (int j = 0; j < degree - 1; j++)
-            {
-                newNode.SetRow(TableIndexEnum.BTREE_KEY, j, child.GetRow(TableIndexEnum.BTREE_KEY, j + degree));
-            }
-            if (!child.GetHeader("LEAF").AsBoolean)
-            {
-                for (int j = 0; j < degree; j++)
-                {
-                    newNode.SetRow(TableIndexEnum.BTREE_CHILD, j, child.GetRow(TableIndexEnum.BTREE_CHILD, j + degree));
-                }
-            }
-
-            // Make space in parent for new child in parent
-            for (int j = parentPage.GetTable(TableIndexEnum.BTREE_KEY).Count(); j >= index + 1; j--)
-            {
-                parentPage.SetRow(TableIndexEnum.BTREE_CHILD, j + 1, parentPage.GetRow(TableIndexEnum.BTREE_CHILD, j));
-            }
-
-            // Add new child in parent
-            TableRow r = new TableRow(new Dictionary<string, object> { { "PID", newNode.PageId } });
-            parentPage.SetRow(TableIndexEnum.BTREE_CHILD, index + 1, r);
-
-            for (int j = parentPage.GetTable(TableIndexEnum.BTREE_KEY).Count() - 1; j >= index; j--)
-            {
-                parentPage.SetRow(TableIndexEnum.BTREE_KEY, j + 1, parentPage.GetRow(TableIndexEnum.BTREE_KEY, j));
-            }
-
-            parentPage.SetRow(TableIndexEnum.BTREE_KEY, index, child.GetRow(TableIndexEnum.BTREE_KEY, degree - 1));
-
-            // resize child node
-            child.GetTable(TableIndexEnum.BTREE_KEY).Slice(0, degree - 1);
         }
         else
         {
-            throw new Exception("ParentPageId is null");
+            // page hasn't got parent (must be root page)
+            // create new root page with 1 child pointer
+            // to current root page and update root.
+            parentPage = BufferManager.Create();
+            parentPageId = parentPage.PageId;
+            parentPage.SetHeader("LEAF", false);
+            index = 0;
+            TableRow tr = new TableRow(new Dictionary<string, object> { { "PID", child.PageId } });
+            parentPage.SetRow(TableIndexEnum.BTREE_CHILD, 0, tr);
+            this.Root = parentPage;
+        }
+
+        // create new node to take 1/2 rows
+        var newNode = BufferManager.Create();
+        newNode.SetHeader("LEAF", child.GetHeader("LEAF").AsBoolean);
+
+        // copy keys (all nodes)
+        var degree = CalculateDegree(child);
+        var order = child.GetTable(TableIndexEnum.BTREE_KEY).Count();
+
+        for (int j = degree; j < order; j++)
+        {
+            newNode.SetRow(TableIndexEnum.BTREE_KEY, j - degree, child.GetRow(TableIndexEnum.BTREE_KEY, j));
+        }
+
+        // copy children (non-leaf nodes)
+        if (!child.GetHeader("LEAF").AsBoolean)
+        {
+            order = child.GetTable(TableIndexEnum.BTREE_CHILD).Count();
+            for (int j = degree; j < order; j++)
+            {
+                newNode.SetRow(TableIndexEnum.BTREE_CHILD, j - degree, child.GetRow(TableIndexEnum.BTREE_CHILD, j));
+            }
+        }
+
+        // Make space in parent for new child in parent
+        for (int j = parentPage.GetTable(TableIndexEnum.BTREE_KEY).Count(); j >= index + 1; j--)
+        {
+            parentPage.SetRow(TableIndexEnum.BTREE_CHILD, j + 1, parentPage.GetRow(TableIndexEnum.BTREE_CHILD, j));
+        }
+
+        // Add new child in parent
+        TableRow r = new TableRow(new Dictionary<string, object> { { "PID", newNode.PageId } });
+        parentPage.SetRow(TableIndexEnum.BTREE_CHILD, index + 1, r);
+
+        for (int j = parentPage.GetTable(TableIndexEnum.BTREE_KEY).Count() - 1; j >= index; j--)
+        {
+            parentPage.SetRow(TableIndexEnum.BTREE_KEY, j + 1, parentPage.GetRow(TableIndexEnum.BTREE_KEY, j));
+        }
+
+        parentPage.SetRow(TableIndexEnum.BTREE_KEY, index, child.GetRow(TableIndexEnum.BTREE_KEY, degree - 1));
+
+        // resize child node
+        if (!child.GetHeader("LEAF").AsBoolean)
+        {
+            child.GetTable(TableIndexEnum.BTREE_KEY).Slice(0, degree - 1);
+            child.GetTable(TableIndexEnum.BTREE_CHILD).Slice(0, degree);
+        }
+        else
+        {
+            child.GetTable(TableIndexEnum.BTREE_KEY).Slice(0, degree);
+        }
+
+        // set parent on both child pages
+        child.ParentPageId = parentPageId;
+        newNode.ParentPageId = parentPageId;
+
+        // split parent recursively?
+        if (IsOverflow(parentPage))
+        {
+            SplitChild(parentPage);
         }
     }
 
@@ -244,7 +295,7 @@ public class Btree
     {
         if (Order is not null)
         {
-            return node.Data[1].Count >= Order;
+            return node.Data[1].Count > Order;
         }
         else
         {
@@ -269,18 +320,39 @@ public class Btree
         }
     }
 
-    private TState TraverseNode<TState>(Page node, TState startingState, Func<TState, TableRow, TState> traverseFunction)
+    private TState TraverseNode<TState>(Page node, TState startingState, Func<TState, Page, int, int, TState> traverseFunction, int nodeIndex = 0)
     {
         int i;
-        for (i = 0; i < node.Data[1].Count(); i++)
+        int currentIndex = nodeIndex;
+        for (i = 0; i < node.GetTable(TableIndexEnum.BTREE_KEY).Count; i++)
         {
-            if (node.GetHeader("LEAF").AsBoolean == true)
+            // traverse current node key
+            startingState = traverseFunction(
+                startingState,
+                node,
+                i,
+                currentIndex);
+
+            if (node.GetHeader("LEAF").AsBoolean == false)
             {
-                startingState = traverseFunction(startingState, node.Data[1][i]);
+                // traverse ith child recursively
+                int childId = (int)node.GetRow(TableIndexEnum.BTREE_CHILD, i)["PID"].AsInteger;
+                var child = BufferManager.Get(childId);
+                startingState = TraverseNode(child, startingState, traverseFunction, ++nodeIndex);
             }
-            else
-            {
-            }
+        }
+        if (node.GetHeader("LEAF").AsBoolean == false)
+        {
+            // traverse last child of non leaf nodes
+            startingState = traverseFunction(
+                startingState,
+                node,
+                i,
+                currentIndex);
+
+            int childId = (int)node.GetRow(TableIndexEnum.BTREE_CHILD, i)["PID"].AsInteger;
+            var child = BufferManager.Get(childId);
+            startingState = TraverseNode(child, startingState, traverseFunction, ++nodeIndex);
         }
         return startingState;
     }
