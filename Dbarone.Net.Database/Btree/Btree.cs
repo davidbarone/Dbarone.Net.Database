@@ -57,11 +57,6 @@ public class Btree
         this.Order = order;
     }
 
-
-    public void Search()
-    {
-    }
-
     /// <summary>
     /// Traverses a tree
     /// </summary>
@@ -376,5 +371,44 @@ public class Btree
             startingState = TraverseNode(child, startingState, traverseFunction, ++nodeIndex);
         }
         return startingState;
+    }
+
+    public TableRow? Search(TableCell key, Page node = null)
+    {
+        if (node is null && Root is null)
+        {
+            throw new Exception("Unable to search empty tree");
+        }
+        else if (node is null)
+        {
+            node = this.Root!;
+        }
+
+        int i = 0;
+        int count = node.GetTable(TableIndexEnum.BTREE_KEY).Count();
+        // Find the first key greater than or equal to the search key
+        while (i < count && key > GetKeyValue(node.GetRow(TableIndexEnum.BTREE_KEY, i)))
+        {
+            i++;
+        }
+
+        // are we at the leaf?
+        if (node.GetHeader("LEAF").AsBoolean)
+        {
+            if (i < count && key == GetKeyValue(node.GetRow(TableIndexEnum.BTREE_KEY, i)))
+            {
+                return node.GetRow(TableIndexEnum.BTREE_KEY, i);
+            }
+            else
+            {
+                return null;
+            }
+        }
+        else
+        {
+            var cid = (int)node.GetRow(TableIndexEnum.BTREE_CHILD, i)["PID"].AsInteger;
+            var c = BufferManager.Get(cid);
+            return Search(key, c);
+        }
     }
 }

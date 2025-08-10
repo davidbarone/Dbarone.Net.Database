@@ -112,4 +112,21 @@ public class BTreeTests
         Assert.Equal(testData.Count(), traverseResult.Count());
         Assert.Equal(testData.Order().ToArray(), traverseResult.ToArray());
     }
+
+    [Theory]
+    [InlineData([new int[] { 5, 4, 3, 2, 1 }, 3, 3])]       // match
+    [InlineData([new int[] { 5, 4, 3, 2, 1 }, 6, null])]    // no match
+    public void Search(int[] data, int searchKey, int? expected)
+    {
+        var bt = InitialiseBtree(4);
+        foreach (var item in data)
+        {
+            TableRow r = new TableRow();
+            r["number"] = item;
+            bt.Insert(r);
+        }
+        var row = bt.Search(searchKey);
+        int? actual = row is not null ? (int)row["number"].AsInteger : null;
+        Assert.Equal(expected, actual);
+    }
 }
