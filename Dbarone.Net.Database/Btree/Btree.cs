@@ -8,8 +8,8 @@ using Dbarone.Net.Database;
 /// Properties:
 /// 0. 3 types of node:
 ///     - root node - top level node in tree
-///     - internal node - any node not root or leaf
-///     - leaf node - contains actual data
+///     - internal node - any node not root or leaf - only stores keys, never full data values
+///     - leaf node - contains actual data - only leaf nodes store full data values (as opposed to B-tree)
 /// 1. Order (m) defines max number of children per page
 /// 2. Order (m) node can contain max m-1 keys
 /// 3. Degree (m/2) defines minimum number of children in non root node
@@ -21,15 +21,17 @@ using Dbarone.Net.Database;
 /// 9. If root node is non-leaf node then will have at least 2 children and at least 1 key
 /// 10. A non leaf node with n-1 key values should have n NON NULL children
 /// Variations in this implementation
-/// 1. Order is optional. If not set, then min/max children is defined by space used / remaining on the page
-/// 2. IsOverflow / IsUnderflow methods used to determine whether children / keys are outside permitted range
-/// 3. Nodes are represented by Page object where:
+/// 1. Only leaf nodes can store data. All other nodes only store key values. This approach similar to B+Tree
+///    algorithm
+/// 2. Order is optional. If not set, then min/max children is defined by space used / remaining on the page
+/// 3. IsOverflow / IsUnderflow methods used to determine whether children / keys are outside permitted range
+/// 4. Nodes are represented by Page object where:
 ///   - table[0] is header
 ///   - table[0]["LEAF"] defines whether node is leaf or not
 ///   - table[0].ParentPageId defines the parent node
 ///   - table[1] is array of keys (this applies to all pages)
 ///   - table[2] is array of children (this applies to non leaf pages only)
-/// 4. Nodes are doubly-linked (can access parent via .ParentPageId and can access children via table[2])
+/// 5. Nodes are doubly-linked (can access parent via .ParentPageId and can access children via table[2])
 /// </remarks>
 public class Btree
 {
@@ -176,11 +178,20 @@ public class Btree
             // child page already has a parent
             parentPageId = child.ParentPageId.Value;
             parentPage = BufferManager.Get(parentPageId);
+
+            index = parentPage
+                .GetTable(TableIndexEnum.BTREE_CHILD)
+                .Select(r => (int)r["PID"].AsInteger)
+                .ToList()
+                .IndexOf(child.PageId);
+
+            /*
             index = new BinarySearch<int>(
                 parentPage
                 .GetTable(TableIndexEnum.BTREE_CHILD)
                 .Select(r => (int)r["PID"].AsInteger).ToArray()
             ).Search(child.PageId);
+            */
         }
         else
         {
@@ -194,6 +205,11 @@ public class Btree
             TableRow tr = new TableRow(new Dictionary<string, object> { { "PID", child.PageId } });
             parentPage.SetRow(TableIndexEnum.BTREE_CHILD, 0, tr);
             this.Root = parentPage;
+        }
+
+        if (index < 0)
+        {
+            throw new Exception("Should not get here!");
         }
 
         // create new node to take 1/2 rows
@@ -210,12 +226,18 @@ public class Btree
         }
 
         // copy children (non-leaf nodes)
+        // children need parent repointed
         if (!child.GetHeader("LEAF").AsBoolean)
         {
             order = child.GetTable(TableIndexEnum.BTREE_CHILD).Count();
             for (int j = degree; j < order; j++)
             {
                 newNode.SetRow(TableIndexEnum.BTREE_CHILD, j - degree, child.GetRow(TableIndexEnum.BTREE_CHILD, j));
+
+                // update parent on child
+                var cid = (int)child.GetRow(TableIndexEnum.BTREE_CHILD, j)["PID"].AsInteger;
+                var c = BufferManager.Get(cid);
+                c.ParentPageId = newNode.PageId;
             }
         }
 
