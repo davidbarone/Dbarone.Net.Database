@@ -255,6 +255,7 @@ public class Btree
         if (child.ParentPageId is not null)
         {
             (parentPage, index) = GetIndexInParent(child);
+            parentPageId = parentPage.PageId;
         }
         else
         {
