@@ -3,6 +3,12 @@ using Dbarone.Net.Database;
 /// <summary>
 /// Implementation of B-Tree algorithm.
 /// https://www.geeksforgeeks.org/dsa/introduction-of-b-tree-2/
+/// https://www.geeksforgeeks.org/dsa/delete-operation-in-b-tree/
+/// https://www.tutorialspoint.com/bplus-tree-deletion-in-data-structure
+/// https://www.geeksforgeeks.org/dsa/deletion-in-b-tree/
+/// https://www.geeksforgeeks.org/dsa/delete-operation-in-b-tree/
+/// https://www.geeksforgeeks.org/dsa/introduction-of-b-tree-2/
+/// https://www.programiz.com/dsa/deletion-from-a-b-plus-tree
 /// </summary>
 /// <remarks>
 /// Properties:
@@ -84,34 +90,90 @@ public class Btree
         else
         {
             InsertNonFull(Root, row);
-            if (IsOverflow(Root))
-            {
-                /*
-                var newRoot = BufferManager.Create();
-                newRoot.SetHeader("LEAF", true);
-                TableRow child = new TableRow(new Dictionary<string, object>() { { "PID", Root.PageId } });
-                newRoot.SetRow(TableIndexEnum.BTREE_CHILD, 0, child);
-                Root.ParentPageId = newRoot.PageId;
-                SplitChild(Root);
-
-                // Get index to insert child
-                int i = 0;
-                if (GetKeyValue(newRoot.GetRow(TableIndexEnum.BTREE_KEY, i)) < GetKeyValue(row))
-                {
-                    i++;
-                }
-
-                var pid = newRoot.GetRow(TableIndexEnum.BTREE_CHILD, i)["PID"];
-                var nodeToInsert = BufferManager.Get(pid);
-                InsertNonFull(nodeToInsert, row);
-                this.Root = newRoot;
-                */
-            }
         }
     }
 
-    public void Delete()
+    public void Delete(TableCell key)
     {
+        // Locate the key in leaf to delete
+        var location = Search(key);
+        if (location is not null)
+        {
+            // delete the key
+            var node = BufferManager.Get(location.Value.PageId);
+            node.DeleteRow(TableIndexEnum.BTREE_KEY, location.Value.RowIndex);
+            // check underflow
+            if (this.IsUnderflow(node))
+            {
+                ProcessUnderflow(node);
+            }
+            else
+            {
+                // if first item in table, need to update internal nodes
+
+            }
+        }
+
+
+        // remove / replace references to deleted node
+
+        // remove old root node and update new root if root node is empty
+
+    }
+
+
+    private void ProcessUnderflow(Page node)
+    {
+        if (IsRoot(node))
+        {
+            // do nothing - root allowed to underflow
+        }
+        else if (CanBorrowFromLeftSibling(node))
+        {
+            BorrowFromLeftSibling(node);
+            ZeroKeyChangedUpdateParentKey(node);
+        }
+        else if (CanBorrowFromRightSibling(node))
+        {
+            BorrowFromRightSibling(node);
+            var right = GetRightSibling(node);
+            ZeroKeyChangedUpdateParentKey(right);
+        }
+        else if (CanMergeWithLeftSibling(node))
+        {
+            MergeWithLeftSibling(node);
+            RemoveParentKey(node);
+            if (IsUnderflow(node))
+            {
+                ProcessUnderflow(node);
+            }
+        }
+        else if (CanMergeWithRightSibling(node))
+        {
+            MergeWithRightSibling(node);
+            var right = GetRightSibling(node);
+            RemoveParentKey(right);
+            if (IsUnderflow(right))
+            {
+                ProcessUnderflow(right);
+            }
+        }
+        else
+        {
+            // if got here, cannot fix underflow
+            // this is ok ONLY if using dynamic order/degree
+            // as when rows are variable width it is possible
+            // for both siblings to not be able to offer a
+            // record, but merging with either left or right
+            // siblings would also overflow the current node
+            if (this.Order is not null)
+            {
+                throw new Exception("Should not get here!");
+            }
+
+        }
+
+        // If not first item, 
 
     }
 
@@ -162,6 +224,28 @@ public class Btree
         return row[KeyColumn];
     }
 
+    private (Page Parent, int RowIndex) GetIndexInParent(Page child)
+    {
+        if (child.ParentPageId is not null)
+        {
+            var parentPageId = child.ParentPageId.Value;
+            var parentPage = BufferManager.Get(parentPageId);
+
+            var index = parentPage
+                .GetTable(TableIndexEnum.BTREE_CHILD)
+                .Select(r => (int)r["PID"].AsInteger)
+                .ToList()
+                .IndexOf(child.PageId);
+
+            return (parentPage, index);
+        }
+        else
+        {
+            throw new Exception("child does not have parent");
+        }
+    }
+
+
     private void SplitChild(Page child)
     {
         Page parentPage;
@@ -170,23 +254,7 @@ public class Btree
 
         if (child.ParentPageId is not null)
         {
-            // child page already has a parent
-            parentPageId = child.ParentPageId.Value;
-            parentPage = BufferManager.Get(parentPageId);
-
-            index = parentPage
-                .GetTable(TableIndexEnum.BTREE_CHILD)
-                .Select(r => (int)r["PID"].AsInteger)
-                .ToList()
-                .IndexOf(child.PageId);
-
-            /*
-            index = new BinarySearch<int>(
-                parentPage
-                .GetTable(TableIndexEnum.BTREE_CHILD)
-                .Select(r => (int)r["PID"].AsInteger).ToArray()
-            ).Search(child.PageId);
-            */
+            (parentPage, index) = GetIndexInParent(child);
         }
         else
         {
@@ -373,7 +441,31 @@ public class Btree
         return startingState;
     }
 
-    public TableRow? Search(TableCell key, Page node = null)
+    /// <summary>
+    /// Gets a table row from a page given physical location
+    /// </summary>
+    /// <param name="pageId"></param>
+    /// <param name="row"></param>
+    /// <returns></returns>
+    public TableRow? Get((int PageId, int RowIndex) location)
+    {
+        var page = BufferManager.Get(location.PageId);
+        if (!page.GetHeader("LEAF").AsBoolean)
+        {
+            throw new Exception("Page is not a leaf page.");
+        }
+        var tr = page.GetRow(TableIndexEnum.BTREE_KEY, location.RowIndex);
+        return tr;
+    }
+
+    /// <summary>
+    /// Searches for a key and returns the physical location of the record in the leaf node.
+    /// </summary>
+    /// <param name="key">Key to search</param>
+    /// <param name="node">Current node to search</param>
+    /// <returns>Physical location of key, or null if not found</returns>
+    /// <exception cref="Exception">Throws error if ???</exception>
+    public (int PageId, int RowIndex)? Search(TableCell key, Page node = null)
     {
         if (node is null && Root is null)
         {
@@ -397,7 +489,7 @@ public class Btree
         {
             if (i < count && key == GetKeyValue(node.GetRow(TableIndexEnum.BTREE_KEY, i)))
             {
-                return node.GetRow(TableIndexEnum.BTREE_KEY, i);
+                return (node.PageId, i);
             }
             else
             {
@@ -410,5 +502,84 @@ public class Btree
             var c = BufferManager.Get(cid);
             return Search(key, c);
         }
+    }
+
+    private Page? GetLeftSibling(Page node)
+    {
+        return null;
+    }
+
+    private Page? GetRightSibling(Page node)
+    {
+        return null;
+    }
+
+    public bool CanBorrowFromLeftSibling(Page node)
+    {
+        return false;
+    }
+
+    public bool CanBorrowFromRightSibling(Page node)
+    {
+        return false;
+    }
+
+    public void BorrowFromLeftSibling(Page node)
+    {
+
+    }
+
+    public void BorrowFromRightSibling(Page node)
+    {
+
+    }
+
+    public bool CanMergeWithLeftSibling(Page node)
+    {
+        return false;
+    }
+
+    public bool CanMergeWithRightSibling(Page node)
+    {
+        return false;
+    }
+
+    public void MergeWithLeftSibling(Page node)
+    {
+
+    }
+
+    public void MergeWithRightSibling(Page node)
+    {
+
+    }
+
+    public bool IsRoot(Page node)
+    {
+        return node.ParentPageId is not null;
+    }
+
+    private Page? GetParent(Page node)
+    {
+        if (node.ParentPageId is not null)
+        {
+            return BufferManager.Get(node.ParentPageId.Value);
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    private void ZeroKeyChangedUpdateParentKey(Page node)
+    {
+        // updates the parent page if the 0th key on current page changes
+        // this can be called recursively
+
+    }
+
+    private void RemoveParentKey(Page node)
+    {
+
     }
 }

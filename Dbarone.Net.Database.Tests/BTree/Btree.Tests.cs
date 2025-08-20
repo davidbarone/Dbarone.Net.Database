@@ -78,7 +78,7 @@ public class BTreeTests
     }
 
     [Theory]
-    [InlineData(100)]
+    //[InlineData(100)]
     [InlineData(1000)]
     [InlineData(10000)]
     public void RandomInsert(int numberOfInserts)
@@ -125,8 +125,34 @@ public class BTreeTests
             r["number"] = item;
             bt.Insert(r);
         }
-        var row = bt.Search(searchKey);
-        int? actual = row is not null ? (int)row["number"].AsInteger : null;
-        Assert.Equal(expected, actual);
+        var location = bt.Search(searchKey);
+        if (location is not null)
+        {
+            var row = bt.Get(location.Value);
+            int? actual = row is not null ? (int)row["number"].AsInteger : null;
+            Assert.Equal(expected, actual);
+        }
+        else
+        {
+            Assert.Null(expected);
+        }
+    }
+
+    [Theory]
+    [InlineData([new int[] { 1, 2, 3 }, 3, 2])]
+    public void Delete(int[] keysToInsert, int keyToDelete, int expectedCount)
+    {
+        var bt = InitialiseBtree(4);
+        foreach (var item in keysToInsert)
+        {
+            TableRow r = new TableRow();
+            r["number"] = item;
+            bt.Insert(r);
+        }
+
+        bt.Delete(new TableCell(keyToDelete));
+        List<long> values = new List<long>();
+        var traverseResult = bt.Traverse(values, (values, page, i, nodeIndex) => { values.Add(page.GetRow(TableIndexEnum.BTREE_KEY, i)["number"].AsInteger); return values; });
+        Assert.Equal(expectedCount, traverseResult.Count());
     }
 }

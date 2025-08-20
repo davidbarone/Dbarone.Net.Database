@@ -202,6 +202,20 @@ public class Page
         }
     }
 
+    public void DeleteRow(TableIndexEnum tableIndex, int rowIndex)
+    {
+        if (tableIndex < 0 || (int)tableIndex >= this.Data.Count())
+        {
+            throw new Exception("Invalid table index");
+        }
+        if (rowIndex <= 0 || rowIndex >= this.GetTable(tableIndex).Count())
+        {
+            throw new Exception("Invalid rowIndex");
+        }
+        this.Data[(int)tableIndex].RemoveAt(rowIndex);
+        this.Buffers[(int)tableIndex].RemoveAt(rowIndex);
+    }
+
     public TableRow GetRow(TableIndexEnum tableIndex, int rowIndex)
     {
         return this.Data[(int)tableIndex][rowIndex];
