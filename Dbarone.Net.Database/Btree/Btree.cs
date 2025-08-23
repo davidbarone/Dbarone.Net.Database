@@ -442,11 +442,11 @@ public class Btree
         {
             if (node.GetHeader("LEAF").AsBoolean == true)
             {
-                return node.Data[1].Count < Order / 2;
+                return node.GetTable(TableIndexEnum.BTREE_KEY).Count() < Order / 2;
             }
             else
             {
-                return node.Data[1].Count < (int)(Order / 2) - 1;
+                return node.GetTable(TableIndexEnum.BTREE_KEY).Count() < (int)(Order / 2) - 1;
             }
         }
         else
@@ -467,7 +467,7 @@ public class Btree
     {
         if (Order is not null)
         {
-            return node.Data[1].Count > Order;
+            return node.GetTable(TableIndexEnum.BTREE_KEY).Count() > Order;
         }
         else
         {
@@ -682,22 +682,31 @@ public class Btree
         }
     }
 
-    public void BorrowFromLeftSibling(Page node)
+    /// <summary>
+    /// Borrows last key / child from left sibling.
+    /// 
+    /// Steps:
+    /// 1. Take last key from left and insert at 0th on node
+    /// 2. If non-leaf, take last child from left and insert at 0th on node
+    /// 3. Update middle key to be value of key moved from left
+    /// </summary>
+    /// <param name="node"></param>
+    private void BorrowFromLeftSibling(Page node)
     {
 
     }
 
-    public void BorrowFromRightSibling(Page node)
+    private void BorrowFromRightSibling(Page node)
     {
 
     }
 
-    public bool CanMergeWithLeftSibling(Page node)
+    private bool CanMergeWithLeftSibling(Page node)
     {
         return false;
     }
 
-    public bool CanMergeWithRightSibling(Page node)
+    private bool CanMergeWithRightSibling(Page node)
     {
         return false;
     }

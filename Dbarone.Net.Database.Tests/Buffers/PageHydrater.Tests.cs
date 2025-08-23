@@ -22,7 +22,7 @@ public class PageHydraterTests
         row["text"] = "foobar";
         row["datetime"] = new DateTime(2000, 1, 1);
         t.Add(row);
-        page.Data.Add(t);
+        page.SetTable(TableIndexEnum.BTREE_KEY, t);
         page.TableCount = 2;
         return page;
     }
@@ -40,6 +40,7 @@ public class PageHydraterTests
         var page2 = hydrater.Hydrate(result.Buffer, ser, TextEncoding.UTF8);
 
         // Check that length of serialised string (expected length) equals GetPageSize (actual)
+        Assert.Equal(page.TableCount, page2.TableCount);
         Assert.Equal(result.Length, page2.GetPageSize());
     }
 
@@ -62,6 +63,6 @@ public class PageHydraterTests
         Assert.Equal(page.PrevPageId, page2.PrevPageId);
         Assert.Equal(page.ParentPageId, page2.ParentPageId);
         Assert.Equal(page.IsDirty, page2.IsDirty);
-        Assert.Equal(page.Data.Count, page2.Data.Count);
+        Assert.Equal(page.TableCount, page2.TableCount);
     }
 }
