@@ -44,6 +44,8 @@ using Dbarone.Net.Extensions;
 /// </remarks>
 public class Btree
 {
+    #region Properties
+
     public IBufferManager BufferManager { get; set; }
     public Page? Root { get; set; } = null;
     public string KeyColumn => Schema.Attributes.First(a => a.IsKey).AttributeName;
@@ -52,12 +54,16 @@ public class Btree
     /// <summary>
     /// Optional. If set, is the upper bound on number of children a node can have
     /// </summary>
-    int? Order { get; set; }
+    private int? Order { get; set; }
 
     /// <summary>
     /// Optional. If set, is the lower bound of number of children a node can have.
     /// </summary>
-    int? Degree => Order / 2;
+    private int? Degree => Order / 2;
+
+    #endregion
+
+    #region Constructors
 
     public Btree(IBufferManager bufferManager, TableSchema schema, int? order = null)
     {
@@ -65,6 +71,10 @@ public class Btree
         this.Schema = schema;
         this.Order = order;
     }
+
+    #endregion
+
+    #region Public Methods
 
     /// <summary>
     /// Traverses a tree
@@ -126,6 +136,55 @@ public class Btree
 
     }
 
+    /// <summary>
+    /// Searches for a key and returns the physical location of the record in the leaf node.
+    /// </summary>
+    /// <param name="key">Key to search</param>
+    /// <param name="node">Current node to search</param>
+    /// <returns>Physical location of key, or null if not found</returns>
+    /// <exception cref="Exception">Throws error if ???</exception>
+    public (int PageId, int RowIndex)? Search(TableCell key, Page node = null)
+    {
+        if (node is null && Root is null)
+        {
+            throw new Exception("Unable to search empty tree");
+        }
+        else if (node is null)
+        {
+            node = this.Root!;
+        }
+
+        int i = 0;
+        int count = node.GetTable(TableIndexEnum.BTREE_KEY).Count();
+        // Find the first key greater than or equal to the search key
+        while (i < count && key > GetKeyValue(node.GetRow(TableIndexEnum.BTREE_KEY, i)))
+        {
+            i++;
+        }
+
+        // are we at the leaf?
+        if (node.GetHeader("LEAF").AsBoolean)
+        {
+            if (i < count && key == GetKeyValue(node.GetRow(TableIndexEnum.BTREE_KEY, i)))
+            {
+                return (node.PageId, i);
+            }
+            else
+            {
+                return null;
+            }
+        }
+        else
+        {
+            var cid = (int)node.GetRow(TableIndexEnum.BTREE_CHILD, i)["PID"].AsInteger;
+            var c = BufferManager.Get(cid);
+            return Search(key, c);
+        }
+    }
+
+    #endregion
+
+    #region Private Methods
 
     private void ProcessUnderflow(Page node)
     {
@@ -199,7 +258,7 @@ public class Btree
 
         if (node.GetHeader("LEAF").AsBoolean == true)
         {
-            // Page is leaf page
+            // leaf page
             while (i >= 0 && GetKeyValue(node.GetRow(TableIndexEnum.BTREE_KEY, i)) > GetKeyValue(row))
             {
                 node.SetRow(TableIndexEnum.BTREE_KEY, i + 1, node.GetRow(TableIndexEnum.BTREE_KEY, i));
@@ -214,7 +273,7 @@ public class Btree
         }
         else
         {
-            // Internal page
+            // internal page
             while (i >= 0 && GetKeyValue(node.GetRow(TableIndexEnum.BTREE_KEY, i)) > GetKeyValue(row))
                 i--;
 
@@ -258,6 +317,22 @@ public class Btree
     }
 
 
+    /// <summary>
+    /// Splits a page into 2 child pages.
+    /// 
+    /// 1. If current page root, create new root with current page being 1st child of new root
+    /// 2. Find parent child index of current page to split
+    /// 3. Create new right child to take 1/2 records
+    /// 4. Add right page into parent
+    /// 5. Copy 1/2 keys from current to right node
+    /// 6. If current is not leaf node, copy 1/2 children from current to right node
+    /// 7. Repoint pages pointed to by moved children to new right page 
+    /// 8. Insert new key / child in parent to point to new right page
+    /// 9. Make sure current + right page both point to parent
+    /// 10. Split parent if required (recursive)
+    /// </summary>
+    /// <param name="child">Page to split</param>
+    /// <exception cref="Exception"></exception>
     private void SplitChild(Page child)
     {
         Page parentPage;
@@ -417,6 +492,7 @@ public class Btree
         }
     }
 
+
     private TState TraverseNode<TState>(Page node, TState startingState, Func<TState, Page, int, int, TState> traverseFunction, int nodeIndex = 0)
     {
         int i;
@@ -471,70 +547,139 @@ public class Btree
         return tr;
     }
 
-    /// <summary>
-    /// Searches for a key and returns the physical location of the record in the leaf node.
-    /// </summary>
-    /// <param name="key">Key to search</param>
-    /// <param name="node">Current node to search</param>
-    /// <returns>Physical location of key, or null if not found</returns>
-    /// <exception cref="Exception">Throws error if ???</exception>
-    public (int PageId, int RowIndex)? Search(TableCell key, Page node = null)
+    private Page? GetRightSibling(Page node)
     {
-        if (node is null && Root is null)
+        // gets next sibling page
+        if (node.ParentPageId is null)
         {
-            throw new Exception("Unable to search empty tree");
-        }
-        else if (node is null)
-        {
-            node = this.Root!;
-        }
-
-        int i = 0;
-        int count = node.GetTable(TableIndexEnum.BTREE_KEY).Count();
-        // Find the first key greater than or equal to the search key
-        while (i < count && key > GetKeyValue(node.GetRow(TableIndexEnum.BTREE_KEY, i)))
-        {
-            i++;
-        }
-
-        // are we at the leaf?
-        if (node.GetHeader("LEAF").AsBoolean)
-        {
-            if (i < count && key == GetKeyValue(node.GetRow(TableIndexEnum.BTREE_KEY, i)))
-            {
-                return (node.PageId, i);
-            }
-            else
-            {
-                return null;
-            }
+            // root node does not have next page.
+            return null;
         }
         else
         {
-            var cid = (int)node.GetRow(TableIndexEnum.BTREE_CHILD, i)["PID"].AsInteger;
-            var c = BufferManager.Get(cid);
-            return Search(key, c);
+            int level = 0;
+            var p = GetChildIndexInParent(node);
+            while (p.ChildIndex == p.Parent.GetTable(TableIndexEnum.BTREE_CHILD).Count() - 1)
+            {
+                if (p.Parent.ParentPageId is null)
+                {
+                    // got up to parent - current page must be far right page - no next to return.
+                    return null;
+                }
+                level++;
+                p = GetChildIndexInParent(p.Parent);
+            }
+            var cid = (int)p.Parent.GetRow(TableIndexEnum.BTREE_CHILD, p.ChildIndex + 1)["PID"].AsInteger;
+            var child = BufferManager.Get(cid);
+            for (int i = 0; i < level; i++)
+            {
+                cid = (int)child.GetRow(TableIndexEnum.BTREE_CHILD, 0)["PID"].AsInteger;
+                child = BufferManager.Get(cid);
+            }
+            return child;
         }
     }
 
     private Page? GetLeftSibling(Page node)
     {
-        return null;
+        // gets next sibling page
+        if (node.ParentPageId is null)
+        {
+            // root node does not have next page.
+            return null;
+        }
+        else
+        {
+            int level = 0;
+            var p = GetChildIndexInParent(node);
+            while (p.ChildIndex == 0)
+            {
+                if (p.Parent.ParentPageId is null)
+                {
+                    // got up to parent - current page must be far left page - no prev to return.
+                    return null;
+                }
+                level++;
+                p = GetChildIndexInParent(p.Parent);
+            }
+            var cid = (int)p.Parent.GetRow(TableIndexEnum.BTREE_CHILD, p.ChildIndex - 1)["PID"].AsInteger;
+            var child = BufferManager.Get(cid);
+            for (int i = 0; i < level; i++)
+            {
+                var count = child.GetTable(TableIndexEnum.BTREE_CHILD).Count();
+                cid = (int)child.GetRow(TableIndexEnum.BTREE_CHILD, count - 1)["PID"].AsInteger;
+                child = BufferManager.Get(cid);
+            }
+            return child;
+        }
     }
 
-    private Page? GetRightSibling(Page node)
+    /// <summary>
+    /// This checks whether sibling can provide a record AND still not be in underflow state.
+    /// Checking is similar (but opposite) to underflow checking.
+    /// </summary>
+    /// <param name="node"></param>
+    /// <returns></returns>
+    /// <exception cref="Exception"></exception>
+    private bool CanBorrowFromLeftSibling(Page node)
     {
-        return null;
+        var left = GetLeftSibling(node);
+        if (left is null)
+        {
+            return false;
+        }
+        else
+        {
+            if (Order is not null)
+            {
+                if (left.GetHeader("LEAF").AsBoolean == true)
+                {
+                    return left.GetTable(TableIndexEnum.BTREE_KEY).Count() > (int)Order / 2;
+                }
+                else
+                {
+                    return left.GetTable(TableIndexEnum.BTREE_KEY).Count() > (int)(Order / 2) - 1;
+                }
+            }
+            else
+            {
+                throw new Exception("CanBorrowFromLeftSibling does not support dynamic underflow checking.");
+            }
+        }
     }
 
-    public bool CanBorrowFromLeftSibling(Page node)
-    {
-        return false;
-    }
-
+    /// <summary>
+    /// This checks whether sibling can provide a record AND still not be in underflow state.
+    /// Checking is similar (but opposite) to underflow checking.
+    /// </summary>
+    /// <param name="node"></param>
+    /// <returns></returns>
+    /// <exception cref="Exception"></exception>
     public bool CanBorrowFromRightSibling(Page node)
     {
-        return false;
+        var right = GetLeftSibling(node);
+        if (right is null)
+        {
+            return false;
+        }
+        else
+        {
+            if (Order is not null)
+            {
+                if (right.GetHeader("LEAF").AsBoolean == true)
+                {
+                    return right.GetTable(TableIndexEnum.BTREE_KEY).Count() > (int)Order / 2;
+                }
+                else
+                {
+                    return right.GetTable(TableIndexEnum.BTREE_KEY).Count() > (int)(Order / 2) - 1;
+                }
+            }
+            else
+            {
+                throw new Exception("CanBorrowFromLeftSibling does not support dynamic underflow checking.");
+            }
+        }
     }
 
     public void BorrowFromLeftSibling(Page node)
@@ -572,9 +717,10 @@ public class Btree
     /// 
     ///                       pk0
     ///                    pc0   pc1
-    ///                     |     | 
-    ///              lk0 ---|     |--- rk0 
-    ///           lc0   lc1         rc0   rc1
+    ///                     /     \
+    ///                    /       \
+    ///                  lk0       rk0 
+    ///               lc0   lc1 rc0   rc1
     /// 
     /// In above example, the middle key between pages l and r is pk0.
     /// 
@@ -620,18 +766,18 @@ public class Btree
     /// </summary>
     /// <param name="left"></param>
     /// <param name="right"></param>
-    public void Merge(Page left, Page right)
+    private void Merge(Page left, Page right)
     {
         /*
         ---------------------------------------------------
-                       Parent
+                        Parent
                       k1  k2  k3
                     c1  c2  c3  c4    
-                         |   |
-                         |   |
-            Left  -------|   |---------- Right
-          k1  k2  k3                 k1  k2  k3  k4
-        c1  c2  c3  c4             c1  c2  c3  c4  c5
+                       /      \
+                      /        \ 
+                Left              Right
+            k1  k2  k3         k1  k2  k3  k4
+          c1  c2  c3  c4     c1  c2  c3  c4  c5
 
         Steps:
         1. Middle key parent (k2) added to left IF LEFT IS NOT LEAF
@@ -642,12 +788,12 @@ public class Btree
         6. remove Parent (k2)
         7. remove Parent (c3)
         8. remove Right
+        9. left becomes new merged node
 
         NOTES:
         1. Parent (K2) can be in different page to Parent (C2).
         ---------------------------------------------------
         */
-
 
         // check pages are adjacent
         if (GetRightSibling(left)!.PageId.Value != right.PageId.Value)
@@ -730,7 +876,7 @@ public class Btree
         this.BufferManager.Free(right.PageId);
     }
 
-    public bool IsRoot(Page node)
+    private bool IsRoot(Page node)
     {
         return node.ParentPageId is not null;
     }
@@ -758,4 +904,7 @@ public class Btree
     {
 
     }
+
+    #endregion
+
 }
