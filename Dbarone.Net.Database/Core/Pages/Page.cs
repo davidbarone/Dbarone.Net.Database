@@ -1,4 +1,5 @@
 namespace Dbarone.Net.Database;
+
 using Dbarone.Net.Assertions;
 using Dbarone.Net.Document;
 
@@ -165,17 +166,11 @@ public class Page
         this.IsDirty = dirty;       // when initialising new page, defaults to dirty
     }
 
-    /// <summary>
-    /// Sets a data row in the page. Additionally, the byte array for the row is cached for checkpointing the page.
-    /// </summary>
-    /// <param name="tableIndex"></param>
-    /// <param name="rowIndex"></param>
-    /// <param name="row"></param>
-    /// <exception cref="Exception"></exception>
-    public void SetRow(TableIndexEnum tableIndex, int rowIndex, TableRow row)
+    public void SetRow(TableIndexEnum tableIndex, int rowIndex, TableRow row, byte[] bytes)
     {
-        var bytes = TableSerializer.SerializeRow(row).Buffer.ToArray();
-
+        // this version to be used to set a row when you also have the buffer information
+        // used internally to move rows + buffers between pages, for example during
+        // btree merge operation or borrow operation
         if (tableIndex < 0)
         {
             throw new Exception("Invalid table index");
@@ -202,6 +197,19 @@ public class Page
         }
     }
 
+    /// <summary>
+    /// Sets a data row in the page. Additionally, the byte array for the row is cached for checkpointing the page.
+    /// </summary>
+    /// <param name="tableIndex"></param>
+    /// <param name="rowIndex"></param>
+    /// <param name="row"></param>
+    /// <exception cref="Exception"></exception>
+    public void SetRow(TableIndexEnum tableIndex, int rowIndex, TableRow row)
+    {
+        var bytes = TableSerializer.SerializeRow(row).Buffer.ToArray();
+        SetRow(tableIndex, rowIndex, row, bytes);
+    }
+
     public void DeleteRow(TableIndexEnum tableIndex, int rowIndex)
     {
         if (tableIndex < 0 || (int)tableIndex >= this.Data.Count())
@@ -221,6 +229,11 @@ public class Page
         return this.Data[(int)tableIndex][rowIndex];
     }
 
+    public byte[] GetBuffer(TableIndexEnum tableIndex, int rowIndex)
+    {
+        return this.Buffers[(int)tableIndex][rowIndex];
+    }
+
     public Table GetTable(TableIndexEnum tableIndex)
     {
         return this.Data[(int)tableIndex];
@@ -229,7 +242,7 @@ public class Page
     /// <summary>
     /// Sets the current page to be an empty page.
     /// </summary>
-    public void Clear()
+    public void Empty()
     {
         this.PageType = PageType.Empty;
         this.IsDirty = true;

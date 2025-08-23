@@ -1,14 +1,8 @@
 using Dbarone.Net.Database;
+using Dbarone.Net.Extensions;
 
 /// <summary>
 /// Implementation of B-Tree algorithm.
-/// https://www.geeksforgeeks.org/dsa/introduction-of-b-tree-2/
-/// https://www.geeksforgeeks.org/dsa/delete-operation-in-b-tree/
-/// https://www.tutorialspoint.com/bplus-tree-deletion-in-data-structure
-/// https://www.geeksforgeeks.org/dsa/deletion-in-b-tree/
-/// https://www.geeksforgeeks.org/dsa/delete-operation-in-b-tree/
-/// https://www.geeksforgeeks.org/dsa/introduction-of-b-tree-2/
-/// https://www.programiz.com/dsa/deletion-from-a-b-plus-tree
 /// </summary>
 /// <remarks>
 /// Properties:
@@ -38,6 +32,15 @@ using Dbarone.Net.Database;
 ///   - table[1] is array of keys (this applies to all pages)
 ///   - table[2] is array of children (this applies to non leaf pages only)
 /// 5. Nodes are doubly-linked (can access parent via .ParentPageId and can access children via table[2])
+/// 
+/// Bibliography:
+/// https://www.geeksforgeeks.org/dsa/introduction-of-b-tree-2/
+/// https://www.geeksforgeeks.org/dsa/delete-operation-in-b-tree/
+/// https://www.tutorialspoint.com/bplus-tree-deletion-in-data-structure
+/// https://www.geeksforgeeks.org/dsa/deletion-in-b-tree/
+/// https://www.geeksforgeeks.org/dsa/delete-operation-in-b-tree/
+/// https://www.geeksforgeeks.org/dsa/introduction-of-b-tree-2/
+/// https://www.programiz.com/dsa/deletion-from-a-b-plus-tree
 /// </remarks>
 public class Btree
 {
@@ -102,15 +105,17 @@ public class Btree
             // delete the key
             var node = BufferManager.Get(location.Value.PageId);
             node.DeleteRow(TableIndexEnum.BTREE_KEY, location.Value.RowIndex);
+
+            // if first item in table, need to update internal nodes
+            if (location.Value.RowIndex == 0)
+            {
+                this.ZeroKeyChangedUpdateParentKey(node);
+            }
+
             // check underflow
             if (this.IsUnderflow(node))
             {
                 ProcessUnderflow(node);
-            }
-            else
-            {
-                // if first item in table, need to update internal nodes
-
             }
         }
 
@@ -137,11 +142,15 @@ public class Btree
         {
             BorrowFromRightSibling(node);
             var right = GetRightSibling(node);
-            ZeroKeyChangedUpdateParentKey(right);
+            if (right is not null)
+            {
+                ZeroKeyChangedUpdateParentKey(right);
+            }
         }
         else if (CanMergeWithLeftSibling(node))
         {
-            MergeWithLeftSibling(node);
+            var left = GetLeftSibling(node)!;
+            Merge(left, node);
             RemoveParentKey(node);
             if (IsUnderflow(node))
             {
@@ -150,12 +159,15 @@ public class Btree
         }
         else if (CanMergeWithRightSibling(node))
         {
-            MergeWithRightSibling(node);
             var right = GetRightSibling(node);
-            RemoveParentKey(right);
-            if (IsUnderflow(right))
+            if (right is not null)
             {
-                ProcessUnderflow(right);
+                Merge(node, right);
+                RemoveParentKey(right);
+                if (IsUnderflow(right))
+                {
+                    ProcessUnderflow(right);
+                }
             }
         }
         else
@@ -224,7 +236,7 @@ public class Btree
         return row[KeyColumn];
     }
 
-    private (Page Parent, int RowIndex) GetIndexInParent(Page child)
+    private (Page Parent, int ChildIndex) GetChildIndexInParent(Page child)
     {
         if (child.ParentPageId is not null)
         {
@@ -254,7 +266,7 @@ public class Btree
 
         if (child.ParentPageId is not null)
         {
-            (parentPage, index) = GetIndexInParent(child);
+            (parentPage, index) = GetChildIndexInParent(child);
             parentPageId = parentPage.PageId;
         }
         else
@@ -545,14 +557,177 @@ public class Btree
         return false;
     }
 
-    public void MergeWithLeftSibling(Page node)
-    {
 
+    /// <summary>
+    /// Gets the key between 2 pages.
+    /// 
+    /// Pages are linked to parent / interior pages through keys and child pointers
+    /// For all non leaf pages, if there are n children, there are n-1 keys
+    /// Data is assigned to left or right side of the key using formula:
+    /// 
+    /// if data less than key then left else right
+    /// 
+    /// 2 adjacent pages are linked via a middle key. Any data greater / equal to the
+    /// middle key goes to the right page, else the left page.
+    /// 
+    ///                       pk0
+    ///                    pc0   pc1
+    ///                     |     | 
+    ///              lk0 ---|     |--- rk0 
+    ///           lc0   lc1         rc0   rc1
+    /// 
+    /// In above example, the middle key between pages l and r is pk0.
+    /// 
+    /// Sometimes, the middle key is NOT in the immediate parent. This can occur if the
+    /// index of the parent child is 0.
+    /// 
+    ///  Level 0                         ___ pk0 ___
+    ///                                 /           \
+    ///                              pc0             pc1
+    ///                             /                   \ 
+    ///  Level 1                plk0                     prk0 
+    ///                        /   \                    /   \
+    ///                     plc0    plc1             prc0    prc1 
+    ///                    /           \            /           \
+    ///  Level 2         xk0           lk0        rk0           yk0    
+    ///                 /   \         /   \      /   \         /   \ 
+    ///               xc0   xc1     lc0   lc1  rc0   rc1     yc0   yc1
+    /// 
+    /// In above example, lc1 and rc0 do not have direct common parent. You need to go 2 levels
+    /// up to find middle key pk0.
+    /// </summary>
+    /// <param name="left"></param>
+    /// <param name="right"></param>
+    /// <returns></returns>
+    public (Page Ancestor, int KeyIndex) GetMiddleKey(Page left, Page right)
+    {
+        // check pages are adjacent
+        if (GetRightSibling(left)!.PageId.Value != right.PageId.Value)
+        {
+            throw new Exception("GetMiddleKey requires pages to be adjacent.");
+        }
+
+        var parent = GetChildIndexInParent(right);
+        while (parent.ChildIndex == 0)
+        {
+            parent = GetChildIndexInParent(parent.Parent);
+        }
+        return (parent.Parent, parent.ChildIndex);
     }
 
-    public void MergeWithRightSibling(Page node)
+    /// <summary>
+    /// Merges 2 pages.
+    /// </summary>
+    /// <param name="left"></param>
+    /// <param name="right"></param>
+    public void Merge(Page left, Page right)
     {
+        /*
+        ---------------------------------------------------
+                       Parent
+                      k1  k2  k3
+                    c1  c2  c3  c4    
+                         |   |
+                         |   |
+            Left  -------|   |---------- Right
+          k1  k2  k3                 k1  k2  k3  k4
+        c1  c2  c3  c4             c1  c2  c3  c4  c5
 
+        Steps:
+        1. Middle key parent (k2) added to left IF LEFT IS NOT LEAF
+        2. add right (k1-k4) to left
+        3. add right (c1-c5) to left IF RIGHT + LEFT NOT LEAF
+        4. for each child in right (c1-c5), the child pointed to must have parent set to left
+        5. add right (buffers) to left
+        6. remove Parent (k2)
+        7. remove Parent (c3)
+        8. remove Right
+
+        NOTES:
+        1. Parent (K2) can be in different page to Parent (C2).
+        ---------------------------------------------------
+        */
+
+
+        // check pages are adjacent
+        if (GetRightSibling(left)!.PageId.Value != right.PageId.Value)
+        {
+            throw new Exception("Merge requires pages to be adjacent.");
+        }
+
+        var isLeftLeaf = left.Header["LEAF"].AsBoolean;
+        var leftLocationInParent = GetChildIndexInParent(left);
+        var leftKeyCount = left.GetTable(TableIndexEnum.BTREE_KEY).Count();
+
+        // get middle key location
+        var middleKeyLocation = GetMiddleKey(left, right);
+
+        // move middle key / buffer to end of left keys
+        if (!isLeftLeaf)
+        {
+            var key = middleKeyLocation.Ancestor.GetRow(TableIndexEnum.BTREE_KEY, middleKeyLocation.KeyIndex);
+            var buffer = middleKeyLocation.Ancestor.GetBuffer(TableIndexEnum.BTREE_KEY, middleKeyLocation.KeyIndex);
+            left.SetRow(
+                TableIndexEnum.BTREE_KEY,
+                leftKeyCount,
+                key,
+                buffer
+            );
+        }
+
+        // move right keys + buffers to left
+        var rightKeyCount = right.GetTable(TableIndexEnum.BTREE_KEY).Count();
+        for (int i = 0; i < rightKeyCount; i++)
+        {
+            left.SetRow(
+                TableIndexEnum.BTREE_KEY,
+                leftKeyCount + 1 + i,
+                right.GetRow(TableIndexEnum.BTREE_KEY, i),
+                right.GetBuffer(TableIndexEnum.BTREE_KEY, i)
+            );
+        }
+
+        // move children keys to left
+        if (!isLeftLeaf)
+        {
+            var leftChildCount = left.GetTable(TableIndexEnum.BTREE_CHILD).Count();
+            var rightChildCount = right.GetTable(TableIndexEnum.BTREE_CHILD).Count();
+            for (int i = 0; i < rightChildCount; i++)
+            {
+                var c = right.GetRow(TableIndexEnum.BTREE_CHILD, i);
+                var b = right.GetBuffer(TableIndexEnum.BTREE_CHILD, i);
+                left.SetRow(
+                    TableIndexEnum.BTREE_CHILD,
+                    leftChildCount + i,
+                    c,
+                    b
+                );
+                // update parent on children
+                var ch = BufferManager.Get((int)c["PID"].AsInteger);
+                ch.ParentPageId = left.PageId;
+            }
+        }
+
+        // remove parent key + child
+        // if right page occurs at 0th index in parent, need to delete parent c0 and move key0 to middle(left, right)
+        // if right page occurs at n>0th index in parent, remove c(n) and k(n-1)
+        var location = GetChildIndexInParent(right);
+        if (location.ChildIndex > 0)
+        {
+            location.Parent.DeleteRow(TableIndexEnum.BTREE_CHILD, location.ChildIndex);
+            location.Parent.DeleteRow(TableIndexEnum.BTREE_KEY, location.ChildIndex - 1);
+        }
+        else
+        {
+            location.Parent.DeleteRow(TableIndexEnum.BTREE_CHILD, location.ChildIndex);
+            var keyToMove = location.Parent.GetRow(TableIndexEnum.BTREE_KEY, location.ChildIndex);
+            location.Parent.DeleteRow(TableIndexEnum.BTREE_KEY, location.ChildIndex);
+            var mk = GetMiddleKey(left, right);
+            mk.Ancestor.SetRow(TableIndexEnum.BTREE_KEY, mk.KeyIndex, keyToMove);
+        }
+
+        // remove right
+        this.BufferManager.Free(right.PageId);
     }
 
     public bool IsRoot(Page node)

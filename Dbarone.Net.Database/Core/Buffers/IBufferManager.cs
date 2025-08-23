@@ -35,10 +35,10 @@ public interface IBufferManager : IStorage
     Page Get(int pageId);
 
     /// <summary>
-    /// Clears an existing page in the buffers. If the page is not already in the buffers, it will be read from storage.
+    /// Frees an existing page the buffers. If the page is not already in the buffers, it will be read from storage.
     /// </summary>
     /// <param name="pageId">The page id to clear.</param>
-    void Clear(int pageId);
+    void Free(int pageId);
 
     /// <summary>
     /// Saves all dirty pages to disk.

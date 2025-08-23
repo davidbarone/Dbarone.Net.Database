@@ -1,4 +1,5 @@
 namespace Dbarone.Net.Database;
+
 using Dbarone.Net.Assertions;
 using Dbarone.Net.Database.Mapper;
 
@@ -102,10 +103,10 @@ public abstract class BufferManager : IBufferManager, IStorage
     /// Marks a page as free
     /// </summary>
     /// <param name="page"></param>
-    public void Clear(int pageId)
+    public void Free(int pageId)
     {
         var page = this.Get(pageId);
-        page.Clear();
+        page.Empty();
     }
 
     /// <summary>
