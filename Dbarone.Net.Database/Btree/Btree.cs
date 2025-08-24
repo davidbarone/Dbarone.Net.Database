@@ -295,6 +295,19 @@ public class Btree
         return row[KeyColumn];
     }
 
+    /// <summary>
+    /// Returns a TableRow object containing ONLY key value(s).
+    /// Used to store keys in all non-leaf pages.
+    /// </summary>
+    /// <param name="row"></param>
+    /// <returns></returns>
+    private TableRow GetKeyAsTableRow(TableRow row)
+    {
+        TableRow tr = new TableRow();
+        tr[KeyColumn] = GetKeyValue(row);
+        return tr;
+    }
+
     private (Page Parent, int ChildIndex) GetChildIndexInParent(Page child)
     {
         if (child.ParentPageId is not null)
@@ -685,15 +698,60 @@ public class Btree
     /// <summary>
     /// Borrows last key / child from left sibling.
     /// 
+    ///                          pk0
+    ///                       pc0   pc1
+    ///                      /         \  
+    ///                     /           \
+    ///     lk0   lk1   lk2               rk0         
+    ///  lc0   lc1   lc2   lc3         rc0   rc1
+    /// 
     /// Steps:
-    /// 1. Take last key from left and insert at 0th on node
-    /// 2. If non-leaf, take last child from left and insert at 0th on node
-    /// 3. Update middle key to be value of key moved from left
+    /// 1. if left is leaf node:
+    /// 1a. move key (lk2) from left to 0th position on right, shifting right keys one place to right
+    /// 1b  replace middle key (pk0) with KeyValue(lk2)
+    /// 2. If left is not leaf node: 
+    /// 2a. Take middle key (pk0) and insert as key0 on right
+    /// 2b. Take last child from left (lc3) and insert at 0th on node shifting right children one place to right.
+    /// 2c. Promote last key on left node (lk2) to new middle key (replacing pk0)
     /// </summary>
     /// <param name="node"></param>
     private void BorrowFromLeftSibling(Page node)
     {
-
+        var left = GetLeftSibling(node);
+        if (left is null)
+        {
+            throw new Exception("No left node to borrow from.");
+        }
+        var isLeaf = left.GetHeader("LEAF").AsBoolean;
+        if (isLeaf)
+        {
+            var leftKeyCount = left.GetTable(TableIndexEnum.BTREE_KEY).Count();
+            var keyToMove = left.GetRow(TableIndexEnum.BTREE_KEY, leftKeyCount - 1);
+            var bufferToMove = left.GetBuffer(TableIndexEnum.BTREE_KEY, leftKeyCount - 1);
+            node.InsertRow(TableIndexEnum.BTREE_KEY, 0, keyToMove, bufferToMove);
+            left.DeleteRow(TableIndexEnum.BTREE_KEY, leftKeyCount - 1);
+            var middle = GetMiddleKey(left, node);
+            middle.Ancestor.SetRow(TableIndexEnum.BTREE_KEY, middle.KeyIndex, GetKeyAsTableRow(keyToMove));
+        }
+        else
+        {
+            var middleLoc = GetMiddleKey(left, node);
+            var middleKey = middleLoc.Ancestor.GetRow(TableIndexEnum.BTREE_KEY, middleLoc.KeyIndex);
+            var middleBuffer = middleLoc.Ancestor.GetBuffer(TableIndexEnum.BTREE_KEY, middleLoc.KeyIndex);
+            node.InsertRow(TableIndexEnum.BTREE_KEY, 0, middleKey, middleBuffer);
+            var leftKeyCount = left.GetTable(TableIndexEnum.BTREE_KEY).Count();
+            var lastKeyLeft = left.GetRow(TableIndexEnum.BTREE_KEY, leftKeyCount - 1);
+            var lastKeyBufferLeft = left.GetBuffer(TableIndexEnum.BTREE_KEY, leftKeyCount - 1);
+            var lastChildLeft = left.GetRow(TableIndexEnum.BTREE_CHILD, leftKeyCount);
+            var lastChildBufferLeft = left.GetBuffer(TableIndexEnum.BTREE_CHILD, leftKeyCount);
+            // move last child to right node
+            node.InsertRow(TableIndexEnum.BTREE_KEY, 0, lastChildLeft, lastChildBufferLeft);
+            // move last key to middle
+            middleLoc.Ancestor.SetRow(TableIndexEnum.BTREE_KEY, middleLoc.KeyIndex, lastKeyLeft, lastKeyBufferLeft);
+            // delete last key + child from left
+            left.DeleteRow(TableIndexEnum.BTREE_KEY, leftKeyCount - 1);
+            left.DeleteRow(TableIndexEnum.BTREE_CHILD, leftKeyCount);
+        }
     }
 
     private void BorrowFromRightSibling(Page node)
