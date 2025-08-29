@@ -305,3 +305,9 @@ Testing Order
 Mapper - to/from dictionary
 Page.cs - add max header size, so header can change without having to check overflow/underflow
 Make sure all non leaf nodes use GetKeyAsTableRow instead of full key/row
+
+BTREE
+- write traverse function to check all nodes valid
+- check none in overflow/underflow state
+- all parent / child links correct
+- all keys match child k[0]

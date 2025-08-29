@@ -231,10 +231,10 @@ public class Btree
         {
             var left = GetLeftSibling(node)!;
             Merge(left, node);
-            RemoveParentKey(node);
-            if (IsUnderflow(node))
+            // is left still underflow after merge?
+            if (IsUnderflow(left))
             {
-                ProcessUnderflow(node);
+                ProcessUnderflow(left);
             }
         }
         else if (CanMergeWithRightSibling(node))
@@ -243,10 +243,10 @@ public class Btree
             if (right is not null)
             {
                 Merge(node, right);
-                RemoveParentKey(right);
-                if (IsUnderflow(right))
+                // is left still underflow after merge?
+                if (IsUnderflow(node))
                 {
-                    ProcessUnderflow(right);
+                    ProcessUnderflow(node);
                 }
             }
         }
@@ -525,7 +525,6 @@ public class Btree
             return (int)(node.GetTable(TableIndexEnum.BTREE_KEY).Count() + 1) / 2;
         }
     }
-
 
     private TState TraverseNode<TState>(Page node, TState startingState, Func<TState, Page, int, int, TState> traverseFunction, int nodeIndex = 0)
     {
@@ -840,12 +839,48 @@ public class Btree
 
     private bool CanMergeWithLeftSibling(Page node)
     {
-        return false;
+        // returns true if node has a left sibling the newly merged node does not overflow
+        var left = GetLeftSibling(node);
+        if (left is null)
+        {
+            return false;
+        }
+        else
+        {
+            if (Order is not null)
+            {
+                var leftKeyCount = left.GetTable(TableIndexEnum.BTREE_KEY).Count();
+                var rightKeyCount = node.GetTable(TableIndexEnum.BTREE_KEY).Count();
+                return leftKeyCount + rightKeyCount > Order;
+            }
+            else
+            {
+                throw new NotSupportedException("Currently not able to check merge operation on dynamic pages");
+            }
+        }
     }
 
     private bool CanMergeWithRightSibling(Page node)
     {
-        return false;
+        // returns true if node has a left sibling the newly merged node does not overflow
+        var right = GetRightSibling(node);
+        if (right is null)
+        {
+            return false;
+        }
+        else
+        {
+            if (Order is not null)
+            {
+                var leftKeyCount = node.GetTable(TableIndexEnum.BTREE_KEY).Count();
+                var rightKeyCount = right.GetTable(TableIndexEnum.BTREE_KEY).Count();
+                return leftKeyCount + rightKeyCount > Order;
+            }
+            else
+            {
+                throw new NotSupportedException("Currently not able to check merge operation on dynamic pages");
+            }
+        }
     }
 
 
@@ -908,7 +943,9 @@ public class Btree
     }
 
     /// <summary>
-    /// Merges 2 pages.
+    /// Merges 2 pages. After merging, the right node is removed, and the left
+    /// node becomes the new merged node.
+    /// This method handles all administration of parent keys too.
     /// </summary>
     /// <param name="left"></param>
     /// <param name="right"></param>
@@ -935,6 +972,7 @@ public class Btree
         7. remove Parent (c3)
         8. remove Right
         9. left becomes new merged node
+        10. Check underflow on parent, and merge parent if required (recursive)
 
         NOTES:
         1. Parent (K2) can be in different page to Parent (C2).
@@ -1018,6 +1056,12 @@ public class Btree
             mk.Ancestor.SetRow(TableIndexEnum.BTREE_KEY, mk.KeyIndex, keyToMove);
         }
 
+        // Check underflow on parent
+        if (IsUnderflow(location.Parent))
+        {
+            ProcessUnderflow(location.Parent);
+        }
+
         // remove right
         this.BufferManager.Free(right.PageId);
     }
@@ -1043,11 +1087,6 @@ public class Btree
     {
         // updates the parent page if the 0th key on current page changes
         // this can be called recursively
-
-    }
-
-    private void RemoveParentKey(Page node)
-    {
 
     }
 
