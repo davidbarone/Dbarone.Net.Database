@@ -78,7 +78,8 @@ public class BTreeTests
     }
 
     [Theory]
-    //[InlineData(100)]
+    [InlineData(10)]
+    [InlineData(100)]
     [InlineData(1000)]
     [InlineData(10000)]
     public void RandomInsert(int numberOfInserts)
@@ -154,5 +155,46 @@ public class BTreeTests
         List<long> values = new List<long>();
         var traverseResult = bt.Traverse(values, (values, page, i, nodeIndex) => { values.Add(page.GetRow(TableIndexEnum.BTREE_KEY, i)["number"].AsInteger); return values; });
         Assert.Equal(expectedCount, traverseResult.Count());
+    }
+
+    [Theory]
+    [InlineData(10)]
+    [InlineData(100)]
+    [InlineData(1000)]
+    [InlineData(10000)]
+    public void RandomInsertAndDelete(int numberOfInsertDeletes)
+    {
+        List<long> testData = new List<long>();
+        for (int i = 0; i < numberOfInsertDeletes; i++)
+        {
+            testData.Add(new Random().Next());
+        }
+
+        var bt = InitialiseBtree(100);
+        foreach (var item in testData)
+        {
+            TableRow r = new TableRow();
+            r["number"] = item;
+            bt.Insert(r);
+        }
+
+        foreach (var item in testData)
+        {
+            bt.Delete(new TableCell(item));
+        }
+
+        List<long> values = new List<long>();
+        var traverseResult = bt.Traverse(
+            values,
+            (values, page, i, nodeIndex) =>
+            {
+                if (page.GetHeader("LEAF").AsBoolean)
+                {
+                    values.Add(page.GetRow(TableIndexEnum.BTREE_KEY, i)["number"].AsInteger); return values;
+                }
+                return values;
+            }
+        );
+        Assert.Empty(traverseResult);
     }
 }
