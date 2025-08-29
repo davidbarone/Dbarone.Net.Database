@@ -10,6 +10,27 @@ using Dbarone.Net.Extensions;
 ///     - root node - top level node in tree
 ///     - internal node - any node not root or leaf - only stores keys, never full data values
 ///     - leaf node - contains actual data - only leaf nodes store full data values (as opposed to B-tree)
+///
+/// Structure of leaf node
+/// ----------------------
+/// 
+///     k0 k1 k2 k3 k4 k5 ...
+/// 
+/// All keys in order
+/// k5 > k4 > k3 > k2 > k1 > k0
+/// 
+/// Structure of non-leaf node
+/// --------------------------
+/// 
+///      k0  k1  k2  k3
+///    c0  c1  c2  c3  c4
+/// 
+/// c1 is a pointer to a child node
+/// all keys in node pointed to by c1 are >= k0
+/// k[0] in c1 == k0
+/// 
+
+
 /// 1. Order (m) defines max number of children per page
 /// 2. Order (m) node can contain max m-1 keys
 /// 3. Degree (m/2) defines minimum number of children in non root node
@@ -754,9 +775,67 @@ public class Btree
         }
     }
 
+    /// <summary>
+    /// Borrows first key / child from right sibling.
+    /// 
+    ///                     pk0
+    ///                  pc0   pc1
+    ///                 /         \  
+    ///                /           \
+    ///            lk0               rk0   rk1   rk2         
+    ///         lc0   lc1         rc0   rc1   rc2   rc3
+    /// 
+    /// Steps:
+    /// 1. if right is leaf node:
+    /// 1a. move key (rk0) from right to nth/last position on left
+    /// 1b  replace middle key (pk0) with KeyValue(rk1) (which is new 0th key on right)
+    /// 2. If right is not leaf node: 
+    /// 2a. Take middle key (pk0) and insert as key (lk1) on left
+    /// 2b. Take first child from right (rc0) and insert at nth position on left/node (lc2).
+    /// 2c. Promote first key on right node (rk0) to new middle key (replacing pk0)
+    /// </summary>
+    /// <param name="node"></param>
     private void BorrowFromRightSibling(Page node)
     {
+        var right = GetRightSibling(node);
+        if (right is null)
+        {
+            throw new Exception("No right node to borrow from.");
+        }
+        var isLeaf = right.GetHeader("LEAF").AsBoolean;
+        if (isLeaf)
+        {
+            var leftKeyCount = node.GetTable(TableIndexEnum.BTREE_KEY).Count();
+            var keyToMove = right.GetRow(TableIndexEnum.BTREE_KEY, 0);
+            var bufferToMove = right.GetBuffer(TableIndexEnum.BTREE_KEY, 0);
+            node.InsertRow(TableIndexEnum.BTREE_KEY, leftKeyCount, keyToMove, bufferToMove);
+            right.DeleteRow(TableIndexEnum.BTREE_KEY, 0);
+            var middle = GetMiddleKey(node, right);
+            var newMiddleKey = right.GetRow(TableIndexEnum.BTREE_KEY, 0);
+            middle.Ancestor.SetRow(TableIndexEnum.BTREE_KEY, middle.KeyIndex, GetKeyAsTableRow(keyToMove));
+        }
+        else
+        {
+            // move down middle key
+            var leftKeyCount = node.GetTable(TableIndexEnum.BTREE_KEY).Count();
+            var middleLoc = GetMiddleKey(node, right);
+            var middleKey = middleLoc.Ancestor.GetRow(TableIndexEnum.BTREE_KEY, middleLoc.KeyIndex);
+            var middleBuffer = middleLoc.Ancestor.GetBuffer(TableIndexEnum.BTREE_KEY, middleLoc.KeyIndex);
+            node.InsertRow(TableIndexEnum.BTREE_KEY, leftKeyCount, middleKey, middleBuffer);
 
+            // move right child[0] + promote right key[0]
+            var firstKeyRight = right.GetRow(TableIndexEnum.BTREE_KEY, 0);
+            var firstKeyBufferRight = right.GetBuffer(TableIndexEnum.BTREE_KEY, 0);
+            var firstChildRight = right.GetRow(TableIndexEnum.BTREE_CHILD, 0);
+            var firstChildBufferRight = right.GetBuffer(TableIndexEnum.BTREE_CHILD, 0);
+            // move right first child to left node
+            node.InsertRow(TableIndexEnum.BTREE_KEY, leftKeyCount, firstChildRight, firstChildBufferRight);
+            // move right first key to middle
+            middleLoc.Ancestor.SetRow(TableIndexEnum.BTREE_KEY, middleLoc.KeyIndex, firstKeyRight, firstKeyBufferRight);
+            // delete first key + first child from right
+            right.DeleteRow(TableIndexEnum.BTREE_KEY, 0);
+            right.DeleteRow(TableIndexEnum.BTREE_CHILD, 0);
+        }
     }
 
     private bool CanMergeWithLeftSibling(Page node)
