@@ -1068,7 +1068,7 @@ public class Btree
 
     private bool IsRoot(Page node)
     {
-        return node.ParentPageId is not null;
+        return node.ParentPageId is null;
     }
 
     private Page? GetParent(Page node)

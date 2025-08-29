@@ -273,7 +273,7 @@ public class Page
         {
             throw new Exception("Invalid table index");
         }
-        if (rowIndex <= 0 || rowIndex >= this.GetTable(tableIndex).Count())
+        if (rowIndex < 0 || rowIndex >= this.GetTable(tableIndex).Count())
         {
             throw new Exception("Invalid rowIndex");
         }
