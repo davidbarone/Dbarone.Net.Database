@@ -33,6 +33,7 @@ public class PageTests
         var page = new Page(ser, 1);
 
         // Add row
+        page.InsertTable(TableIndexEnum.BTREE_KEY);
         page.SetRow(TableIndexEnum.BTREE_KEY, 0, GetTableRow());
         Assert.Equal(2, page.TableCount);
         Assert.Single(page.GetTable(TableIndexEnum.BTREE_KEY));

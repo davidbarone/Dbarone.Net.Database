@@ -58,7 +58,7 @@ public class BTreeTests
         {
             var pid = page.PageId;
             var rootId = bt.Root!.PageId;
-            var type = page.GetHeader("LEAF").AsBoolean ? "L" : (page.PageId == rootId) ? "R" : "I";
+            var type = page.IsLeaf ? "L" : (page.PageId == rootId) ? "R" : "I";
             var keyCount = page.GetTable(TableIndexEnum.BTREE_KEY).Count();
             var childCount = (type != "L") ? (int)page.GetTable(TableIndexEnum.BTREE_CHILD).Count() : 0;
             var key = (i < keyCount) ? (int?)page.GetRow(TableIndexEnum.BTREE_KEY, i)["number"].AsInteger : null;
@@ -103,7 +103,7 @@ public class BTreeTests
             values,
             (values, page, i, nodeIndex) =>
             {
-                if (page.GetHeader("LEAF").AsBoolean)
+                if (page.IsLeaf)
                 {
                     values.Add(page.GetRow(TableIndexEnum.BTREE_KEY, i)["number"].AsInteger); return values;
                 }
@@ -188,7 +188,7 @@ public class BTreeTests
             values,
             (values, page, i, nodeIndex) =>
             {
-                if (page.GetHeader("LEAF").AsBoolean)
+                if (page.IsLeaf)
                 {
                     values.Add(page.GetRow(TableIndexEnum.BTREE_KEY, i)["number"].AsInteger); return values;
                 }

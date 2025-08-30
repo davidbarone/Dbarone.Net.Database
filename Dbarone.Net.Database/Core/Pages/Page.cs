@@ -139,6 +139,18 @@ public class Page
         }
     }
 
+    public bool IsLeaf
+    {
+        get
+        {
+            return Header["LF"].AsBoolean;
+        }
+        set
+        {
+            Header["LF"] = (bool)value;
+        }
+    }
+
     public TableCell GetHeader(string name)
     {
         return Header[name];
@@ -152,6 +164,8 @@ public class Page
     #endregion
 
     #region Table / Row Methods
+
+    #region Tables
 
     /// <summary>
     /// Creates a new Table and RowBuffers object at the specified index.
@@ -226,6 +240,10 @@ public class Page
         }
     }
 
+    #endregion
+
+    #region Buffers
+
     /// <summary>
     /// Sets the row buffers array for a table.
     /// </summary>
@@ -260,9 +278,9 @@ public class Page
         }
     }
 
+    #endregion
 
-
-
+    #region Rows
 
     public TableRow GetRow(TableIndexEnum tableIndex, int rowIndex)
     {
@@ -274,17 +292,9 @@ public class Page
         // this version to be used to set a row when you also have the buffer information
         // used internally to move rows + buffers between pages, for example during
         // btree merge operation or borrow operation
-        if (tableIndex < 0)
+        if (tableIndex < 0 || (int)tableIndex >= this.Data.Count())
         {
-            throw new Exception("Invalid table index");
-        }
-        while ((int)tableIndex >= this.Data.Count())
-        {
-            this.Data.Insert(this.Data.Count(), new Table());
-        }
-        while ((int)tableIndex >= this.Buffers.Count())
-        {
-            this.Buffers.Insert(this.Buffers.Count(), new List<byte[]>());
+            throw new ArgumentOutOfRangeException("Invalid table index");
         }
         if (rowIndex >= 0 && rowIndex < this.GetTable(tableIndex).Count())
         {
@@ -298,9 +308,6 @@ public class Page
             this.Data[(int)tableIndex].Insert(rowIndex, row);
             this.Buffers[(int)tableIndex].Insert(rowIndex, bytes);
         }
-
-        // update table count header
-        this.TableCount = this.Data.Count();
     }
 
     /// <summary>
@@ -374,11 +381,16 @@ public class Page
         InsertRow(tableIndex, index, row, bytes);
     }
 
+    #endregion
+
+    #region Row Buffer
+
     public byte[] GetRowBuffer(TableIndexEnum tableIndex, int rowIndex)
     {
         return this.Buffers[(int)tableIndex][rowIndex];
     }
 
+    #endregion
 
     #endregion
 

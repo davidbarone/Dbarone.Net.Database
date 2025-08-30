@@ -48,7 +48,7 @@ using Dbarone.Net.Extensions;
 /// 3. IsOverflow / IsUnderflow methods used to determine whether children / keys are outside permitted range
 /// 4. Nodes are represented by Page object where:
 ///   - table[0] is header
-///   - table[0]["LEAF"] defines whether node is leaf or not
+///   - table[0].IsLeaf defines whether node is leaf or not
 ///   - table[0].ParentPageId defines the parent node
 ///   - table[1] is array of keys (this applies to all pages)
 ///   - table[2] is array of children (this applies to non leaf pages only)
@@ -118,7 +118,8 @@ public class Btree
         if (Root == null)
         {
             Root = BufferManager.Create();
-            Root.SetHeader("LEAF", true);
+            Root.IsLeaf = true;
+            Root.InsertTable(TableIndexEnum.BTREE_KEY);
             Root.SetRow(TableIndexEnum.BTREE_KEY, 0, row);
         }
         else
@@ -184,7 +185,7 @@ public class Btree
         }
 
         // are we at the leaf?
-        if (node.GetHeader("LEAF").AsBoolean)
+        if (node.IsLeaf)
         {
             if (i < count && key == GetKeyValue(node.GetRow(TableIndexEnum.BTREE_KEY, i)))
             {
@@ -279,7 +280,7 @@ public class Btree
 
         int i = node.GetTable(TableIndexEnum.BTREE_KEY).Count() - 1;
 
-        if (node.GetHeader("LEAF").AsBoolean == true)
+        if (node.IsLeaf)
         {
             // leaf page
             while (i >= 0 && GetKeyValue(node.GetRow(TableIndexEnum.BTREE_KEY, i)) > GetKeyValue(row))
@@ -386,8 +387,10 @@ public class Btree
             // create new root page with 1 child pointer
             // to current root page and update root.
             parentPage = BufferManager.Create();
+            parentPage.IsLeaf = false;
+            parentPage.InsertTable(TableIndexEnum.BTREE_KEY);
+            parentPage.InsertTable(TableIndexEnum.BTREE_CHILD);
             parentPageId = parentPage.PageId;
-            parentPage.SetHeader("LEAF", false);
             index = 0;
             TableRow tr = new TableRow(new Dictionary<string, object> { { "PID", child.PageId } });
             parentPage.SetRow(TableIndexEnum.BTREE_CHILD, 0, tr);
@@ -401,7 +404,12 @@ public class Btree
 
         // create new node to take 1/2 rows
         var newNode = BufferManager.Create();
-        newNode.SetHeader("LEAF", child.GetHeader("LEAF").AsBoolean);
+        newNode.IsLeaf = child.IsLeaf;
+        newNode.InsertTable(TableIndexEnum.BTREE_KEY);
+        if (!newNode.IsLeaf)
+        {
+            newNode.InsertTable(TableIndexEnum.BTREE_CHILD);
+        }
 
         // copy keys (all nodes)
         var degree = CalculateDegree(child);
@@ -414,7 +422,7 @@ public class Btree
 
         // copy children (non-leaf nodes)
         // children need parent repointed
-        if (!child.GetHeader("LEAF").AsBoolean)
+        if (!child.IsLeaf)
         {
             order = child.GetTable(TableIndexEnum.BTREE_CHILD).Count();
             for (int j = degree; j < order; j++)
@@ -446,7 +454,7 @@ public class Btree
         parentPage.SetRow(TableIndexEnum.BTREE_KEY, index, child.GetRow(TableIndexEnum.BTREE_KEY, degree - 1));
 
         // resize child node
-        if (!child.GetHeader("LEAF").AsBoolean)
+        if (!child.IsLeaf)
         {
             child.GetTable(TableIndexEnum.BTREE_KEY).Slice(0, degree - 1);
             child.GetTable(TableIndexEnum.BTREE_CHILD).Slice(0, degree);
@@ -476,7 +484,7 @@ public class Btree
     {
         if (Order is not null)
         {
-            if (node.GetHeader("LEAF").AsBoolean == true)
+            if (node.IsLeaf)
             {
                 return node.GetTable(TableIndexEnum.BTREE_KEY).Count() < Order / 2;
             }
@@ -541,7 +549,7 @@ public class Btree
                 i,
                 currentIndex);
 
-            if (node.GetHeader("LEAF").AsBoolean == false)
+            if (!node.IsLeaf)
             {
                 // traverse ith child recursively
                 int childId = (int)node.GetRow(TableIndexEnum.BTREE_CHILD, i)["PID"].AsInteger;
@@ -549,7 +557,7 @@ public class Btree
                 startingState = TraverseNode(child, startingState, traverseFunction, ++nodeIndex);
             }
         }
-        if (node.GetHeader("LEAF").AsBoolean == false)
+        if (!node.IsLeaf)
         {
             // traverse last child of non leaf nodes
             startingState = traverseFunction(
@@ -574,7 +582,7 @@ public class Btree
     public TableRow? Get((int PageId, int RowIndex) location)
     {
         var page = BufferManager.Get(location.PageId);
-        if (!page.GetHeader("LEAF").AsBoolean)
+        if (!page.IsLeaf)
         {
             throw new Exception("Page is not a leaf page.");
         }
@@ -667,7 +675,7 @@ public class Btree
         {
             if (Order is not null)
             {
-                if (left.GetHeader("LEAF").AsBoolean == true)
+                if (left.IsLeaf)
                 {
                     return left.GetTable(TableIndexEnum.BTREE_KEY).Count() > (int)Order / 2;
                 }
@@ -701,7 +709,7 @@ public class Btree
         {
             if (Order is not null)
             {
-                if (right.GetHeader("LEAF").AsBoolean == true)
+                if (right.IsLeaf)
                 {
                     return right.GetTable(TableIndexEnum.BTREE_KEY).Count() > (int)Order / 2;
                 }
@@ -744,7 +752,7 @@ public class Btree
         {
             throw new Exception("No left node to borrow from.");
         }
-        var isLeaf = left.GetHeader("LEAF").AsBoolean;
+        var isLeaf = left.IsLeaf;
         if (isLeaf)
         {
             var leftKeyCount = left.GetTable(TableIndexEnum.BTREE_KEY).Count();
@@ -803,7 +811,7 @@ public class Btree
         {
             throw new Exception("No right node to borrow from.");
         }
-        var isLeaf = right.GetHeader("LEAF").AsBoolean;
+        var isLeaf = right.IsLeaf;
         if (isLeaf)
         {
             var leftKeyCount = node.GetTable(TableIndexEnum.BTREE_KEY).Count();
@@ -987,7 +995,7 @@ public class Btree
             throw new Exception("Merge requires pages to be adjacent.");
         }
 
-        var isLeftLeaf = left.Header["LEAF"].AsBoolean;
+        var isLeftLeaf = left.IsLeaf;
         var leftLocationInParent = GetChildIndexInParent(left);
         var leftKeyCount = left.GetTable(TableIndexEnum.BTREE_KEY).Count();
 
