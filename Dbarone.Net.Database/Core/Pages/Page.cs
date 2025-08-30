@@ -153,11 +153,53 @@ public class Page
 
     #region Table / Row Methods
 
+    /// <summary>
+    /// Creates a new Table and RowBuffers object at the specified index.
+    /// </summary>
+    /// <param name="tableIndex">The index to create the new table / row buffers.</param>
+    public void InsertTable(TableIndexEnum tableIndex, Table? table = null)
+    {
+        this.Data.Insert((int)tableIndex, new Table());
+        this.Buffers.Insert((int)tableIndex, new List<byte[]>());
+
+        if (table is not null)
+        {
+            for (int i = 0; i < table.Count(); i++)
+            {
+                var buffer = TableSerializer.SerializeRow(table[i]).Buffer.ToArray();
+                this.SetRow(tableIndex, i, table[i], buffer);
+            }
+        }
+        this.TableCount = this.Data.Count();
+    }
+
+    /// <summary>
+    /// Deletes a Table and RowBuffers object at the specified index.
+    /// </summary>
+    /// <param name="tableIndex">The index to delete the table / row buffers.</param>
+    public void DeleteTable(TableIndexEnum tableIndex)
+    {
+        this.Data.RemoveAt((int)tableIndex);
+        this.Buffers.RemoveAt((int)tableIndex);
+        this.TableCount = this.Data.Count();
+    }
+
+    /// <summary>
+    /// Returns the Table object at the specified index.
+    /// </summary>
+    /// <param name="tableIndex">The index of the Table to return.</param>
+    /// <returns>Returns the specified Table object.</returns>
     public Table GetTable(TableIndexEnum tableIndex)
     {
         return this.Data[(int)tableIndex];
     }
 
+    /// <summary>
+    /// Replaces the table at the specified index with a new Table object.
+    /// </summary>
+    /// <param name="tableIndex"></param>
+    /// <param name="table"></param>
+    /// <exception cref="Exception"></exception>
     public void SetTable(TableIndexEnum tableIndex, Table table)
     {
         // this version to be used to set a row when you also have the buffer information
@@ -184,16 +226,19 @@ public class Page
         }
     }
 
-    public byte[] GetBuffer(TableIndexEnum tableIndex, int rowIndex)
+    /// <summary>
+    /// Sets the row buffers array for a table.
+    /// </summary>
+    /// <remarks>
+    /// This version to be used to set a row when you also have the buffer information
+    /// used internally to move rows + buffers between pages, for example during
+    /// btree merge operation or borrow operation
+    /// </remarks>
+    /// <param name="tableIndex">The table to set the buffers for.</param>
+    /// <param name="buffers">The list of row buffers</param>
+    /// <exception cref="Exception"></exception>
+    public void SetBuffers(TableIndexEnum tableIndex, List<byte[]> buffers)
     {
-        return this.Buffers[(int)tableIndex][rowIndex];
-    }
-
-    public void SetBuffer(TableIndexEnum tableIndex, List<byte[]> buffer)
-    {
-        // this version to be used to set a row when you also have the buffer information
-        // used internally to move rows + buffers between pages, for example during
-        // btree merge operation or borrow operation
         if (tableIndex < 0)
         {
             throw new Exception("Invalid table index");
@@ -201,11 +246,11 @@ public class Page
         if ((int)tableIndex >= this.Buffers.Count())
         {
             // insert table
-            this.Buffers.Insert((int)tableIndex, buffer);
+            this.Buffers.Insert((int)tableIndex, buffers);
         }
         else
         {
-            this.Buffers[(int)tableIndex] = buffer;
+            this.Buffers[(int)tableIndex] = buffers;
         }
 
         // update table count header if NOT writing the header table
@@ -214,6 +259,10 @@ public class Page
             this.TableCount = this.Data.Count();
         }
     }
+
+
+
+
 
     public TableRow GetRow(TableIndexEnum tableIndex, int rowIndex)
     {
@@ -271,11 +320,11 @@ public class Page
     {
         if (tableIndex < 0 || (int)tableIndex >= this.Data.Count())
         {
-            throw new Exception("Invalid table index");
+            throw new ArgumentOutOfRangeException("Invalid table index");
         }
         if (rowIndex < 0 || rowIndex >= this.GetTable(tableIndex).Count())
         {
-            throw new Exception("Invalid rowIndex");
+            throw new ArgumentOutOfRangeException("Invalid rowIndex");
         }
         this.Data[(int)tableIndex].RemoveAt(rowIndex);
         this.Buffers[(int)tableIndex].RemoveAt(rowIndex);
@@ -325,6 +374,12 @@ public class Page
         InsertRow(tableIndex, index, row, bytes);
     }
 
+    public byte[] GetRowBuffer(TableIndexEnum tableIndex, int rowIndex)
+    {
+        return this.Buffers[(int)tableIndex][rowIndex];
+    }
+
+
     #endregion
 
     #region Other Methods
@@ -337,7 +392,7 @@ public class Page
         // Initialise header
         TableRow row = new TableRow();
         Table t = new Table(row);
-        this.Data.Add(t);
+        this.InsertTable(TableIndexEnum.HEADER, t);
         this.PageId = pageId;
         this.TableCount = 1;
         this.PageType = PageType.Empty;

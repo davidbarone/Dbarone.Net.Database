@@ -23,14 +23,14 @@ public class PageHydrater : IPageHydrater
 
         var result0 = serializer.Deserialize(buffer, textEncoding);
         page.SetTable(0, result0.Table);
-        page.SetBuffer(0, result0.RowBuffers);
+        page.SetBuffers(0, result0.RowBuffers);
 
         // loop for each addition table in page
         for (int i = 1; i < page.TableCount; i++)
         {
             var result = serializer.Deserialize(buffer, textEncoding);
             page.SetTable((TableIndexEnum)i, result.Table);
-            page.SetBuffer((TableIndexEnum)i, result.RowBuffers);
+            page.SetBuffers((TableIndexEnum)i, result.RowBuffers);
         }
         return page;
     }

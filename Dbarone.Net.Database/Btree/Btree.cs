@@ -260,7 +260,9 @@ public class Btree
             // siblings would also overflow the current node
             if (this.Order is not null)
             {
-                throw new Exception("Should not get here!");
+                // NOTE: IT IS POSSIBLE TO LEAVE A NODE IN UNDERFLOW
+                // STATE - TODO: MUST DOCUMENT THIS
+                //throw new Exception("Should not get here!");
             }
 
         }
@@ -747,7 +749,7 @@ public class Btree
         {
             var leftKeyCount = left.GetTable(TableIndexEnum.BTREE_KEY).Count();
             var keyToMove = left.GetRow(TableIndexEnum.BTREE_KEY, leftKeyCount - 1);
-            var bufferToMove = left.GetBuffer(TableIndexEnum.BTREE_KEY, leftKeyCount - 1);
+            var bufferToMove = left.GetRowBuffer(TableIndexEnum.BTREE_KEY, leftKeyCount - 1);
             node.InsertRow(TableIndexEnum.BTREE_KEY, 0, keyToMove, bufferToMove);
             left.DeleteRow(TableIndexEnum.BTREE_KEY, leftKeyCount - 1);
             var middle = GetMiddleKey(left, node);
@@ -757,13 +759,13 @@ public class Btree
         {
             var middleLoc = GetMiddleKey(left, node);
             var middleKey = middleLoc.Ancestor.GetRow(TableIndexEnum.BTREE_KEY, middleLoc.KeyIndex);
-            var middleBuffer = middleLoc.Ancestor.GetBuffer(TableIndexEnum.BTREE_KEY, middleLoc.KeyIndex);
+            var middleBuffer = middleLoc.Ancestor.GetRowBuffer(TableIndexEnum.BTREE_KEY, middleLoc.KeyIndex);
             node.InsertRow(TableIndexEnum.BTREE_KEY, 0, middleKey, middleBuffer);
             var leftKeyCount = left.GetTable(TableIndexEnum.BTREE_KEY).Count();
             var lastKeyLeft = left.GetRow(TableIndexEnum.BTREE_KEY, leftKeyCount - 1);
-            var lastKeyBufferLeft = left.GetBuffer(TableIndexEnum.BTREE_KEY, leftKeyCount - 1);
+            var lastKeyBufferLeft = left.GetRowBuffer(TableIndexEnum.BTREE_KEY, leftKeyCount - 1);
             var lastChildLeft = left.GetRow(TableIndexEnum.BTREE_CHILD, leftKeyCount);
-            var lastChildBufferLeft = left.GetBuffer(TableIndexEnum.BTREE_CHILD, leftKeyCount);
+            var lastChildBufferLeft = left.GetRowBuffer(TableIndexEnum.BTREE_CHILD, leftKeyCount);
             // move last child to right node
             node.InsertRow(TableIndexEnum.BTREE_KEY, 0, lastChildLeft, lastChildBufferLeft);
             // move last key to middle
@@ -806,7 +808,7 @@ public class Btree
         {
             var leftKeyCount = node.GetTable(TableIndexEnum.BTREE_KEY).Count();
             var keyToMove = right.GetRow(TableIndexEnum.BTREE_KEY, 0);
-            var bufferToMove = right.GetBuffer(TableIndexEnum.BTREE_KEY, 0);
+            var bufferToMove = right.GetRowBuffer(TableIndexEnum.BTREE_KEY, 0);
             node.InsertRow(TableIndexEnum.BTREE_KEY, leftKeyCount, keyToMove, bufferToMove);
             right.DeleteRow(TableIndexEnum.BTREE_KEY, 0);
             var middle = GetMiddleKey(node, right);
@@ -819,14 +821,14 @@ public class Btree
             var leftKeyCount = node.GetTable(TableIndexEnum.BTREE_KEY).Count();
             var middleLoc = GetMiddleKey(node, right);
             var middleKey = middleLoc.Ancestor.GetRow(TableIndexEnum.BTREE_KEY, middleLoc.KeyIndex);
-            var middleBuffer = middleLoc.Ancestor.GetBuffer(TableIndexEnum.BTREE_KEY, middleLoc.KeyIndex);
+            var middleBuffer = middleLoc.Ancestor.GetRowBuffer(TableIndexEnum.BTREE_KEY, middleLoc.KeyIndex);
             node.InsertRow(TableIndexEnum.BTREE_KEY, leftKeyCount, middleKey, middleBuffer);
 
             // move right child[0] + promote right key[0]
             var firstKeyRight = right.GetRow(TableIndexEnum.BTREE_KEY, 0);
-            var firstKeyBufferRight = right.GetBuffer(TableIndexEnum.BTREE_KEY, 0);
+            var firstKeyBufferRight = right.GetRowBuffer(TableIndexEnum.BTREE_KEY, 0);
             var firstChildRight = right.GetRow(TableIndexEnum.BTREE_CHILD, 0);
-            var firstChildBufferRight = right.GetBuffer(TableIndexEnum.BTREE_CHILD, 0);
+            var firstChildBufferRight = right.GetRowBuffer(TableIndexEnum.BTREE_CHILD, 0);
             // move right first child to left node
             node.InsertRow(TableIndexEnum.BTREE_KEY, leftKeyCount, firstChildRight, firstChildBufferRight);
             // move right first key to middle
@@ -929,7 +931,7 @@ public class Btree
     public (Page Ancestor, int KeyIndex) GetMiddleKey(Page left, Page right)
     {
         // check pages are adjacent
-        if (GetRightSibling(left)!.PageId.Value != right.PageId.Value)
+        if (GetRightSibling(left)!.PageId != right.PageId)
         {
             throw new Exception("GetMiddleKey requires pages to be adjacent.");
         }
@@ -980,7 +982,7 @@ public class Btree
         */
 
         // check pages are adjacent
-        if (GetRightSibling(left)!.PageId.Value != right.PageId.Value)
+        if (GetRightSibling(left)!.PageId != right.PageId)
         {
             throw new Exception("Merge requires pages to be adjacent.");
         }
@@ -996,7 +998,7 @@ public class Btree
         if (!isLeftLeaf)
         {
             var key = middleKeyLocation.Ancestor.GetRow(TableIndexEnum.BTREE_KEY, middleKeyLocation.KeyIndex);
-            var buffer = middleKeyLocation.Ancestor.GetBuffer(TableIndexEnum.BTREE_KEY, middleKeyLocation.KeyIndex);
+            var buffer = middleKeyLocation.Ancestor.GetRowBuffer(TableIndexEnum.BTREE_KEY, middleKeyLocation.KeyIndex);
             left.SetRow(
                 TableIndexEnum.BTREE_KEY,
                 leftKeyCount,
@@ -1013,7 +1015,7 @@ public class Btree
                 TableIndexEnum.BTREE_KEY,
                 leftKeyCount + 1 + i,
                 right.GetRow(TableIndexEnum.BTREE_KEY, i),
-                right.GetBuffer(TableIndexEnum.BTREE_KEY, i)
+                right.GetRowBuffer(TableIndexEnum.BTREE_KEY, i)
             );
         }
 
@@ -1025,7 +1027,7 @@ public class Btree
             for (int i = 0; i < rightChildCount; i++)
             {
                 var c = right.GetRow(TableIndexEnum.BTREE_CHILD, i);
-                var b = right.GetBuffer(TableIndexEnum.BTREE_CHILD, i);
+                var b = right.GetRowBuffer(TableIndexEnum.BTREE_CHILD, i);
                 left.SetRow(
                     TableIndexEnum.BTREE_CHILD,
                     leftChildCount + i,

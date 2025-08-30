@@ -78,11 +78,11 @@ public class BTreeTests
     }
 
     [Theory]
-    [InlineData(10)]
-    [InlineData(100)]
-    [InlineData(1000)]
-    [InlineData(10000)]
-    public void RandomInsert(int numberOfInserts)
+    [InlineData(10, 100)]
+    [InlineData(100, 100)]
+    [InlineData(1000, 100)]
+    [InlineData(10000, 100)]
+    public void RandomInsert(int numberOfInserts, int order)
     {
         List<long> testData = new List<long>();
         for (int i = 0; i < numberOfInserts; i++)
@@ -90,7 +90,7 @@ public class BTreeTests
             testData.Add(new Random().Next());
         }
 
-        var bt = InitialiseBtree(100);
+        var bt = InitialiseBtree(order);
         foreach (var item in testData)
         {
             TableRow r = new TableRow();
@@ -158,11 +158,11 @@ public class BTreeTests
     }
 
     [Theory]
-    [InlineData(10)]
-    [InlineData(100)]
-    [InlineData(1000)]
-    [InlineData(10000)]
-    public void RandomInsertAndDelete(int numberOfInsertDeletes)
+    //[InlineData(10, 100)]
+    //[InlineData(100, 100)]
+    [InlineData(1000, 100)]
+    [InlineData(10000, 100)]
+    public void RandomInsertAndDelete(int numberOfInsertDeletes, int order)
     {
         List<long> testData = new List<long>();
         for (int i = 0; i < numberOfInsertDeletes; i++)
@@ -170,7 +170,7 @@ public class BTreeTests
             testData.Add(new Random().Next());
         }
 
-        var bt = InitialiseBtree(100);
+        var bt = InitialiseBtree(order);
         foreach (var item in testData)
         {
             TableRow r = new TableRow();

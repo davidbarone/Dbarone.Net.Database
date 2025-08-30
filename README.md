@@ -311,3 +311,7 @@ BTREE
 - check none in overflow/underflow state
 - all parent / child links correct
 - all keys match child k[0]
+
+Page
+- set, insert, delete tests
+- set isdirty tests
