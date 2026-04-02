@@ -6,6 +6,19 @@ using Xunit;
 
 public class BTreeTests
 {
+    private List<long> NumbersTraverse(TraverseParameters<List<long>> parameters)
+    {
+        var page = parameters.Node;
+        var i = parameters.IndexInNode;
+        if (parameters.State is null)
+        {
+            parameters.State = new List<long>();
+        }
+        parameters.State.Add(page.GetRow(TableIndexEnum.BTREE_KEY, i)["number"].AsInteger);
+        return parameters.State;
+    }
+
+
     private Btree InitialiseBtree(int? order = null)
     {
         var ph = new PageHydrater();
@@ -31,8 +44,7 @@ public class BTreeTests
             bt.Insert(r);
         }
 
-        List<long> values = new List<long>();
-        var traverseResult = bt.Traverse(values, (values, page, i, nodeIndex) => { values.Add(page.GetRow(TableIndexEnum.BTREE_KEY, i)["number"].AsInteger); return values; });
+        var traverseResult = bt.Traverse<List<long>>(NumbersTraverse, TraverseType.Key);
         Assert.Equal(data.Count(), traverseResult.Count());
     }
 
@@ -53,26 +65,7 @@ public class BTreeTests
         Assert.Equal(expectedPageCount, totalPages);
 
         // Check rows are ordered. Use Traverse to get all rows in btree.
-        List<string> results = new List<string>();
-        bt.Traverse<List<string>>(results, (results, page, i, nodeIndex) =>
-        {
-            var pid = page.PageId;
-            var rootId = bt.Root!.PageId;
-            var type = page.IsLeaf ? "L" : (page.PageId == rootId) ? "R" : "I";
-            var keyCount = page.GetTable(TableIndexEnum.BTREE_KEY).Count();
-            var childCount = (type != "L") ? (int)page.GetTable(TableIndexEnum.BTREE_CHILD).Count() : 0;
-            var key = (i < keyCount) ? (int?)page.GetRow(TableIndexEnum.BTREE_KEY, i)["number"].AsInteger : null;
-            var childId = (type != "L") ? (int?)page.GetRow(TableIndexEnum.BTREE_CHILD, i)["PID"].AsInteger : null;
-
-            if (results.Count() <= nodeIndex)
-            {
-                results.Insert(nodeIndex, $"({pid}|{type}) (K:{keyCount} C:{childCount})");
-            }
-
-            // Add key / child info
-            results[nodeIndex] += $" {key}|{childId}";
-            return results;
-        });
+        var results = bt.Traverse<List<string>>(Btree.PrettyPrintTraverse, TraverseType.Key);
         var actual = string.Join(Environment.NewLine, results.ToArray());
         Assert.Equal(expectedTraverse, actual);
     }
@@ -154,7 +147,8 @@ public class BTreeTests
         bt.Delete(new TableCell(keyToDelete));
         List<long> values = new List<long>();
         var traverseResult = bt.Traverse(values, (values, page, i, nodeIndex) => { values.Add(page.GetRow(TableIndexEnum.BTREE_KEY, i)["number"].AsInteger); return values; });
-        Assert.Equal(expectedCount, traverseResult.Count());
+        Assert.Equal(expectedCount, traverseResult.
+        Count());
     }
 
     [Theory]

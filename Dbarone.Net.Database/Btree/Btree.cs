@@ -100,11 +100,11 @@ public class Btree
     /// <summary>
     /// Traverses a tree
     /// </summary>
-    public TState Traverse<TState>(TState startingState, Func<TState, Page, int, int, TState> traverseFunction)
+    public TState Traverse<TState>(Func<TraverseParameters<TState>, TState> traverseFunction, TraverseType traverseType, TState? startingState = null) where TState : class
     {
         if (Root is not null)
         {
-            return TraverseNode(Root, startingState, traverseFunction);
+            return TraverseInternal(Root, traverseFunction, 0, traverseType, startingState);
         }
         throw new Exception("whoops");
     }
@@ -536,39 +536,53 @@ public class Btree
         }
     }
 
-    private TState TraverseNode<TState>(Page node, TState startingState, Func<TState, Page, int, int, TState> traverseFunction, int nodeIndex = 0)
+    private TState TraverseInternal<TState>(Page node, Func<TraverseParameters<TState>, TState> traverseFunction, int nodeCounter = 0, TraverseType traverseType = TraverseType.Key, TState? startingState = null) where TState : class
     {
         int i;
-        int currentIndex = nodeIndex;
+        int currentNodeCounter = nodeCounter;
         for (i = 0; i < node.GetTable(TableIndexEnum.BTREE_KEY).Count; i++)
         {
-            // traverse current node key
-            startingState = traverseFunction(
-                startingState,
-                node,
-                i,
-                currentIndex);
-
-            if (!node.IsLeaf)
+            if (traverseType == TraverseType.Key || i == 0)
             {
-                // traverse ith child recursively
-                int childId = (int)node.GetRow(TableIndexEnum.BTREE_CHILD, i)["PID"].AsInteger;
-                var child = BufferManager.Get(childId);
-                startingState = TraverseNode(child, startingState, traverseFunction, ++nodeIndex);
+                if (!node.IsLeaf)
+                {
+                    // traverse ith child recursively
+                    int childId = (int)node.GetRow(TableIndexEnum.BTREE_CHILD, i)["PID"].AsInteger;
+                    var child = BufferManager.Get(childId);
+                    startingState = TraverseInternal(child, traverseFunction, ++nodeCounter, traverseType, startingState);
+                }
+
+                var traverseParams = new TraverseParameters<TState>
+                {
+                    State = startingState,
+                    IndexInNode = i,
+                    Node = node,
+                    NodeCounter = currentNodeCounter
+                };
+
+                // call traverse function for current key
+                startingState = traverseFunction(traverseParams);
             }
+
         }
         if (!node.IsLeaf)
         {
+            /*
+            var traverseParams = new TraverseParameters<TState>
+            {
+                State = startingState,
+                IndexInNode = i,
+                Node = node,
+                NodeCounter = currentNodeCounter
+            };
+
             // traverse last child of non leaf nodes
-            startingState = traverseFunction(
-                startingState,
-                node,
-                i,
-                currentIndex);
+            startingState = traverseFunction(traverseParams);
+            */
 
             int childId = (int)node.GetRow(TableIndexEnum.BTREE_CHILD, i)["PID"].AsInteger;
             var child = BufferManager.Get(childId);
-            startingState = TraverseNode(child, startingState, traverseFunction, ++nodeIndex);
+            startingState = TraverseInternal(child, traverseFunction, ++nodeCounter, traverseType, startingState);
         }
         return startingState;
     }
@@ -1013,6 +1027,7 @@ public class Btree
                 key,
                 buffer
             );
+            leftKeyCount++;
         }
 
         // move right keys + buffers to left
@@ -1021,7 +1036,7 @@ public class Btree
         {
             left.SetRow(
                 TableIndexEnum.BTREE_KEY,
-                leftKeyCount + 1 + i,
+                leftKeyCount + i,
                 right.GetRow(TableIndexEnum.BTREE_KEY, i),
                 right.GetRowBuffer(TableIndexEnum.BTREE_KEY, i)
             );
@@ -1102,4 +1117,43 @@ public class Btree
 
     #endregion
 
+    #region Btree Traversal Methods
+
+    public object ValidatorTraverse(TraverseParameters<object> parameters)
+    {
+        parameters.State = new object();    // ignore state
+
+        if (parameters.Node.GetTable(TableIndexEnum.BTREE_KEY).Count() + 1 != parameters.Node.GetTable(TableIndexEnum.BTREE_CHILD).Count())
+        {
+            throw new Exception("Key count should be 1 less than child count.");
+        }
+        return parameters.State!;
+    }
+
+    public static List<string> PrettyPrintTraverse(TraverseParameters<List<string>> parameters)
+    {
+        // initialise state
+        if (parameters.State is null)
+        {
+            parameters.State = new List<string>();
+        }
+
+        var pid = parameters.Node.PageId;
+        var type = parameters.Node.IsLeaf ? "L" : (parameters.Node.ParentPageId is null) ? "R" : "I";
+        var keyCount = parameters.Node.GetTable(TableIndexEnum.BTREE_KEY).Count();
+        var childCount = (type != "L") ? (int)parameters.Node.GetTable(TableIndexEnum.BTREE_CHILD).Count() : 0;
+        var key = (parameters.IndexInNode < keyCount) ? (int?)parameters.Node.GetRow(TableIndexEnum.BTREE_KEY, parameters.IndexInNode)["number"].AsInteger : null;
+        var childId = (type != "L") ? (int?)parameters.Node.GetRow(TableIndexEnum.BTREE_CHILD, parameters.IndexInNode)["PID"].AsInteger : null;
+
+        if (parameters.State.Count() <= parameters.NodeCounter)
+        {
+            parameters.State.Insert(parameters.NodeCounter, $"({pid}|{type}) (K:{keyCount} C:{childCount})");
+        }
+
+        // Add key / child info
+        parameters.State[parameters.NodeCounter] += $" {key}|{childId}";
+        return parameters.State;
+    }
+
+    #endregion
 }
