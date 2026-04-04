@@ -59,6 +59,8 @@ Disk IO is orders of magnitude slower than direct memory access. Therefore datab
 
 The buffer has a finite space, so is also responsible for periodically flushing unused pages back to disk.
 
+![Buffer Management System](Images/BufferManager.png)
+
 The `IBufferManager` interface describes the operations carried out by the buffer manager.
 
 There are 2 implementations of buffer manager:
