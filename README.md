@@ -5,7 +5,7 @@ I've created this project to play with, and learn some database concepts. It is 
 
 This database contains the following features:
 - Support for file-based or in-memory-only databases.
-- Support for database encryption via a database-level password. This employs AES symmetric encryption.
+- :lock: Support for database encryption via a database-level password. This employs AES symmetric encryption.
 
 *NOTE: This project is still in very early development, and is not useable yet.*
 
