@@ -1,14 +1,14 @@
 using Dbarone.Net.Database;
 
-public class TraverseParameters<T>
+public class TraverseState<T>
 {
-    public TraverseParameters(T startingState)
+    public TraverseState(T startingState)
     {
         this.State = startingState;
     }
 
 
-    public TraverseParameters()
+    public TraverseState()
     {
         this.State = default!;
     }

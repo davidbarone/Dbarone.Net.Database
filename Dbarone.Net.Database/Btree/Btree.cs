@@ -100,11 +100,11 @@ public class Btree
     /// <summary>
     /// Traverses a tree
     /// </summary>
-    public TState Traverse<TState>(Func<TraverseParameters<TState>, TState> traverseFunction, TraverseType traverseType, TState? startingState = null) where TState : class
+    public TState Traverse<TState>(Action<TraverseState<TState>> traverseState, TraverseType traverseType, TState? startingState = null) where TState : class
     {
         if (Root is not null)
         {
-            return TraverseInternal(Root, traverseFunction, 0, traverseType, startingState);
+            return TraverseInternal(Root, traverseState, 0, traverseType, startingState);
         }
         throw new Exception("whoops");
     }
@@ -536,7 +536,7 @@ public class Btree
         }
     }
 
-    private TState TraverseInternal<TState>(Page node, Func<TraverseParameters<TState>, TState> traverseFunction, int nodeCounter = 0, TraverseType traverseType = TraverseType.Key, TState? startingState = null) where TState : class
+    private TState TraverseInternal<TState>(Page node, Action<TraverseState<TState>> traverseFunction, int nodeCounter = 0, TraverseType traverseType = TraverseType.Key, TState? startingState = null) where TState : class
     {
         int i;
         int currentNodeCounter = nodeCounter;
@@ -552,7 +552,7 @@ public class Btree
                     startingState = TraverseInternal(child, traverseFunction, ++nodeCounter, traverseType, startingState);
                 }
 
-                var traverseParams = new TraverseParameters<TState>
+                var traverseParams = new TraverseState<TState>
                 {
                     State = startingState,
                     IndexInNode = i,
@@ -561,7 +561,7 @@ public class Btree
                 };
 
                 // call traverse function for current key
-                startingState = traverseFunction(traverseParams);
+                traverseFunction(traverseParams);
             }
 
         }
@@ -1119,7 +1119,7 @@ public class Btree
 
     #region Btree Traversal Methods
 
-    public object ValidatorTraverse(TraverseParameters<object> parameters)
+    public object ValidatorTraverse(TraverseState<object> parameters)
     {
         parameters.State = new object();    // ignore state
 
@@ -1130,7 +1130,7 @@ public class Btree
         return parameters.State!;
     }
 
-    public static List<string> PrettyPrintTraverse(TraverseParameters<List<string>> parameters)
+    public static void PrettyPrintTraverseState(TraverseState<List<string>> parameters)
     {
         // initialise state
         if (parameters.State is null)
@@ -1152,7 +1152,6 @@ public class Btree
 
         // Add key / child info
         parameters.State[parameters.NodeCounter] += $" {key}|{childId}";
-        return parameters.State;
     }
 
     #endregion

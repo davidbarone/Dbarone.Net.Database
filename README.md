@@ -1,5 +1,5 @@
 # Dbarone.Net.Database
-A simple database written in .NET.
+A very simple database written in .NET.
 
 This is a simple database engine that can be used for very basic data storage use-cases (for example configurations, small prototype applications etc). It is written entirely in .NET Core, and should be portable to any system that can run .NET Core.
 

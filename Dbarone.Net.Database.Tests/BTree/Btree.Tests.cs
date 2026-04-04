@@ -6,7 +6,7 @@ using Xunit;
 
 public class BTreeTests
 {
-    private List<long> NumbersTraverse(TraverseParameters<List<long>> parameters)
+    private void NumbersTraverse(TraverseState<List<long>> parameters)
     {
         var page = parameters.Node;
         var i = parameters.IndexInNode;
@@ -14,10 +14,11 @@ public class BTreeTests
         {
             parameters.State = new List<long>();
         }
-        parameters.State.Add(page.GetRow(TableIndexEnum.BTREE_KEY, i)["number"].AsInteger);
-        return parameters.State;
+        if (page.IsLeaf)
+        {
+            parameters.State.Add(page.GetRow(TableIndexEnum.BTREE_KEY, i)["number"].AsInteger);
+        }
     }
-
 
     private Btree InitialiseBtree(int? order = null)
     {
@@ -65,7 +66,7 @@ public class BTreeTests
         Assert.Equal(expectedPageCount, totalPages);
 
         // Check rows are ordered. Use Traverse to get all rows in btree.
-        var results = bt.Traverse<List<string>>(Btree.PrettyPrintTraverse, TraverseType.Key);
+        var results = bt.Traverse<List<string>>(Btree.PrettyPrintTraverseState, TraverseType.Key);
         var actual = string.Join(Environment.NewLine, results.ToArray());
         Assert.Equal(expectedTraverse, actual);
     }
@@ -93,16 +94,8 @@ public class BTreeTests
 
         List<long> values = new List<long>();
         var traverseResult = bt.Traverse(
-            values,
-            (values, page, i, nodeIndex) =>
-            {
-                if (page.IsLeaf)
-                {
-                    values.Add(page.GetRow(TableIndexEnum.BTREE_KEY, i)["number"].AsInteger); return values;
-                }
-                return values;
-            }
-        );
+            NumbersTraverse,
+            TraverseType.Node, values);
         Assert.Equal(testData.Count(), traverseResult.Count());
         Assert.Equal(testData.Order().ToArray(), traverseResult.ToArray());
     }
@@ -146,7 +139,7 @@ public class BTreeTests
 
         bt.Delete(new TableCell(keyToDelete));
         List<long> values = new List<long>();
-        var traverseResult = bt.Traverse(values, (values, page, i, nodeIndex) => { values.Add(page.GetRow(TableIndexEnum.BTREE_KEY, i)["number"].AsInteger); return values; });
+        var traverseResult = bt.Traverse(NumbersTraverse, TraverseType.Node, values);
         Assert.Equal(expectedCount, traverseResult.
         Count());
     }
@@ -179,15 +172,9 @@ public class BTreeTests
 
         List<long> values = new List<long>();
         var traverseResult = bt.Traverse(
-            values,
-            (values, page, i, nodeIndex) =>
-            {
-                if (page.IsLeaf)
-                {
-                    values.Add(page.GetRow(TableIndexEnum.BTREE_KEY, i)["number"].AsInteger); return values;
-                }
-                return values;
-            }
+            NumbersTraverse,
+            TraverseType.Node,
+            values
         );
         Assert.Empty(traverseResult);
     }
