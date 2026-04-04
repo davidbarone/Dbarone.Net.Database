@@ -1,13 +1,74 @@
 # Dbarone.Net.Database
 A very simple database written in .NET.
 
-This is a simple database engine that can be used for very basic data storage use-cases (for example configurations, small prototype applications etc). It is written entirely in .NET Core, and should be portable to any system that can run .NET Core.
+I've created this project to play with, and learn some database concepts. It is written entirely in .NET Core, and should be portable to any system that can run .NET Core.
+
+This database contains the following features:
+- Support for file-based or in-memory-only databases.
+- Support for database encryption via a database-level password. This employs AES symmetric encryption.
 
 *NOTE: This project is still in very early development, and is not useable yet.*
 
-It has taken inspiration from several other projects including:
-- sqlite
-- litedb
+## Overall Architecture
+This is a page-oriented database. Each page is a fixed-sized block of data (by default each page is 8K, but this can be defined in the `Global.cs` file).
+
+Each page has the following general structure:
+
++-------------------+
+| Page Header       |  (All pages have fixed header size of 96 bytes)
++-------------------+
+| Table0            |
++-------------------+
+| Table1            |
++-------------------+
+| TableN            |
++-------------------+
+
+The page header contains the following standard fields:
+- **PageId**: (Mandatory) - The numeric page id or position in the database file (0 based)
+- **PageType**: (Mandatory) - The type of page
+- **TableCount**: (Mandatory) - The number of data tables in the page. Can be zero or more.
+- **PrevPageId**: (Optional) - the previous page id if applicable.
+- **NextPageId**: (Optional) - the next page id if applicable.
+- **ParentPageId**: (Optional) - the parent page id if applicable
+- **IsDirty**: (Mandatory) - flag to denote if the page is dirty
+- **IsLeaf**: (Optional) - flag to denote if the page is a leaf
+
+### Page Types
+The following page types exist:
+
+| Page Type   | Use                                       |
+| ----------- | ----------------------------------------- |
+| B-tree data | stores actual row data in a b-tree format |
+
+### Table Serialization
+Data needs to be converted to and from an efficient byte array to be stored on data pages. This is carried out by table serializer module. The `ITableSerializer` interface describes the serialization operations:
+
+``` cs
+    (IBuffer Buffer, long Length) Serialize(Table table, TextEncoding textEncoding = TextEncoding.UTF8);
+    (IBuffer Buffer, long Length) SerializeRow(TableRow row, TextEncoding textEncoding = TextEncoding.UTF8, TableSchema? schema = null);
+    (Table Table, List<byte[]> RowBuffers) Deserialize(IBuffer buffer, TextEncoding textEncoding = TextEncoding.UTF8);
+```
+
+Tables and rows can be serialised. A row is typically serialized when it changes values. Deserialization typically occurs when a page is read from primary storage.
+
+The `IBuffer` interface (implemented by the `GenericBuffer` class) implements the low-level serialization and deserialization of data.
+
+### Buffer Management
+Disk IO is orders of magnitude slower than direct memory access. Therefore databaes typically have a buffer management system. The purpose of this is to allocate buffer space in main memory so that temporary data can be stored there. When a mew page is requested from the database, it is loaded into memory, within the buffer manager. When subsequent requests for that page are made, if the page is still stored in the buffers, it will be served from there instead of from disk, significantly improving page access times.
+
+The buffer has a finite space, so is also responsible for periodically flushing unused pages back to disk.
+
+The `IBufferManager` interface describes the operations carried out by the buffer manager.
+
+There are 2 implementations of buffer manager:
+| Type                  | Purpose                           |
+| --------------------- | --------------------------------- |
+| `DiskBufferManager`   | For use with file-based databases |
+| `MemoryBufferManager` | For use with in-memory databases  |
+
+TO DO - add more details here
+
 
 ## Data Types
 The following data types are used internally:
