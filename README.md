@@ -4,7 +4,7 @@ A very simple database written in .NET.
 I've created this project to play with, and learn some database concepts. It is written entirely in .NET Core, and should be portable to any system that can run .NET Core.
 
 This database contains the following features:
-- Support for file-based or in-memory-only databases.
+- :floppy_disk: Support for file-based or in-memory-only databases.
 - :lock: Support for database encryption via a database-level password. This employs AES symmetric encryption.
 
 *NOTE: This project is still in very early development, and is not useable yet.*
