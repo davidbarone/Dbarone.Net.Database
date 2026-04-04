@@ -14,6 +14,7 @@ This is a page-oriented database. Each page is a fixed-sized block of data (by d
 
 Each page has the following general structure:
 
+``` text
 +-------------------+
 | Page Header       |  (All pages have fixed header size of 96 bytes)
 +-------------------+
@@ -23,6 +24,7 @@ Each page has the following general structure:
 +-------------------+
 | TableN            |
 +-------------------+
+```
 
 The page header contains the following standard fields:
 - **PageId**: (Mandatory) - The numeric page id or position in the database file (0 based)
