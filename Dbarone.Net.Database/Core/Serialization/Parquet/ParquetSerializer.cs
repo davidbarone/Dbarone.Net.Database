@@ -10,6 +10,43 @@ public class ParquetSerializer
   /// <returns></returns>
   public Table Deserialize(IBuffer buffer, TextEncoding textEncoding = TextEncoding.UTF8)
   {
+    // Magic header
+    buffer.Position = 0;
+    var magicHeader = buffer.ReadString(4);
+    if (!magicHeader.Equals("PAR1"))
+    {
+      throw new Exception("Invalid magic header");
+    }
+
+    // Magic footer
+    buffer.Position = buffer.Length - 4;
+    var magicFooter = buffer.ReadString(4);
+    if (!magicFooter.Equals("PAR1"))
+    {
+      throw new Exception("Invalid magic footer");
+    }
+
+    // Get file metadata length - 4 bytes immediately prior to magic footer - 4 bytes in little-endian format
+    buffer.Position = buffer.Length - 4 - 4;
+    var fileMetadataLengthBytes = buffer.ReadBytes(4);
+    int fileMetadataLength = BitConverter.ToInt32(fileMetadataLengthBytes, 0);
+
+    // Get metadata
+    // Encoded in Apache Thrift compact/binary protocol (FileMetaData struct)
+    // https://thrift.apache.org/
+    buffer.Position = buffer.Length - 4 - 4 - fileMetadataLength;
+    var fileMetadataBytes = buffer.ReadBytes(fileMetadataLength);
+    GenericBuffer metadataBuffer = new GenericBuffer(fileMetadataBytes);
+
+    // byte #1: version
+    // structure: field header
+    // - high 4 bits: delta field id
+    // - low 4 bits: type 
+    var version = (int)metadataBuffer.ReadBytes(1)[0];
+    var versionLow = version & 0xF;
+    var versionHigh = version & ~0xF >> 4;
+
+
     return new Table();
   }
 }

@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using Parquet;
 using Parquet.Schema;
 using Xunit;
+using System;
+using Dbarone.Net.Database;
 
 /// <summary>
 /// To test Parquet serialization module, we use the Parquet.NET
@@ -13,8 +15,19 @@ using Xunit;
 /// </summary>
 public class ParquetSerializerTests
 {
+  public byte[] MemoryStreamToByteArray(MemoryStream ms)
+  {
+    if (ms == null)
+      throw new Exception("MemoryStream cannot be null.");
 
-  private async Task<Stream> Dataset1()
+    // Ensure the position is at the beginning
+    if (ms.CanSeek)
+      ms.Position = 0;
+
+    return ms.ToArray(); // Creates a copy of the data    
+  }
+
+  private async Task<byte[]> Dataset1()
   {
     var schema = new ParquetSchema(
       new DataField<int>("foo")
@@ -46,13 +59,18 @@ public class ParquetSerializerTests
         }
       }
     }
-    return ms;
+    using FileStream fs = new FileStream("test.parquet", FileMode.Create, FileAccess.Write);
+    ms.WriteTo(fs);
+    return MemoryStreamToByteArray(ms);
   }
 
   [Fact]
   public async Task SerializeTableNoSchemaTest()
   {
-    var parquet = await Dataset1();
-    var a = parquet.Length;
+    var bytes = await Dataset1();
+    GenericBuffer buf = new GenericBuffer(bytes);
+    ParquetSerializer ser = new ParquetSerializer();
+    ser.Deserialize(buf);
+
   }
 }
