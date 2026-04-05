@@ -38,20 +38,29 @@ public class ParquetSerializer
     var fileMetadataBytes = buffer.ReadBytes(fileMetadataLength);
     GenericBuffer metadataBuffer = new GenericBuffer(fileMetadataBytes);
 
-    // byte #1: version
+    var field_id = 0;
+
+    // Field #1: version
     // structure: field header
     // - high 4 bits: delta field id
     // - low 4 bits: type 
     // - typically Type: I32, Delta fieldid: 1
     var versionByte = (int)metadataBuffer.ReadBytes(1)[0];
     var versionLow = versionByte & 0xF;
-    var versionHigh = versionByte & ~0xF >> 4;
+    var versionHigh = (versionByte & ~0xF) >> 4;
+    field_id += versionHigh;
 
     // Next byte[s] are version in ZigZag encoding
     var versionVarInt = new VarInt(metadataBuffer.Slice(metadataBuffer.Position, metadataBuffer.Length - metadataBuffer.Position));
     var versionZz = new ZigZag(versionVarInt);
     var version = versionZz.Decoded;
+    metadataBuffer.Position = metadataBuffer.Position + versionVarInt.Size;
 
+    // Field #2: List<SchemaElement>
+    var schemaListByte = (int)metadataBuffer.ReadBytes(1)[0];
+    var schemaListLow = schemaListByte & 0xF;
+    var schemaListHigh = (schemaListByte & ~0xF) >> 4;
+    field_id += schemaListHigh;
 
     return new Table();
   }
