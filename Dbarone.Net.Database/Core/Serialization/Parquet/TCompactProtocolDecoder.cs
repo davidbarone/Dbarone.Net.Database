@@ -1,3 +1,4 @@
+using System.Reflection.Metadata.Ecma335;
 using Dbarone.Net.Database;
 using Dbarone.Net.Extensions;
 
@@ -39,24 +40,15 @@ public class TCompactProtocolDecoder
   private (TCompactProtocolType FieldType, int FieldID, object? Value) ReadField(IBuffer buffer, int currentFieldID)
   {
     var (fieldType, fieldIDDelta) = ReadFieldHeader(buffer);
-    var newfieldID = currentFieldID + fieldIDDelta;
-    switch (fieldType)
+    if (fieldType == TCompactProtocolType.CT_STOP)
     {
-      case TCompactProtocolType.CT_I16:
-        var zz = ReadZigZag(buffer);
-        return (fieldType, newfieldID, zz.Decoded);
-      case TCompactProtocolType.CT_I32:
-        zz = ReadZigZag(buffer);
-        return (fieldType, newfieldID, zz.Decoded);
-      case TCompactProtocolType.CT_I64:
-        zz = ReadZigZag(buffer);
-        return (fieldType, newfieldID, zz.Decoded);
-      case TCompactProtocolType.CT_LIST:
-        var list = ReadList(buffer);
-        return (fieldType, newfieldID, list);
-
-      default:
-        throw new Exception("whoops");
+      return (fieldType, currentFieldID, null);
+    }
+    else
+    {
+      var newfieldID = currentFieldID + fieldIDDelta;
+      var value = ReadValue(buffer, fieldType);
+      return (fieldType, newfieldID, value);
     }
   }
 
@@ -72,13 +64,53 @@ public class TCompactProtocolDecoder
     return dict;
   }
 
+  private object ReadValue(IBuffer buffer, TCompactProtocolType type)
+  {
+    switch (type)
+    {
+      case TCompactProtocolType.CT_BOOLEAN_TRUE:
+        return true;
+      case TCompactProtocolType.CT_BOOLEAN_FALSE:
+        return false;
+      case TCompactProtocolType.CT_I16:
+        var zz = ReadZigZag(buffer);
+        return zz.Decoded;
+      case TCompactProtocolType.CT_I32:
+        zz = ReadZigZag(buffer);
+        return zz.Decoded;
+      case TCompactProtocolType.CT_I64:
+        zz = ReadZigZag(buffer);
+        return zz.Decoded;
+      case TCompactProtocolType.CT_LIST:
+        var list = ReadList(buffer);
+        return list;
+      case TCompactProtocolType.CT_STRUCT:
+        var st = ReadStruct(buffer);
+        return st;
+      case TCompactProtocolType.CT_BINARY:
+        // for byte[] and string types
+        var length = ReadVarInt(buffer);
+        var bytes = buffer.ReadBytes(length);
+        return bytes;
+      case TCompactProtocolType.CT_BYTE:
+        var b = buffer.ReadBytes(1)[0];
+        return b;
+      case TCompactProtocolType.CT_STOP:
+        return null;
+      default:
+        throw new Exception("whoops");
+    }
+  }
+
   public List<object> ReadList(IBuffer buffer)
   {
+    List<object> arr = new List<object>();
     var listHeader = ReadListHeader(buffer);
     for (ulong i = 0; i < listHeader.Size; i++)
     {
+      arr.Add(ReadValue(buffer, listHeader.ElementType));
     }
-    return null;
+    return arr;
   }
 
   /// <summary>
