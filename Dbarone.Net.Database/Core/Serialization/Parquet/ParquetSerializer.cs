@@ -62,6 +62,21 @@ public class ParquetSerializer
     var schemaListHigh = (schemaListByte & ~0xF) >> 4;
     field_id += schemaListHigh;
 
+    // Within a LIST, read the list header
+    // - high 4 bits: element type
+    // - low 4 bits: size (if < 15), otherwise, 0xF, then read varint for size
+    var listHeaderByte = (int)metadataBuffer.ReadBytes(1)[0];
+    var listHeaderLow = listHeaderByte & 0xF;
+    var listHeaderHigh = (listHeaderByte & ~0xF) >> 4;
+
+    if (listHeaderLow == 0xF)
+    {
+      // read varint to get size
+      var viSize = new VarInt(metadataBuffer.Slice(metadataBuffer.Position, metadataBuffer.Length - metadataBuffer.Position));
+      var zz = new ZigZag(viSize);
+    }
+
+
     return new Table();
   }
 }
