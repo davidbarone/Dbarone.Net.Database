@@ -8,7 +8,7 @@ using Dbarone.Net.Extensions;
 /// - https://simonkjohnston.life/thrift-specs/protocol-compact.html
 /// - https://issues.apache.org/jira/browse/THRIFT-110
 /// </summary>
-public class TCompactProtocolSerializer
+public class TCompactProtocolDecoder
 {
 
   /// <summary>
@@ -54,10 +54,12 @@ public class TCompactProtocolSerializer
         zz = ReadZigZag(buffer);
         buffer.Position += zz.VarInt.Size;
         return (fieldType, newfieldID, zz.Decoded);
+      default:
+        throw new Exception("whoops");
     }
   }
 
-  private Dictionary<int, object?> ReadStruct(IBuffer buffer)
+  public Dictionary<int, object?> ReadStruct(IBuffer buffer)
   {
     Dictionary<int, object?> dict = new Dictionary<int, object?>();
     var field = ReadField(buffer, 0);
@@ -100,8 +102,11 @@ public class TCompactProtocolSerializer
 
   public object Decode(IBuffer buffer)
   {
-
+    return null;
   }
 
   public object DecodeI16(IBuffer buffer)
+  {
+    return null;
+  }
 }

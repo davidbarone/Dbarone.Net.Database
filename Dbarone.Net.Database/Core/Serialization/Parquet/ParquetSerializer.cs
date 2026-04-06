@@ -2,6 +2,13 @@ using Dbarone.Net.Database;
 
 public class ParquetSerializer
 {
+  private ParquetThriftFileMetaData GetFileMetaData(IBuffer buffer, TextEncoding textEncoding = TextEncoding.UTF8)
+  {
+    TCompactProtocolDecoder codec = new TCompactProtocolDecoder();
+    var fileMetaData = codec.ReadStruct(buffer);
+    return null;
+  }
+
   /// <summary>
   /// Deserializes a buffer contains parquet-formatted data, into a table.
   /// </summary>
