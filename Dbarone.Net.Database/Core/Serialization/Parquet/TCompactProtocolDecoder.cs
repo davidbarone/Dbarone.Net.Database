@@ -44,16 +44,17 @@ public class TCompactProtocolDecoder
     {
       case TCompactProtocolType.CT_I16:
         var zz = ReadZigZag(buffer);
-        buffer.Position += zz.VarInt.Size;
         return (fieldType, newfieldID, zz.Decoded);
       case TCompactProtocolType.CT_I32:
         zz = ReadZigZag(buffer);
-        buffer.Position += zz.VarInt.Size;
         return (fieldType, newfieldID, zz.Decoded);
       case TCompactProtocolType.CT_I64:
         zz = ReadZigZag(buffer);
-        buffer.Position += zz.VarInt.Size;
         return (fieldType, newfieldID, zz.Decoded);
+      case TCompactProtocolType.CT_LIST:
+        var list = ReadList(buffer);
+        return (fieldType, newfieldID, list);
+
       default:
         throw new Exception("whoops");
     }
@@ -66,15 +67,31 @@ public class TCompactProtocolDecoder
     while (field.FieldType != TCompactProtocolType.CT_STOP)
     {
       dict.Add(field.FieldID, field.Value);
+      field = ReadField(buffer, field.FieldID);
     }
     return dict;
   }
 
+  public List<object> ReadList(IBuffer buffer)
+  {
+    var listHeader = ReadListHeader(buffer);
+    for (ulong i = 0; i < listHeader.Size; i++)
+    {
+    }
+    return null;
+  }
+
+  /// <summary>
+  /// Reads a VarInt from a buffer. The buffer position is advanced by the size of the VarInt.
+  /// </summary>
+  /// <param name="buffer">The input buffer.</param>
+  /// <returns>Returns a VarInt.</returns>
   private VarInt ReadVarInt(IBuffer buffer)
   {
     // create copy of buffer starting at varint.
     var slice = buffer.Slice(buffer.Position, buffer.Length - buffer.Position);
     var vi = new VarInt(slice);
+    buffer.Position += vi.Size;
     return vi;
   }
 
@@ -98,6 +115,31 @@ public class TCompactProtocolDecoder
       FieldType: (TCompactProtocolType)low,
       FieldIDDelta: high
       );
+  }
+
+  /// <summary>
+  /// Within a LIST, read the list header first.
+  /// - high 4 bits: size (if < 15), otherwise, 0xF, then read varint for size
+  /// - low 4 bits: element type
+  /// </summary>
+  /// <param name="buffer">The input buffer.</param>
+  /// <returns>Returns list header</returns>
+  private (TCompactProtocolType ElementType, ulong Size) ReadListHeader(IBuffer buffer)
+  {
+    var b = buffer.ReadBytes(1)[0];
+    var low = GetLowNibble(b);
+    var high = GetHighNibble(b);
+    ulong size = (ulong)high;
+    if (size == 15)
+    {
+      // read next VarInt to get size
+      var vi = this.ReadVarInt(buffer);
+      size = vi.Value;
+    }
+    return (
+      ElementType: (TCompactProtocolType)low,
+      Size: size
+    );
   }
 
   public object Decode(IBuffer buffer)
