@@ -61,90 +61,56 @@ public class ParquetThriftEncryptionAlgorithm
 
 public class ParquetThriftSchemaElement
 {
-  /// <summary>
-  /// Field: 1
-  /// </summary>
+  [ThriftFieldId(1)]
   public ParquetThriftType? Type { get; set; }
 
-  /// <summary>
-  /// Field: 2
-  /// </summary>
+  [ThriftFieldId(2)]
   public int? TypeLength { get; set; }
 
-  /// <summary>
-  /// Field: 3
-  /// </summary>
+  [ThriftFieldId(3)]
   public ParquetThriftFieldRepetitionType RepetitionType { get; set; }
 
-  /// <summary>
-  /// Field: 4
-  /// </summary>
+  [ThriftFieldId(4)]
   public string Name { get; set; }
 
-  /// <summary>
-  /// Field: 5
-  /// </summary>
+  [ThriftFieldId(5)]
   public int? NumChildren { get; set; }
 
-  /// <summary>
-  /// Field: 8
-  /// </summary>
+  [ThriftFieldId(8)]
   public int? Precision { get; set; }
 
-  /// <summary>
-  /// Field: 9
-  /// </summary>
+  [ThriftFieldId(9)]
   public int? FieldId { get; set; }
 
-  /// <summary>
-  /// Field: 10
-  /// </summary>
+  [ThriftFieldId(10)]
   public ParquetThriftLogicalType? LogicalType { get; set; }
 }
 public class ParquetThriftFileMetaData
 {
-  /// <summary>
-  /// Field: 1
-  /// </summary>
+  [ThriftFieldId(1)]
   public int Version { get; set; }
 
-  /// <summary>
-  /// Field: 2
-  /// </summary>
+  [ThriftFieldId(2)]
   public List<ParquetThriftSchemaElement> Schema { get; set; }
 
-  /// <summary>
-  /// Field: 3
-  /// </summary>
+  [ThriftFieldId(3)]
   public int NumRows { get; set; }
 
-  /// <summary>
-  /// Field: 4
-  /// </summary>
+  [ThriftFieldId(4)]
   public List<ParquetThriftRowGroup> RowGroups { get; set; }
 
-  /// <summary>
-  /// Field: 5
-  /// </summary>
+  [ThriftFieldId(5)]
   public List<ParquetThriftKeyValue>? KeyValueMetaData { get; set; }
 
-  /// <summary>
-  /// Field: 6
-  /// </summary>
+  [ThriftFieldId(6)]
   public string? CreatedBy { get; set; }
 
-  /// <summary>
-  /// Field: 7
-  /// </summary>
+  [ThriftFieldId(7)]
   public List<ParquetThriftColumnOrder>? ColumnOrders { get; set; }
 
-  /// <summary>
-  /// Field: 8
-  /// </summary>
+  [ThriftFieldId(8)]
   public ParquetThriftEncryptionAlgorithm EncryptionAlgorithm { get; set; }
 
-  /// <summary>
-  /// Field: 9
-  /// </summary>
+  [ThriftFieldId(9)]
   public byte[] FooterSigningKeyMetadata { get; set; }
 }
