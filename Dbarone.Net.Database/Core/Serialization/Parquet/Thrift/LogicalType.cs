@@ -14,22 +14,22 @@ namespace Dbarone.Net.Database.Thrift;
 public sealed class LogicalType
 {
   [FieldId(1)]
-  public StringType STRING { get; set; } = default!;
+  public StringType STRING { get; set; } = default!; // use ConvertedType UTF8
 
   [FieldId(2)]
-  public MapType MAP { get; set; } = default!;
+  public MapType MAP { get; set; } = default!; // use ConvertedType MAP
 
   [FieldId(3)]
-  public ListType LIST { get; set; } = default!;
+  public ListType LIST { get; set; } = default!; // use ConvertedType LIST
 
   [FieldId(4)]
-  public EnumType ENUM { get; set; } = default!;
+  public EnumType ENUM { get; set; } = default!; // use ConvertedType ENUM
 
   [FieldId(5)]
-  public DecimalType DECIMAL { get; set; } = default!;
+  public DecimalType DECIMAL { get; set; } = default!; // use ConvertedType DECIMAL + SchemaElement.{scale, precision}
 
   [FieldId(6)]
-  public DateType DATE { get; set; } = default!;
+  public DateType DATE { get; set; } = default!; // use ConvertedType DATE
 
   // use ConvertedType TIME_MICROS for TIME(isAdjustedToUTC = *, unit = MICROS)
   // use ConvertedType TIME_MILLIS for TIME(isAdjustedToUTC = *, unit = MILLIS)
@@ -110,7 +110,9 @@ public sealed class DecimalType
   public int Precision { get; set; }
 }
 
-/** Time units for logical types */
+/// <summary>
+/// Time units for logical types
+/// </summary>
 public sealed class MilliSeconds { }
 public sealed class MicroSeconds { }
 public sealed class NanoSeconds { }
@@ -155,7 +157,6 @@ public sealed class TimeType
   [FieldId(2)]
   public TimeUnit Unit { get; set; } = default!;
 }
-
 
 /// <summary>
 /// Integer logical type annotation

@@ -2,6 +2,9 @@
 /// https://github.com/apache/parquet-format/blob/master/src/main/thrift/parquet.thrift
 namespace Dbarone.Net.Database.Thrift;
 
+/// <summary>
+/// Representation of Schemas
+/// </summary>
 public enum RepetitionType
 {
   /** This field is required (can not be null) and each row has exactly 1 value. */
