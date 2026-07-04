@@ -1,12 +1,14 @@
+namespace Dbarone.Net.Database.Thrift;
+
 [System.AttributeUsage(System.AttributeTargets.Property, AllowMultiple = false)]
-public sealed class ThriftFieldIdAttribute : System.Attribute
+public sealed class FieldIdAttribute : System.Attribute
 {
   // See the attribute guidelines at
   //  http://go.microsoft.com/fwlink/?LinkId=85236
   readonly int fieldId;
 
   // This is a positional argument
-  public ThriftFieldIdAttribute(int fieldId)
+  public FieldIdAttribute(int fieldId)
   {
     this.fieldId = fieldId;
   }

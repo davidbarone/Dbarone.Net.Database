@@ -3,10 +3,6 @@
 
 
 
-public class ParquetThriftLogicalType
-{
-
-}
 
 public class ParquetThriftRowGroup
 {
