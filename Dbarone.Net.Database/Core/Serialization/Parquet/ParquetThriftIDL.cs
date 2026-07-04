@@ -10,58 +10,13 @@ public class ParquetThriftRowGroup
 
 }
 
-public class ParquetThriftKeyValue
-{
-  /// <summary>
-  /// Field: 1
-  /// </summary>
-  public string Key { get; set; }
 
-  /// <summary>
-  /// Field: 2
-  /// </summary>
-  public string? Value { get; set; }
-}
-
-public class ParquetThriftColumnOrder
-{
-
-}
 
 public class ParquetThriftEncryptionAlgorithm
 {
 
 }
 
-public class ParquetThriftFileMetaData
-{
-  [ThriftFieldId(1)]
-  public int Version { get; set; }
-
-  [ThriftFieldId(2)]
-  public List<ParquetThriftSchemaElement> Schema { get; set; }
-
-  [ThriftFieldId(3)]
-  public int NumRows { get; set; }
-
-  [ThriftFieldId(4)]
-  public List<ParquetThriftRowGroup> RowGroups { get; set; }
-
-  [ThriftFieldId(5)]
-  public List<ParquetThriftKeyValue>? KeyValueMetaData { get; set; }
-
-  [ThriftFieldId(6)]
-  public string? CreatedBy { get; set; }
-
-  [ThriftFieldId(7)]
-  public List<ParquetThriftColumnOrder>? ColumnOrders { get; set; }
-
-  [ThriftFieldId(8)]
-  public ParquetThriftEncryptionAlgorithm EncryptionAlgorithm { get; set; }
-
-  [ThriftFieldId(9)]
-  public byte[] FooterSigningKeyMetadata { get; set; }
-}
 
 public class ParquetThriftColumnChunk
 {

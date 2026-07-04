@@ -1,8 +1,9 @@
 using Dbarone.Net.Database;
+using Dbarone.Net.Database.Thrift;
 
 public class ParquetSerializer
 {
-  private ParquetThriftFileMetaData GetFileMetaData(IBuffer buffer, TextEncoding textEncoding = TextEncoding.UTF8)
+  private FileMetaData GetFileMetaData(IBuffer buffer, TextEncoding textEncoding = TextEncoding.UTF8)
   {
     TCompactProtocolDecoder codec = new TCompactProtocolDecoder();
     var fileMetaData = codec.ReadStruct(buffer);
