@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+
 namespace Dbarone.Net.Database.Thrift;
 
 /// <summary>
@@ -26,7 +28,7 @@ public sealed class FileMetaData
   /// The first element is the root
   /// </summary>
   [FieldId(2)]
-  public List<SchemaElement> Schema { get; set; }
+  public List<SchemaElement> Schema { get; set; } = default!;
 
   /// <summary>
   /// Number of rows in this file
@@ -38,7 +40,7 @@ public sealed class FileMetaData
   /// Row groups in this file
   /// </summary>
   [FieldId(4)]
-  public List<ParquetThriftRowGroup> RowGroups { get; set; } = default!;
+  public List<RowGroup> RowGroups { get; set; } = default!;
 
   /// <summary>
   /// Optional key/value metadata
@@ -74,7 +76,7 @@ public sealed class FileMetaData
   public List<ColumnOrder>? ColumnOrders { get; set; }
 
   [FieldId(8)]
-  public ParquetThriftEncryptionAlgorithm EncryptionAlgorithm { get; set; } = default!;
+  public EncryptionAlgorithm EncryptionAlgorithm { get; set; } = default!;
 
   [FieldId(9)]
   public byte[] FooterSigningKeyMetadata { get; set; } = default!;

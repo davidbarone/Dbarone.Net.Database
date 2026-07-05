@@ -8,7 +8,7 @@ public sealed class KeyValue
   /// <summary>
   /// Field: 1
   /// </summary>
-  public string Key { get; set; }
+  public string Key { get; set; } = default!;
 
   /// <summary>
   /// Field: 2
