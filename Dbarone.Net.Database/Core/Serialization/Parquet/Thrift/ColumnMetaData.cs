@@ -79,30 +79,42 @@ public sealed class ColumnMetaData
   [FieldId(12)]
   public Statistics? Statistics { get; set; }
 
-  /** Set of all encodings used for pages in this column chunk.
-   * This information can be used to determine if all data pages are
-   * dictionary encoded for example **/
-  13: optional list<PageEncodingStats> encoding_stats;
+  /// <summary>
+  /// Set of all encodings used for pages in this column chunk.
+  /// This information can be used to determine if all data pages are
+  /// dictionary encoded for example
+  /// </summary>
+  [FieldId(13)]
+  public List<PageEncodingStats>? EncodingStats { get; set; }
 
-  /** Byte offset from beginning of file to Bloom filter data. **/
-  14: optional i64 bloom_filter_offset;
+  /// <summary>
+  /// Byte offset from beginning of file to Bloom filter data.
+  /// </summary>
+  [FieldId(14)]
+  public long? BloomFilterOffset { get; set; }
 
-  /** Size of Bloom filter data including the serialized header, in bytes.
-   * Added in 2.10 so readers may not read this field from old files and
-   * it can be obtained after the BloomFilterHeader has been deserialized.
-   * Writers should write this field so readers can read the bloom filter
-   * in a single I/O.
-   */
-  15: optional i32 bloom_filter_length;
+  /// <summary>
+  /// Size of Bloom filter data including the serialized header, in bytes.
+  /// Added in 2.10 so readers may not read this field from old files and
+  /// it can be obtained after the BloomFilterHeader has been deserialized.
+  /// Writers should write this field so readers can read the bloom filter
+  /// in a single I/O.
+  /// </summary>
+  [FieldId(15)]
+  public int? BloomFilterLength { get; set; }
 
-  /**
-   * Optional statistics to help estimate total memory when converted to in-memory
-   * representations. The histograms contained in these statistics can
-   * also be useful in some cases for more fine-grained nullability/list length
-   * filter pushdown.
-   */
-  16: optional SizeStatistics size_statistics;
+  /// <summary>
+  /// Optional statistics to help estimate total memory when converted to in-memory
+  /// representations.The histograms contained in these statistics can
+  /// also be useful in some cases for more fine-grained nullability/list length
+  /// filter pushdown.
+  /// </summary>
+  [FieldId(16)]
+  public SizeStatistics? SizeStatistics { get; set; }
 
-  /** Optional statistics specific for Geometry and Geography logical types */
-  17: optional GeospatialStatistics geospatial_statistics;
+  /// <summary>
+  /// Optional statistics specific for Geometry and Geography logical types
+  /// </summary>
+  [FieldId(17)]
+  public GeospatialStatistics? GeospatialStatistics { get; set; }
 }
