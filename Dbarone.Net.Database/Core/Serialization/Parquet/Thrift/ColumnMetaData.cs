@@ -418,7 +418,7 @@ public sealed class SizeStatistics
 public sealed class BoundingBox
 {
   [FieldId(1)]
-  public double xmin { get; set; };
+  public double xmin { get; set; }
 
   [FieldId(2)]
   public double xmax { get; set; }
