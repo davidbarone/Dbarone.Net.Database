@@ -5,43 +5,79 @@ using Dbarone.Net.Database.Thrift;
 /// </summary>
 public sealed class ColumnMetaData
 {
-/** Type of this column **/
-  1: required Type type
+  /// <summary>
+  /// Type of this column
+  /// </summary>
+  [FieldId(1)]
+  public Dbarone.Net.Database.Thrift.Type Type { get; set; }
 
-  /** Set of all encodings used for this column. The purpose is to validate
-   * whether we can decode those pages. **/
-  2: required list<Encoding> encodings
+  /// <summary>
+  /// Set of all encodings used for this column. The purpose is to validate
+  /// whether we can decode those pages. **/
+  /// </summary>
+  [FieldId(2)]
+  public List<Encoding> Encodings { get; set; } = default!;
 
-  /** Path in schema **/
-  3: required list<string> path_in_schema
+  /// <summary>
+  /// Path in schema
+  /// </summary>
+  [FieldId(3)]
+  public List<string> PathInSchema { get; set; } = default!;
 
-  /** Compression codec **/
-  4: required CompressionCodec codec
+  /// <summary>
+  /// Compression codec
+  /// </summary>
+  [FieldId(4)]
+  public CompressionCodec Codec { get; set; }
 
-  /** Number of values in this column **/
-  5: required i64 num_values
+  /// <summary>
+  /// Number of values in this column
+  /// </summary>
+  [FieldId(5)]
+  public long NumValues { get; set; }
 
-  /** total byte size of all uncompressed pages in this column chunk (including the headers) **/
-  6: required i64 total_uncompressed_size
+  /// <summary>
+  /// total byte size of all uncompressed pages in this column chunk (including the headers)
+  /// </summary>
+  [FieldId(6)]
+  public long TotalUncompressedSize { get; set; }
 
-  /** total byte size of all compressed, and potentially encrypted, pages
-   *  in this column chunk (including the headers) **/
-  7: required i64 total_compressed_size
+  /// <summary>
+  /// total byte size of all compressed, and potentially encrypted, pages
+  /// in this column chunk(including the headers)
+  /// </summary>
+  [FieldId(7)]
+  public long TotalCompressedSize { get; set; }
 
-  /** Optional key/value metadata **/
-  8: optional list<KeyValue> key_value_metadata
+  /// <summary>
+  /// Optional key/value metadata
+  /// </summary>
+  [FieldId(8)]
+  public List<KeyValue>? KeyValueMetaData { get; set; }
 
-  /** Byte offset from beginning of file to first data page **/
-  9: required i64 data_page_offset
+  /// <summary>
+  /// Byte offset from beginning of file to first data page
+  /// </summary>
+  [FieldId(9)]
+  public long DataPageOffset { get; set; }
 
-  /** Byte offset from beginning of file to root index page **/
-  10: optional i64 index_page_offset
+  /// <summary>
+  /// Byte offset from beginning of file to root index page
+  /// </summary>
+  [FieldId(10)]
+  public long? IndexPageOffset { get; set; }
 
-  /** Byte offset from the beginning of file to first (only) dictionary page **/
-  11: optional i64 dictionary_page_offset
+  /// <summary>
+  /// Byte offset from the beginning of file to first (only) dictionary page
+  /// </summary>
+  [FieldId(11)]
+  public long? DictionaryPageOffset { get; set; }
 
-  /** optional statistics for this column chunk */
-  12: optional Statistics statistics;
+  /// <summary>
+  /// optional statistics for this column chunk
+  /// </summary>
+  [FieldId(12)]
+  public Statistics? Statistics { get; set; }
 
   /** Set of all encodings used for pages in this column chunk.
    * This information can be used to determine if all data pages are
