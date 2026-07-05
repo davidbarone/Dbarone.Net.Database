@@ -45,7 +45,7 @@ public sealed class ColumnChunk
   /// Parquet implementations.As such, writers MUST populate this field.
   /// </summary>
   [FieldId(3)]
-  public ColumnMetadata? Metadata { get; set; }
+  public ColumnMetaData? Metadata { get; set; }
 
   /// <summary>
   /// File offset of ColumnChunk's OffsetIndex
@@ -75,11 +75,11 @@ public sealed class ColumnChunk
   /// Crypto metadata of encrypted columns
   /// </summary>
   [FieldId(8)]
-  public ColumnCryptoMetadata? CryptoMetadata { get; set; }
+  public ColumnCryptoMetaData? CryptoMetaData { get; set; }
 
   /// <summary>
   /// Encrypted column metadata for this chunk
   /// </summary>
   [FieldId(9)]
-  public byte[]? EncryptedColumnMetadata { get; set; }
+  public byte[]? EncryptedColumnMetaData { get; set; }
 }
