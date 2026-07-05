@@ -119,7 +119,6 @@ public sealed class ColumnMetaData
   public GeospatialStatistics? GeospatialStatistics { get; set; }
 }
 
-
 /// <summary>
 /// Encodings supported by Parquet.Not all encodings are valid for all types.  These
 /// enums are also used to specify the encoding of definition and repetition levels.
@@ -358,4 +357,105 @@ public sealed class PageEncodingStats
   /// </summary>
   [FieldId(3)]
   public long Count { get; set; }
+}
+
+/// <summary>
+/// A structure for capturing metadata for estimating the unencoded,
+/// uncompressed size of data written. This is useful for readers to estimate
+/// how much memory is needed to reconstruct data in their memory model and for
+/// fine grained filter pushdown on nested structures (the histograms contained
+/// in this structure can help determine the number of nulls at a particular
+/// nesting level and maximum length of lists).
+/// </summary>
+public sealed class SizeStatistics
+{
+  /// <summary>
+  /// The number of physical bytes stored for BYTE_ARRAY data values assuming
+  /// no encoding.This is exclusive of the bytes needed to store the length of
+  /// each byte array.In other words, this field is equivalent to the `(size
+  /// of PLAIN-ENCODING the byte array values) - (4 bytes* number of values
+  /// written)`. To determine unencoded sizes of other types readers can use
+  /// schema information multiplied by the number of non - null and null values.
+  /// The number of null / non - null values can be inferred from the histograms
+  /// below.
+  /// 
+  /// For example, if a column chunk is dictionary-encoded with dictionary
+  /// ["a", "bc", "cde"], and a data page contains the indices[0, 0, 1, 2],
+  /// then this value for that data page should be 7 (1 + 1 + 2 + 3).
+  /// 
+  /// This field should only be set for types that use BYTE_ARRAY as their
+  /// physical type.
+  /// </summary>
+  [FieldId(1)]
+  public long? UnencodedByteArrayDataBytes { get; set; }
+
+  /// <summary>
+  /// When present, there is expected to be one element corresponding to each
+  /// repetition(i.e.size= max repetition_level+1) where each element
+  /// represents the number of times the repetition level was observed in the
+  /// data.
+  /// 
+  /// This field may be omitted if max_repetition_level is 0 without loss
+  /// of information.
+  /// </summary>
+  [FieldId(2)]
+  public List<long>? RepetitionLevelHistogram { get; set; }
+
+  /// <summary>
+  /// Same as repetition_level_histogram except for definition levels.
+  /// 
+  /// This field may be omitted if max_definition_level is 0 or 1 without
+  /// loss of information.
+  /// </summary>
+  [FieldId(3)]
+  public List<long>? DefinitionLevelHistogram { get; set; }
+}
+
+/// <summary>
+/// Bounding box for GEOMETRY or GEOGRAPHY type in the representation of min/max
+/// value pair of coordinates from each axis.
+/// </summary>
+public sealed class BoundingBox
+{
+  [FieldId(1)]
+  public double xmin { get; set; };
+
+  [FieldId(2)]
+  public double xmax { get; set; }
+
+  [FieldId(3)]
+  public double ymin { get; set; }
+
+  [FieldId(4)]
+  public double ymax { get; set; }
+
+  [FieldId(5)]
+  public double? zmin { get; set; }
+
+  [FieldId(6)]
+  public double? zmax { get; set; }
+
+  [FieldId(7)]
+  public double? mmin { get; set; }
+
+  [FieldId(8)]
+  public double? mmax { get; set; }
+}
+
+/// <summary>
+/// Statistics specific to Geometry and Geography logical types
+/// </summary>
+public sealed class GeospatialStatistics
+{
+  /// <summary>
+  /// A bounding box of geospatial instances
+  /// </summary>
+  [FieldId(1)]
+  public BoundingBox? Bbox { get; set; }
+
+  /// <summary>
+  /// Geospatial type codes of all instances, or an empty list if not known
+  /// </summary>
+  [FieldId(2)]
+  public List<int>? GeospatialTypes { get; set; }
 }
