@@ -1,5 +1,5 @@
 namespace Dbarone.Net.Database.Thrift;
 
-[System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Class | System.AttributeTargets.Enum, AllowMultiple = false)]
+[System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Class | System.AttributeTargets.Enum | System.AttributeTargets.Field, AllowMultiple = false)]
 public sealed class DeprecatedAttribute : System.Attribute
 { }
