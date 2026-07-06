@@ -5,13 +5,13 @@ using Dbarone.Net.Extensions;
 /// <summary>
 /// Codes / decodes using the Thrift compact binary protocol.
 /// - https://thrift.apache.org/static/files/thrift-20070401.pdf
+/// - https://github.com/apache/thrift/blob/master/doc/specs/thrift-compact-protocol.md
 /// - https://thrift.apache.org/
 /// - https://simonkjohnston.life/thrift-specs/protocol-compact.html
 /// - https://issues.apache.org/jira/browse/THRIFT-110
 /// </summary>
 public class TCompactProtocolDecoder
 {
-
   /// <summary>
   /// Returns the low 4 bits of a byte.
   /// </summary>

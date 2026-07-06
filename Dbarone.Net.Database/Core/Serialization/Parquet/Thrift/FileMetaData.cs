@@ -4,6 +4,18 @@ namespace Dbarone.Net.Database.Thrift;
 
 /// <summary>
 /// Description for file metadata
+/// 
+/// - FileMetaData
+///   - SchemaElement
+///     - Type
+///     - FieldRepetitionType
+///     - ConvertedType
+///     - LogicalType
+///   - RowGroup
+///   - KeyValue
+///   - ColumnOrder
+///   - EncryptionAlgorithm
+/// 
 /// </summary>
 public sealed class FileMetaData
 {
@@ -76,8 +88,8 @@ public sealed class FileMetaData
   public List<ColumnOrder>? ColumnOrders { get; set; }
 
   [FieldId(8)]
-  public EncryptionAlgorithm EncryptionAlgorithm { get; set; } = default!;
+  public EncryptionAlgorithm? EncryptionAlgorithm { get; set; } = default!;
 
   [FieldId(9)]
-  public byte[] FooterSigningKeyMetadata { get; set; } = default!;
+  public byte[]? FooterSigningKeyMetadata { get; set; } = default!;
 }
