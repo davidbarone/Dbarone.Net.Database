@@ -69,7 +69,7 @@ public sealed class ColumnChunk
   /// Size of ColumnChunk's ColumnIndex, in bytes
   /// </summary>
   [FieldId(7)]
-  public long? ColumnIndexLength { get; set; }
+  public int? ColumnIndexLength { get; set; }
 
   /// <summary>
   /// Crypto metadata of encrypted columns

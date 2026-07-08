@@ -4,14 +4,49 @@ namespace Dbarone.Net.Database.Thrift;
 
 /// <summary>
 /// Description for file metadata
+/// https://github.com/apache/parquet-format/blob/master/src/main/thrift/parquet.thrift
 /// 
 /// - FileMetaData
 ///   - SchemaElement
-///     - Type
-///     - FieldRepetitionType
-///     - ConvertedType
+///     - e:Type
+///     - e:FieldRepetitionType
+///     - e:ConvertedType
 ///     - LogicalType
+///       - StringType
+///       - MapType
+///       - ListType
+///       - EnumType
+///       - DecimalType
+///       - DateType
+///       - TimeType
+///         - TimeUnit
+///       - TimestampType
+///         - TimeUnit
+///       - IntType
+///       - NullType
+///       - JsonType
+///       - BsonType
+///       - UUIDType
+///       - Float16Type
+///       - VariantType
+///       - GeometryType
+///       - GeographyType
+///         - EdgeInterpolationAlgorithm
 ///   - RowGroup
+///     - ColumnChunk
+///       - ColumnMetaData
+///         - Type (see above)
+///         - Encoding
+///         - CompressionCodec
+///         - KeyValue
+///         - Statistics
+///         - PageEncodingStats
+///         - SizeStatistics
+///         - GeospatialStatistics
+///       - ColumnCryptoMetaData
+///         - EncryptionWithFooterKey
+///         - EncryptionWithColumnKey
+///     - SortingColumn
 ///   - KeyValue
 ///   - ColumnOrder
 ///   - EncryptionAlgorithm

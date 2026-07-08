@@ -171,7 +171,7 @@ public sealed class IntType
   public Byte BitWidth { get; set; }
 
   [FieldId(2)]
-  public Boolean IsSigned { get; set; }
+  public bool IsSigned { get; set; }
 }
 
 /// <summary>
