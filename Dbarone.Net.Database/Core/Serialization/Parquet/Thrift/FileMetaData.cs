@@ -36,20 +36,27 @@ namespace Dbarone.Net.Database.Thrift;
 ///     - ColumnChunk
 ///       - ColumnMetaData
 ///         - Type (see above)
-///         - Encoding
-///         - CompressionCodec
+///         - e:Encoding
+///         - e:CompressionCodec
 ///         - KeyValue
 ///         - Statistics
 ///         - PageEncodingStats
+///           - PageType
+///           - Encoding (see above)
 ///         - SizeStatistics
 ///         - GeospatialStatistics
+///           - BoundingBox
 ///       - ColumnCryptoMetaData
 ///         - EncryptionWithFooterKey
 ///         - EncryptionWithColumnKey
 ///     - SortingColumn
 ///   - KeyValue
 ///   - ColumnOrder
+///     - TypeDefinedOrder
+///     - IEEE754TotalOrder
 ///   - EncryptionAlgorithm
+///     - AesGcmV1
+///     - AesGcmCtrV1
 /// 
 /// </summary>
 public sealed class FileMetaData

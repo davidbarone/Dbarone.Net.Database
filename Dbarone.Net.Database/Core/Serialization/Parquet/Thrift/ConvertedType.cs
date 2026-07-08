@@ -7,7 +7,7 @@ namespace Dbarone.Net.Database.Thrift;
 /// See LogicalTypes.md for conversion between ConvertedType and LogicalType.
 /// </summary>
 [Deprecated()]
-public enum ConvertedType : int
+public enum ConvertedType : byte
 {
   /// <summary>
   /// a BYTE_ARRAY actually contains UTF8 encoded chars

@@ -206,7 +206,7 @@ public sealed class VariantType
 /// <summary>
 /// Edge interpolation algorithm for Geography logical type
 /// </summary>
-public enum EdgeInterpolationAlgorithm : int
+public enum EdgeInterpolationAlgorithm : byte
 {
   SPHERICAL = 0,
   VINCENTY = 1,

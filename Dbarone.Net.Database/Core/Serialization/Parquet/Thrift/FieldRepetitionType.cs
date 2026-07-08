@@ -5,7 +5,7 @@ namespace Dbarone.Net.Database.Thrift;
 /// <summary>
 /// Representation of Schemas
 /// </summary>
-public enum RepetitionType
+public enum RepetitionType : byte
 {
   /** This field is required (can not be null) and each row has exactly 1 value. */
   REQUIRED = 0,
