@@ -1,5 +1,6 @@
-namespace Dbarone.Net.Database.Thrift;
+namespace Dbarone.Net.Database.Parquet;
 
+[ParquetThriftMetaData()]
 public sealed class EncryptionAlgorithm
 {
   [FieldId(1)]
@@ -9,6 +10,7 @@ public sealed class EncryptionAlgorithm
   public AesGcmCtrV1 AES_GCM_CTR_V1 { get; set; } = default!;
 }
 
+[ParquetThriftMetaData()]
 public sealed class AesGcmV1
 {
   /// <summary>
@@ -31,6 +33,7 @@ public sealed class AesGcmV1
   public bool? SupplyAadPrefix { get; set; }
 }
 
+[ParquetThriftMetaData()]
 public sealed class AesGcmCtrV1
 {
   /// <summary>

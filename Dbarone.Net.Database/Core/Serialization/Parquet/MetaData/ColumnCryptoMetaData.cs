@@ -1,5 +1,6 @@
-using Dbarone.Net.Database.Thrift;
+using Dbarone.Net.Database.Parquet;
 
+[ParquetThriftMetaData()]
 public sealed class ColumnCryptoMetaData
 {
   [FieldId(1)]
@@ -9,10 +10,12 @@ public sealed class ColumnCryptoMetaData
   public EncryptionWithColumnKey ENCRYPTION_WITH_COLUMN_KEY { get; set; }
 }
 
+[ParquetThriftMetaData()]
 public sealed class EncryptionWithFooterKey
 {
 }
 
+[ParquetThriftMetaData()]
 public sealed class EncryptionWithColumnKey
 {
   /// <summary>

@@ -1,15 +1,16 @@
-using Dbarone.Net.Database.Thrift;
+using Dbarone.Net.Database.Parquet;
 
 /// <summary>
 /// Description for column metadata
 /// </summary>
+[ParquetThriftMetaData()]
 public sealed class ColumnMetaData
 {
   /// <summary>
   /// Type of this column
   /// </summary>
   [FieldId(1)]
-  public Dbarone.Net.Database.Thrift.Type Type { get; set; }
+  public Dbarone.Net.Database.Parquet.Type Type { get; set; }
 
   /// <summary>
   /// Set of all encodings used for this column. The purpose is to validate
@@ -230,6 +231,7 @@ public enum CompressionCodec : byte
 /// Statistics per row group and per page
 /// All fields are optional.
 /// </summary>
+[ParquetThriftMetaData()]
 public sealed class Statistics
 {
   /// <summary>
@@ -338,6 +340,7 @@ public sealed class Statistics
 /// <summary>
 /// statistics of a given page type and encoding
 /// </summary>
+[ParquetThriftMetaData()]
 public sealed class PageEncodingStats
 {
   /// <summary>
@@ -367,6 +370,7 @@ public sealed class PageEncodingStats
 /// in this structure can help determine the number of nulls at a particular
 /// nesting level and maximum length of lists).
 /// </summary>
+[ParquetThriftMetaData()]
 public sealed class SizeStatistics
 {
   /// <summary>
@@ -415,6 +419,7 @@ public sealed class SizeStatistics
 /// Bounding box for GEOMETRY or GEOGRAPHY type in the representation of min/max
 /// value pair of coordinates from each axis.
 /// </summary>
+[ParquetThriftMetaData()]
 public sealed class BoundingBox
 {
   [FieldId(1)]
@@ -445,6 +450,7 @@ public sealed class BoundingBox
 /// <summary>
 /// Statistics specific to Geometry and Geography logical types
 /// </summary>
+[ParquetThriftMetaData()]
 public sealed class GeospatialStatistics
 {
   /// <summary>

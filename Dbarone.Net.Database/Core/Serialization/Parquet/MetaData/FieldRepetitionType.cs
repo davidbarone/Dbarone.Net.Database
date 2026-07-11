@@ -1,6 +1,6 @@
 /// This file defines the Parquet Thrift interface (Thrift IDL)
 /// https://github.com/apache/parquet-format/blob/master/src/main/thrift/parquet.thrift
-namespace Dbarone.Net.Database.Thrift;
+namespace Dbarone.Net.Database.Parquet;
 
 /// <summary>
 /// Representation of Schemas

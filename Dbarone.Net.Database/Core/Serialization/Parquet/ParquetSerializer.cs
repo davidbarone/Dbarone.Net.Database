@@ -1,13 +1,26 @@
 using Dbarone.Net.Database;
-using Dbarone.Net.Database.Thrift;
+using Dbarone.Net.Database.Parquet;
 
 
+/// <summary>
+/// Parquet is an open source, column-oriented data file format designed for
+/// efficient data storage and retrieval.
+/// 
+/// The Parquet format document can be found here: https://parquet.apache.org/
+/// 
+/// Parquet files use Parquet.Thrift:
+/// (https://github.com/apache/parquet-format/blob/master/src/main/thrift/parquet.thrift)
+/// To store metadata in Parquet files.
+/// 
+/// Parquet.Thrift is encoded using the Thrift Compact Protocol encoding:
+/// https://github.com/apache/thrift/blob/master/doc/specs/thrift-compact-protocol.md
+/// </summary>
 public class ParquetSerializer
 {
   private FileMetaData GetFileMetaData(IBuffer buffer, TextEncoding textEncoding = TextEncoding.UTF8)
   {
-    TCompactProtocolDecoder codec = new TCompactProtocolDecoder();
-    var fileMetaData = codec.ReadStruct(buffer);
+    ThriftCompactProtocolCodec codec = new ThriftCompactProtocolCodec();
+    var fileMetaData = codec.Decode(buffer);
     return null;
   }
 

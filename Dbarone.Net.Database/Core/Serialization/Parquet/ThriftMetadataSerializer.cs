@@ -1,5 +1,7 @@
+using System.ComponentModel;
+using System.Reflection;
 using Dbarone.Net.Database;
-using Dbarone.Net.Database.Thrift;
+using Dbarone.Net.Database.Parquet;
 
 /// <summary>
 /// Parquet files store metadata using the Apache Thrift
@@ -14,6 +16,33 @@ using Dbarone.Net.Database.Thrift;
 /// </summary>
 public class ThriftMetaDataSerializer
 {
+  private Dictionary<System.Type, Dictionary<int, PropertyInfo>> MappingRules = new Dictionary<Dbarone.Net.Database.Parquet.Type, Dictionary<int, PropertyInfo>>();
+
+  private IEnumerable<System.Type> GetMetaDataTypes()
+  {
+    foreach (var type in Assembly.GetExecutingAssembly().GetTypes())
+    {
+      if (type.GetCustomAttribute<ParquetThriftMetaDataAttribute>(inherit: false) != null)
+      {
+        yield return type;
+      }
+    }
+  }
+
+  private void Init()
+  {
+    foreach (var type in GetMetaDataTypes())
+    {
+      // Get all public properties
+      foreach (var property in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+      {
+        // Check if the property has a FieldId attribute
+
+      }
+    }
+
+  }
+
   private TCompactProtocolDecoder serializer = new TCompactProtocolDecoder();
 
   private T MapDict<T>(Dictionary<int, object?> dict)

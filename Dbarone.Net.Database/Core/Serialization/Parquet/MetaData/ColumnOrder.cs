@@ -1,4 +1,4 @@
-namespace Dbarone.Net.Database.Thrift;
+namespace Dbarone.Net.Database.Parquet;
 
 /// <summary>
 /// Union to specify the order used for the min_value and max_value fields for a
@@ -13,6 +13,7 @@ namespace Dbarone.Net.Database.Thrift;
 /// If the reader does not support the value of this union, min and max stats
 /// for this column should be ignored.
 /// </summary>
+[ParquetThriftMetaData()]
 public sealed class ColumnOrder
 {
   /**
@@ -139,7 +140,9 @@ public sealed class ColumnOrder
 }
 
 /** Empty struct to signal the order defined by the physical or logical type */
+[ParquetThriftMetaData()]
 public sealed class TypeDefinedOrder { }
 
 /** Empty struct to signal IEEE 754 total order for floating point types */
+[ParquetThriftMetaData()]
 public sealed class IEEE754TotalOrder { }

@@ -1,7 +1,7 @@
 /// <summary>
-/// Thrift compact protocol type enum.
+/// Thrift compact protocol type enum. Defines the types allows in Thrift Compact Protocol encodings.
 /// </summary>
-public enum TCompactProtocolType
+public enum ThriftCompactProtocolType
 {
   /// <summary>
   /// End of struct.

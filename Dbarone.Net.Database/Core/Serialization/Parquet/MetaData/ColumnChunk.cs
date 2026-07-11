@@ -1,5 +1,6 @@
-namespace Dbarone.Net.Database.Thrift;
+namespace Dbarone.Net.Database.Parquet;
 
+[ParquetThriftMetaData()]
 public sealed class ColumnChunk
 {
   /// <summary>

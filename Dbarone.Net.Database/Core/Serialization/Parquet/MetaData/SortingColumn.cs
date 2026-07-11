@@ -1,8 +1,9 @@
-namespace Dbarone.Net.Database.Thrift;
+namespace Dbarone.Net.Database.Parquet;
 
 /// <summary>
 /// Sort order within a RowGroup of a leaf column
 /// </summary>
+[ParquetThriftMetaData()]
 public sealed class SortingColumn
 {
   /// <summary>

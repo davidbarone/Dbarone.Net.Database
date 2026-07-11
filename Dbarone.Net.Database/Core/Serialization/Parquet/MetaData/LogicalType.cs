@@ -2,7 +2,7 @@ using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Data;
 
-namespace Dbarone.Net.Database.Thrift;
+namespace Dbarone.Net.Database.Parquet;
 
 /// <summary>
 /// LogicalType annotations to replace ConvertedType.
@@ -11,6 +11,7 @@ namespace Dbarone.Net.Database.Thrift;
 /// SchemaElement must also set the corresponding ConvertedType(if any)
 /// from the following table.
 /// </summary>
+[ParquetThriftMetaData()]
 public sealed class LogicalType
 {
   [FieldId(1)]
@@ -73,12 +74,25 @@ public sealed class LogicalType
 
 #region Empty structs to use as logical type annotations
 
+[ParquetThriftMetaData()]
 public sealed class StringType { } // allowed for BYTE_ARRAY, must be encoded with UTF-8
+
+[ParquetThriftMetaData()]
 public sealed class MapType { } // see LogicalTypes.mded as raw UUID bytes
+
+[ParquetThriftMetaData()]
 public sealed class UUIDType { } // allowed for FIXED[16], must be encoded as raw UUID bytes
+
+[ParquetThriftMetaData()]
 public sealed class ListType { } // see LogicalTypes.md
+
+[ParquetThriftMetaData()]
 public sealed class EnumType { } // allowed for BYTE_ARRAY, must be encoded with UTF-8
+
+[ParquetThriftMetaData()]
 public sealed class DateType { }  // allowed for INT32
+
+[ParquetThriftMetaData()]
 public sealed class Float16Type { } // allowed for FIXED[2], must be encoded as raw FLOAT16 bytes (see LogicalTypes.md)
 
 /// <summary>
@@ -88,6 +102,7 @@ public sealed class Float16Type { } // allowed for FIXED[2], must be encoded as 
 /// null and the physical type can't be determined. This annotation signals
 /// the case where the physical type was guessed from all null values.
 /// </summary>
+[ParquetThriftMetaData()]
 public sealed class NullType { } // allowed for any physical type, only null values stored
 
 /// <summary>
@@ -101,6 +116,7 @@ public sealed class NullType { } // allowed for any physical type, only null val
 /// 
 /// Allowed for physical types: INT32, INT64, FIXED_LEN_BYTE_ARRAY, and BYTE_ARRAY.
 /// </summary>
+[ParquetThriftMetaData()]
 public sealed class DecimalType
 {
   [FieldId(1)]
@@ -113,9 +129,16 @@ public sealed class DecimalType
 /// <summary>
 /// Time units for logical types
 /// </summary>
+[ParquetThriftMetaData()]
 public sealed class MilliSeconds { }
+
+[ParquetThriftMetaData()]
 public sealed class MicroSeconds { }
+
+[ParquetThriftMetaData()]
 public sealed class NanoSeconds { }
+
+[ParquetThriftMetaData()]
 public sealed class TimeUnit
 {
   [FieldId(1)]
@@ -134,6 +157,7 @@ public sealed class TimeUnit
 /// 
 /// Allowed for physical types: INT64
 /// </summary>
+[ParquetThriftMetaData()]
 public sealed class TimestampType
 {
   [FieldId(1)]
@@ -148,6 +172,7 @@ public sealed class TimestampType
 /// 
 /// Allowed for physical types: INT32(millis), INT64(micros, nanos)
 /// </summary>
+[ParquetThriftMetaData()]
 public sealed class TimeType
 {
 
@@ -165,6 +190,7 @@ public sealed class TimeType
 /// 
 /// Allowed for physical types: INT32, INT64
 /// </summary>
+[ParquetThriftMetaData()]
 public sealed class IntType
 {
   [FieldId(1)]
@@ -179,6 +205,7 @@ public sealed class IntType
 /// 
 /// Allowed for physical types: BYTE_ARRAY
 /// </summary>
+[ParquetThriftMetaData()]
 public sealed class JsonType
 {
 }
@@ -188,6 +215,7 @@ public sealed class JsonType
 /// 
 /// Allowed for physical types: BYTE_ARRAY
 /// </summary>
+[ParquetThriftMetaData()]
 public sealed class BsonType
 {
 }
@@ -195,6 +223,7 @@ public sealed class BsonType
 /**
  * Embedded Variant logical type annotation
  */
+[ParquetThriftMetaData()]
 public sealed class VariantType
 {
   // The version of the variant specification that the variant was
@@ -229,6 +258,7 @@ public enum EdgeInterpolationAlgorithm : byte
 /// 
 /// See Geospatial.md for details.
 /// </summary>
+[ParquetThriftMetaData()]
 public sealed class GeometryType
 {
   [FieldId(1)]
@@ -252,6 +282,7 @@ public sealed class GeometryType
 /// 
 /// See Geospatial.md for details.
 /// </summary>
+[ParquetThriftMetaData()]
 public sealed class GeographyType
 {
   [FieldId(1)]

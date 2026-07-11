@@ -4,13 +4,15 @@ using Dbarone.Net.Extensions;
 
 /// <summary>
 /// Codes / decodes using the Thrift compact binary protocol.
-/// - https://thrift.apache.org/static/files/thrift-20070401.pdf
+/// 
+/// Useful links:
 /// - https://github.com/apache/thrift/blob/master/doc/specs/thrift-compact-protocol.md
 /// - https://thrift.apache.org/
+/// - https://thrift.apache.org/static/files/thrift-20070401.pdf
 /// - https://simonkjohnston.life/thrift-specs/protocol-compact.html
 /// - https://issues.apache.org/jira/browse/THRIFT-110
 /// </summary>
-public class TCompactProtocolDecoder
+public class ThriftCompactProtocolCodec
 {
   /// <summary>
   /// Returns the low 4 bits of a byte.
@@ -37,10 +39,10 @@ public class TCompactProtocolDecoder
   /// </summary>
   /// <param name="buffer">The input buffer.</param>
   /// <returns>Returns an object representing the field</returns>
-  private (TCompactProtocolType FieldType, int FieldID, object? Value) ReadField(IBuffer buffer, int currentFieldID)
+  private (ThriftCompactProtocolType FieldType, int FieldID, object? Value) ReadField(IBuffer buffer, int currentFieldID)
   {
     var (fieldType, fieldIDDelta) = ReadFieldHeader(buffer);
-    if (fieldType == TCompactProtocolType.CT_STOP)
+    if (fieldType == ThriftCompactProtocolType.CT_STOP)
     {
       return (fieldType, currentFieldID, null);
     }
@@ -52,11 +54,11 @@ public class TCompactProtocolDecoder
     }
   }
 
-  public Dictionary<int, object?> ReadStruct(IBuffer buffer)
+  private Dictionary<int, object?> ReadStruct(IBuffer buffer)
   {
     Dictionary<int, object?> dict = new Dictionary<int, object?>();
     var field = ReadField(buffer, 0);
-    while (field.FieldType != TCompactProtocolType.CT_STOP)
+    while (field.FieldType != ThriftCompactProtocolType.CT_STOP)
     {
       dict.Add(field.FieldID, field.Value);
       field = ReadField(buffer, field.FieldID);
@@ -64,45 +66,45 @@ public class TCompactProtocolDecoder
     return dict;
   }
 
-  private object ReadValue(IBuffer buffer, TCompactProtocolType type)
+  private object ReadValue(IBuffer buffer, ThriftCompactProtocolType type)
   {
     switch (type)
     {
-      case TCompactProtocolType.CT_BOOLEAN_TRUE:
+      case ThriftCompactProtocolType.CT_BOOLEAN_TRUE:
         return true;
-      case TCompactProtocolType.CT_BOOLEAN_FALSE:
+      case ThriftCompactProtocolType.CT_BOOLEAN_FALSE:
         return false;
-      case TCompactProtocolType.CT_I16:
+      case ThriftCompactProtocolType.CT_I16:
         var zz = ReadZigZag(buffer);
         return zz.Decoded;
-      case TCompactProtocolType.CT_I32:
+      case ThriftCompactProtocolType.CT_I32:
         zz = ReadZigZag(buffer);
         return zz.Decoded;
-      case TCompactProtocolType.CT_I64:
+      case ThriftCompactProtocolType.CT_I64:
         zz = ReadZigZag(buffer);
         return zz.Decoded;
-      case TCompactProtocolType.CT_LIST:
+      case ThriftCompactProtocolType.CT_LIST:
         var list = ReadList(buffer);
         return list;
-      case TCompactProtocolType.CT_STRUCT:
+      case ThriftCompactProtocolType.CT_STRUCT:
         var st = ReadStruct(buffer);
         return st;
-      case TCompactProtocolType.CT_BINARY:
+      case ThriftCompactProtocolType.CT_BINARY:
         // for byte[] and string types
         var length = ReadVarInt(buffer);
         var bytes = buffer.ReadBytes(length);
         return bytes;
-      case TCompactProtocolType.CT_BYTE:
+      case ThriftCompactProtocolType.CT_BYTE:
         var b = buffer.ReadBytes(1)[0];
         return b;
-      case TCompactProtocolType.CT_STOP:
+      case ThriftCompactProtocolType.CT_STOP:
         return null;
       default:
         throw new Exception("whoops");
     }
   }
 
-  public List<object> ReadList(IBuffer buffer)
+  private List<object> ReadList(IBuffer buffer)
   {
     List<object> arr = new List<object>();
     var listHeader = ReadListHeader(buffer);
@@ -138,13 +140,13 @@ public class TCompactProtocolDecoder
   /// </summary>
   /// <param name="buffer">The input buffer to read.</param>
   /// <returns>Returns the field type and field ID delta.</returns>
-  private (TCompactProtocolType FieldType, int FieldIDDelta) ReadFieldHeader(IBuffer buffer)
+  private (ThriftCompactProtocolType FieldType, int FieldIDDelta) ReadFieldHeader(IBuffer buffer)
   {
     var b = buffer.ReadBytes(1)[0];
     var low = GetLowNibble(b);
     var high = GetHighNibble(b);
     return (
-      FieldType: (TCompactProtocolType)low,
+      FieldType: (ThriftCompactProtocolType)low,
       FieldIDDelta: high
       );
   }
@@ -156,7 +158,7 @@ public class TCompactProtocolDecoder
   /// </summary>
   /// <param name="buffer">The input buffer.</param>
   /// <returns>Returns list header</returns>
-  private (TCompactProtocolType ElementType, ulong Size) ReadListHeader(IBuffer buffer)
+  private (ThriftCompactProtocolType ElementType, ulong Size) ReadListHeader(IBuffer buffer)
   {
     var b = buffer.ReadBytes(1)[0];
     var low = GetLowNibble(b);
@@ -169,14 +171,19 @@ public class TCompactProtocolDecoder
       size = vi.Value;
     }
     return (
-      ElementType: (TCompactProtocolType)low,
+      ElementType: (ThriftCompactProtocolType)low,
       Size: size
     );
   }
 
-  public object Decode(IBuffer buffer)
+  /// <summary>
+  /// Decodes a buffer using Thrift Compact Protocol, outputting a dictionary structure.
+  /// </summary>
+  /// <param name="buffer">The input buffer to read.</param>
+  /// <returns>Data is returned in a dictionary structure.</returns>
+  public Dictionary<int, object?> Decode(IBuffer buffer)
   {
-    return null;
+    return ReadStruct(buffer);
   }
 
   public object DecodeI16(IBuffer buffer)

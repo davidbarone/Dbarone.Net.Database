@@ -1,4 +1,4 @@
-namespace Dbarone.Net.Database.Thrift;
+namespace Dbarone.Net.Database.Parquet;
 
 /// <summary>
 /// DEPRECATED: Common types used by frameworks(e.g.Hive, Pig) using parquet.

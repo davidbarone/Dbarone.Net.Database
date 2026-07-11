@@ -1,8 +1,9 @@
-namespace Dbarone.Net.Database.Thrift;
+namespace Dbarone.Net.Database.Parquet;
 
 /// <summary>
 /// Wrapper struct to store key values
 /// </summary>
+[ParquetThriftMetaData()]
 public sealed class KeyValue
 {
   /// <summary>

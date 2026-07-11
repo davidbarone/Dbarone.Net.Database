@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace Dbarone.Net.Database.Thrift;
+namespace Dbarone.Net.Database.Parquet;
 
 /// <summary>
 /// Description for file metadata
@@ -59,6 +59,7 @@ namespace Dbarone.Net.Database.Thrift;
 ///     - AesGcmCtrV1
 /// 
 /// </summary>
+[ParquetThriftMetaData()]
 public sealed class FileMetaData
 {
   /// <summary>

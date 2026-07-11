@@ -1,4 +1,4 @@
-namespace Dbarone.Net.Database.Thrift;
+namespace Dbarone.Net.Database.Parquet;
 
 [System.AttributeUsage(System.AttributeTargets.Property, AllowMultiple = false)]
 public sealed class FieldIdAttribute : System.Attribute

@@ -1,6 +1,6 @@
 /// This file defines the Parquet Thrift interface (Thrift IDL)
 /// https://github.com/apache/parquet-format/blob/master/src/main/thrift/parquet.thrift
-namespace Dbarone.Net.Database.Thrift;
+namespace Dbarone.Net.Database.Parquet;
 
 /// <summary>
 /// Represents an element inside a schema definition.
@@ -8,6 +8,7 @@ namespace Dbarone.Net.Database.Thrift;
 ///  - if it is a primitive type (leaf) then type is defined and num_children is undefined
 /// the nodes are listed in depth first traversal order.
 /// </summary>
+[ParquetThriftMetaData()]
 public class SchemaElement
 {
   /// <summary>
