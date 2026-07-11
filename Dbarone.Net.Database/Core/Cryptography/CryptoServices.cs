@@ -12,7 +12,7 @@ public class CryptoServices
     {
         using (Aes aes = Aes.Create())
         {
-            var passwordBytes = Encoding.UTF8.GetBytes(password);
+            var passwordBytes = System.Text.Encoding.UTF8.GetBytes(password);
             var keyBytes = SHA256.Create().ComputeHash(passwordBytes).Take(128 / 8).ToArray();
             aes.Key = keyBytes;
             //aes.Padding = PaddingMode.Zeros;

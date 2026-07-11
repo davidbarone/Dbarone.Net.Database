@@ -3,7 +3,7 @@ using Xunit;
 
 namespace Dbarone.Net.Database;
 
-public class TCompactProtocolDecoderTests
+public class ThriftCompactProtocolCodecTests
 {
   private byte[] Base64ToByteArray(string base64)
   {
@@ -20,7 +20,16 @@ public class TCompactProtocolDecoderTests
   public void TestStruct(string input)
   {
     var buf = Base64ToIBuffer(input);
-    TCompactProtocolDecoder codec = new TCompactProtocolDecoder();
-    var results = codec.ReadStruct(buf);
+    ThriftCompactProtocolCodec codec = new ThriftCompactProtocolCodec();
+    var results = codec.Decode(buf);
+  }
+
+  [Theory]
+  [InlineData("FQIZLEgEcm9vdBUCABUCJQAYA2ZvbyUiTKwTIBEAAAAWChkcGRwmCBwVAhklCgYZGANmb28VAhYKFqYBFnImCDwYBAUAAAAYBAEAAAAWACgEBQAAABgEAQAAAAAAABamARYKNnIAKEpQYXJxdWV0Lk5ldCB2ZXJzaW9uIDUuNS4wIChidWlsZCA0YjA4ZWNkY2ViZjNlM2E3MWU0MmFkNDA3MWE2ZTE5MzQ0NTNiZDhmKQA=")]
+  public void TestThriftMetaData(string input)
+  {
+    var buf = Base64ToIBuffer(input);
+    ThriftMetaDataSerializer ser = new ThriftMetaDataSerializer();
+    var results = ser.GetMetaData(buf);
   }
 }

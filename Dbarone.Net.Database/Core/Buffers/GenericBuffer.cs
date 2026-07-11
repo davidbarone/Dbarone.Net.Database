@@ -149,19 +149,19 @@ public class GenericBuffer : IBuffer
         var index = (int)this.Stream.Position;
         if (textEncoding == TextEncoding.UTF8)
         {
-            var result = Encoding.UTF8.GetString(InternalBuffer, index, length);
+            var result = System.Text.Encoding.UTF8.GetString(InternalBuffer, index, length);
             this.Position += length;
             return result;
         }
         else if (textEncoding == TextEncoding.UTF16)
         {
-            var result = Encoding.Unicode.GetString(InternalBuffer, index, length);
+            var result = System.Text.Encoding.Unicode.GetString(InternalBuffer, index, length);
             this.Position += length;
             return result;
         }
         else if (textEncoding == TextEncoding.Latin1)
         {
-            var result = Encoding.Latin1.GetString(InternalBuffer, index, length);
+            var result = System.Text.Encoding.Latin1.GetString(InternalBuffer, index, length);
             this.Position += length;
             return result;
         }
@@ -239,7 +239,7 @@ public class GenericBuffer : IBuffer
             // GetBytes writes directly to the buffer.
             //var bytes = Encoding.UTF8.GetBytes(value, 0, value.Length, this.InternalBuffer, index);
 
-            var bytes = Encoding.UTF8.GetBytes(value);
+            var bytes = System.Text.Encoding.UTF8.GetBytes(value);
             Write(bytes);
             return bytes.Length;
         }
@@ -248,7 +248,7 @@ public class GenericBuffer : IBuffer
             // GetBytes writes directly to the buffer.
             //var bytes = Encoding.UTF8.GetBytes(value, 0, value.Length, this.InternalBuffer, index);
 
-            var bytes = Encoding.Unicode.GetBytes(value);
+            var bytes = System.Text.Encoding.Unicode.GetBytes(value);
             Write(bytes);
             return bytes.Length;
         }
@@ -256,7 +256,7 @@ public class GenericBuffer : IBuffer
         {
             //var bytes = Encoding.Latin1.GetBytes(value, 0, value.Length, this.InternalBuffer, index);
 
-            var bytes = Encoding.Latin1.GetBytes(value);
+            var bytes = System.Text.Encoding.Latin1.GetBytes(value);
             Write(bytes);
             return bytes.Length;
         }

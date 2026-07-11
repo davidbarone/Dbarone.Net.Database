@@ -6,7 +6,7 @@ public sealed class ColumnCryptoMetaData
   [FieldId(1)]
   public EncryptionWithFooterKey ENCRYPTION_WITH_FOOTER_KEY { get; set; }
 
-  [FieldId(1)]
+  [FieldId(2)]
   public EncryptionWithColumnKey ENCRYPTION_WITH_COLUMN_KEY { get; set; }
 }
 

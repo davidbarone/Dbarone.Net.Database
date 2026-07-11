@@ -13,7 +13,7 @@ public class CryptographyTests
 
         // Plain test version    
         var stream = new MemoryStream();
-        var plainWriter = new StreamWriter(stream, Encoding.UTF8, -1, false);
+        var plainWriter = new StreamWriter(stream, System.Text.Encoding.UTF8, -1, false);
         plainWriter.Write(input);
         plainWriter.Flush();
         stream.Flush();
@@ -22,7 +22,7 @@ public class CryptographyTests
         // crypto version
         stream = new MemoryStream();
         var cs = CryptoServices.CreateCryptoStream(stream, "password", CryptoStreamMode.Write);
-        var cryptoWriter = new StreamWriter(cs, Encoding.UTF8, -1, false);
+        var cryptoWriter = new StreamWriter(cs, System.Text.Encoding.UTF8, -1, false);
         cryptoWriter.Write(input);
         cryptoWriter.Flush();
         cs.FlushFinalBlock();
@@ -32,13 +32,13 @@ public class CryptographyTests
 
         // Read plain stream - encrypted
         stream = new MemoryStream(encryptedBytes);
-        StreamReader plainReader = new StreamReader(stream, Encoding.UTF8, true, -1, false);
+        StreamReader plainReader = new StreamReader(stream, System.Text.Encoding.UTF8, true, -1, false);
         string encryptedText = plainReader.ReadToEnd();
 
         // Read crypto stream - decrypted
         stream = new MemoryStream(encryptedBytes);
         cs = CryptoServices.CreateCryptoStream(stream, "password", CryptoStreamMode.Read);
-        StreamReader cryptoReader = new StreamReader(cs, Encoding.UTF8, true, -1, false);
+        StreamReader cryptoReader = new StreamReader(cs, System.Text.Encoding.UTF8, true, -1, false);
         string decryptedText = cryptoReader.ReadToEnd();
 
         Assert.Equal(input, decryptedText);

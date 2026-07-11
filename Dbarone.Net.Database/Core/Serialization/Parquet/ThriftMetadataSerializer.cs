@@ -99,17 +99,25 @@ public class ThriftMetaDataSerializer
 
       var pi = rules[item];
 
-      switch (pi.GetType())
+      switch (pi.PropertyType)
       {
         case System.Type boolType when boolType == typeof(bool):
+          pi.SetValue(obj, (bool)dict[item]!);
+          break;
         case System.Type byteType when byteType == typeof(byte):
+          pi.SetValue(obj, (byte)dict[item]!);
+          break;
         case System.Type shortType when shortType == typeof(short):
+          pi.SetValue(obj, (short)dict[item]!);
+          break;
         case System.Type intType when intType == typeof(int):
+          pi.SetValue(obj, (int)dict[item]!);
+          break;
         case System.Type longType when longType == typeof(long):
-          pi.SetValue(obj, dict[item]);
+          pi.SetValue(obj, (long)dict[item]!);
           break;
         case System.Type parquetThriftMetadataType when IsParquetThriftMetaDataType(parquetThriftMetadataType):
-          pi.SetValue(obj, MapDict(parquetThriftMetadataType, (System.Collections.Generic.Dictionary<int, object?>)dict[item], mappingRules);
+          pi.SetValue(obj, MapDict(parquetThriftMetadataType, (System.Collections.Generic.Dictionary<int, object?>)dict[item], mappingRules));
           break;
         default:
           throw new Exception("whoops");
