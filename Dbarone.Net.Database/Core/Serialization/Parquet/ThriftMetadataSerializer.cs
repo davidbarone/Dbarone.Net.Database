@@ -1,3 +1,4 @@
+using System.Collections;
 using System.ComponentModel;
 using System.Formats.Tar;
 using System.Reflection;
@@ -33,33 +34,13 @@ public class ThriftMetaDataSerializer
     }
   }
 
-  public bool IsEnumerableType(System.Type type)
+  static bool IsGenericListType(System.Type type)
   {
-    if (typeof(System.Collections.IEnumerable).IsAssignableFrom(type) || type.IsArray)
-    {
-      return true;
-    }
+    if (type == null)
+      return false;
 
-    System.Type[] interfaces = type.GetInterfaces();
-    foreach (System.Type type2 in interfaces)
-    {
-      if (type2.GetTypeInfo().IsGenericType && type2.GetGenericTypeDefinition() == typeof(IEnumerable<>))
-      {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  public bool IsDictionaryType(System.Type type)
-  {
-    if (!type.GetTypeInfo().IsGenericType || !type.GetGenericTypeDefinition().Equals(typeof(IDictionary<,>)))
-    {
-      return type.GetInterfaces().Any((System.Type x) => x == typeof(System.Collections.IDictionary) || (x.GetTypeInfo().IsGenericType && x.GetGenericTypeDefinition().Equals(typeof(IDictionary<,>))));
-    }
-
-    return true;
+    return type.IsGenericType &&
+           type.GetGenericTypeDefinition() == typeof(List<>);
   }
 
   private IEnumerable<System.Type> GetMetaDataTypes()
@@ -70,6 +51,18 @@ public class ThriftMetaDataSerializer
       {
         yield return type;
       }
+    }
+  }
+
+  private System.Type GetGenericListElementType(System.Type type)
+  {
+    if (type.IsGenericType && type.IsAssignableToGenericType(typeof(IList<>)))
+    {
+      return type.GetGenericArguments()[0];
+    }
+    else
+    {
+      throw new Exception($"Type {type.Name} is not a generic list type.");
     }
   }
 
@@ -98,6 +91,61 @@ public class ThriftMetaDataSerializer
     return mappingRules;
   }
 
+  private IList ToGenericList(System.Type elementType, List<object> sourceArray)
+  {
+    // Get the cast method
+    var castMethod = typeof(IEnumerable).GetExtensionMethods().First(m => m.Name == "Cast");
+    // Get the cast method for the element type parameter, and invoke;
+    var results = castMethod.MakeGenericMethod(elementType).Invoke(null, new object[] { sourceArray });
+    if (results == null)
+    {
+      throw new Exception("Null return value for ToGenericList().");
+    }
+    var toListMethod = typeof(IEnumerable<>).GetExtensionMethods().First(m => m.Name == "ToList");
+    var returnValue = toListMethod.MakeGenericMethod(elementType).Invoke(null, new object[] { results }) as IList;
+    if (returnValue == null)
+    {
+      throw new Exception("Null return value for ToGenericList().");
+    }
+    return returnValue;
+  }
+
+  private object MapOne(System.Type targetType, object? value, MappingRulesAlias mappingRules)
+  {
+    // Maps 1 value
+    switch (targetType)
+    {
+      case System.Type boolType when boolType == typeof(bool):
+        return Convert.ToBoolean(value);
+      case System.Type byteType when byteType == typeof(byte):
+        return Convert.ToByte(value);
+      case System.Type shortType when shortType == typeof(short):
+        return Convert.ToInt16(value);
+      case System.Type intType when intType == typeof(int):
+        return Convert.ToInt32(value);
+      case System.Type longType when longType == typeof(long):
+        return Convert.ToInt64(value);
+      case System.Type listType when IsGenericListType(listType):
+        var elementType = GetGenericListElementType(listType);
+        return MapList(elementType, (IList)value!, mappingRules);
+      case System.Type parquetThriftMetadataType when IsParquetThriftMetaDataType(parquetThriftMetadataType):
+        return MapDict(parquetThriftMetadataType, (System.Collections.Generic.Dictionary<int, object?>)value!, mappingRules);
+      default:
+        throw new Exception($"Mapping does not exist for targetType of: {targetType}.");
+    }
+  }
+
+  private IList MapList(System.Type targetElementType, IEnumerable sourceArray, MappingRulesAlias mappingRules)
+  {
+    var list = new List<object>();
+
+    foreach (var item in sourceArray)
+    {
+      var mapped = MapOne(targetElementType, item, mappingRules);
+      list.Add(mapped);
+    }
+    return ToGenericList(targetElementType, list);
+  }
 
   private T MapDict<T>(Dictionary<int, object?> dict, MappingRulesAlias mappingRules)
   {
@@ -105,7 +153,7 @@ public class ThriftMetaDataSerializer
     return (T)MapDict(type, dict, mappingRules);
   }
 
-  private object MapDict(System.Type targetType, Dictionary<int, object?> dict, MappingRulesAlias mappingRules)
+  private object MapDict(System.Type targetType, Dictionary<int, object?> sourceDict, MappingRulesAlias mappingRules)
   {
     // Get rules for the target type
     if (!mappingRules.ContainsKey(targetType))
@@ -121,7 +169,7 @@ public class ThriftMetaDataSerializer
       throw new Exception("whoops");
     }
 
-    foreach (var item in dict.Keys)
+    foreach (var item in sourceDict.Keys)
     {
       if (!rules.ContainsKey(item))
       {
@@ -129,32 +177,8 @@ public class ThriftMetaDataSerializer
       }
 
       var pi = rules[item];
-
-      switch (pi.PropertyType)
-      {
-        case System.Type boolType when boolType == typeof(bool):
-          pi.SetValue(obj, Convert.ToBoolean(dict[item]));
-          break;
-        case System.Type byteType when byteType == typeof(byte):
-          pi.SetValue(obj, Convert.ToByte(dict[item]));
-          break;
-        case System.Type shortType when shortType == typeof(short):
-          pi.SetValue(obj, Convert.ToInt16(dict[item]));
-          break;
-        case System.Type intType when intType == typeof(int):
-          pi.SetValue(obj, Convert.ToInt32(dict[item]));
-          break;
-        case System.Type longType when longType == typeof(long):
-          pi.SetValue(obj, Convert.ToInt64(dict[item]));
-          break;
-        case System.Type arrayType when IsEnumerableType(arrayType) && !IsDictionaryType(arrayType):
-          break;
-        case System.Type parquetThriftMetadataType when IsParquetThriftMetaDataType(parquetThriftMetadataType):
-          pi.SetValue(obj, MapDict(parquetThriftMetadataType, (System.Collections.Generic.Dictionary<int, object?>)dict[item], mappingRules));
-          break;
-        default:
-          throw new Exception($"Mapping does not exist for property: {pi.Name} of type {pi.PropertyType}.");
-      }
+      var mapped = MapOne(pi.PropertyType, sourceDict[item], mappingRules);
+      pi.SetValue(obj, mapped);
     }
     return obj;
   }
