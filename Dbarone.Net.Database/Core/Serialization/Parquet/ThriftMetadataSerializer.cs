@@ -169,7 +169,7 @@ public class ThriftMetaDataSerializer
       case System.Type longType when longType == typeof(long):
         return Convert.ToInt64(value);
       case System.Type stringType when stringType == typeof(string):
-        return Convert.ToString(value);
+        return System.Text.Encoding.UTF8.GetString((byte[])value);
       case System.Type byteArrayType when byteArrayType == typeof(byte[]):
         return (byte[])value!;
       case System.Type enumType when enumType.IsEnum:
