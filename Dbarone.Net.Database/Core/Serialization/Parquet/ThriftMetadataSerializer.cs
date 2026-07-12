@@ -1,7 +1,9 @@
 using System.ComponentModel;
+using System.Formats.Tar;
 using System.Reflection;
 using Dbarone.Net.Database;
 using Dbarone.Net.Database.Parquet;
+using Dbarone.Net.Extensions;
 using MappingRulesAlias = System.Collections.Generic.Dictionary<System.Type, System.Collections.Generic.Dictionary<int, System.Reflection.PropertyInfo>>;
 
 /// <summary>
@@ -29,6 +31,35 @@ public class ThriftMetaDataSerializer
     {
       return false;
     }
+  }
+
+  public bool IsEnumerableType(System.Type type)
+  {
+    if (typeof(System.Collections.IEnumerable).IsAssignableFrom(type) || type.IsArray)
+    {
+      return true;
+    }
+
+    System.Type[] interfaces = type.GetInterfaces();
+    foreach (System.Type type2 in interfaces)
+    {
+      if (type2.GetTypeInfo().IsGenericType && type2.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+      {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  public bool IsDictionaryType(System.Type type)
+  {
+    if (!type.GetTypeInfo().IsGenericType || !type.GetGenericTypeDefinition().Equals(typeof(IDictionary<,>)))
+    {
+      return type.GetInterfaces().Any((System.Type x) => x == typeof(System.Collections.IDictionary) || (x.GetTypeInfo().IsGenericType && x.GetGenericTypeDefinition().Equals(typeof(IDictionary<,>))));
+    }
+
+    return true;
   }
 
   private IEnumerable<System.Type> GetMetaDataTypes()
@@ -102,25 +133,27 @@ public class ThriftMetaDataSerializer
       switch (pi.PropertyType)
       {
         case System.Type boolType when boolType == typeof(bool):
-          pi.SetValue(obj, (bool)dict[item]!);
+          pi.SetValue(obj, Convert.ToBoolean(dict[item]));
           break;
         case System.Type byteType when byteType == typeof(byte):
-          pi.SetValue(obj, (byte)dict[item]!);
+          pi.SetValue(obj, Convert.ToByte(dict[item]));
           break;
         case System.Type shortType when shortType == typeof(short):
-          pi.SetValue(obj, (short)dict[item]!);
+          pi.SetValue(obj, Convert.ToInt16(dict[item]));
           break;
         case System.Type intType when intType == typeof(int):
-          pi.SetValue(obj, (int)dict[item]!);
+          pi.SetValue(obj, Convert.ToInt32(dict[item]));
           break;
         case System.Type longType when longType == typeof(long):
-          pi.SetValue(obj, (long)dict[item]!);
+          pi.SetValue(obj, Convert.ToInt64(dict[item]));
+          break;
+        case System.Type arrayType when IsEnumerableType(arrayType) && !IsDictionaryType(arrayType):
           break;
         case System.Type parquetThriftMetadataType when IsParquetThriftMetaDataType(parquetThriftMetadataType):
           pi.SetValue(obj, MapDict(parquetThriftMetadataType, (System.Collections.Generic.Dictionary<int, object?>)dict[item], mappingRules));
           break;
         default:
-          throw new Exception("whoops");
+          throw new Exception($"Mapping does not exist for property: {pi.Name} of type {pi.PropertyType}.");
       }
     }
     return obj;
