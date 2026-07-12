@@ -66,6 +66,26 @@ public class ThriftMetaDataSerializer
     }
   }
 
+  private bool IsNullableType(System.Type type)
+  {
+    if (type.IsGenericType && type.GetGenericTypeDefinition().Equals(typeof(Nullable<>)))
+    {
+      return true;
+    }
+
+    return false;
+  }
+
+  private System.Type GetNullableUnderlyingType(System.Type type)
+  {
+    var underlyingType = Nullable.GetUnderlyingType(type);
+    if (underlyingType is null)
+    {
+      throw new Exception("Cannot get Nullable underlying type.");
+    }
+    return underlyingType;
+  }
+
   private MappingRulesAlias GetMappingRules()
   {
     var mappingRules = new MappingRulesAlias();
@@ -110,7 +130,30 @@ public class ThriftMetaDataSerializer
     return returnValue;
   }
 
-  private object MapOne(System.Type targetType, object? value, MappingRulesAlias mappingRules)
+  private Enum MapEnum(System.Type targetType, object value, MappingRulesAlias mappingRules)
+  {
+    // Get underlying type of enum and case value to that type
+    var underlyingType = Enum.GetUnderlyingType(targetType);
+    var underlyingValue = MapOne(underlyingType, value, mappingRules);
+
+    if (underlyingValue is null)
+    {
+      throw new Exception("Underlying enum value cannot be null.");
+    }
+
+    var isDefined = Enum.IsDefined(targetType, underlyingValue);
+
+    if (isDefined)
+    {
+      return (Enum)Enum.ToObject(targetType, underlyingValue);
+    }
+    else
+    {
+      throw new Exception($"Value [{underlyingValue}] cannot be assigned to Enum [{targetType}].");
+    }
+  }
+
+  private object? MapOne(System.Type targetType, object? value, MappingRulesAlias mappingRules)
   {
     // Maps 1 value
     switch (targetType)
@@ -125,9 +168,22 @@ public class ThriftMetaDataSerializer
         return Convert.ToInt32(value);
       case System.Type longType when longType == typeof(long):
         return Convert.ToInt64(value);
+      case System.Type stringType when stringType == typeof(string):
+        return Convert.ToString(value);
+      case System.Type byteArrayType when byteArrayType == typeof(byte[]):
+        return (byte[])value!;
+      case System.Type enumType when enumType.IsEnum:
+        return MapEnum(enumType, value!, mappingRules);
       case System.Type listType when IsGenericListType(listType):
         var elementType = GetGenericListElementType(listType);
         return MapList(elementType, (IList)value!, mappingRules);
+      case System.Type nullableType when IsNullableType(nullableType):
+        if (value is null) { return null; }
+        else
+        {
+          var underlyingType = GetNullableUnderlyingType(nullableType);
+          return MapOne(underlyingType, value, mappingRules);
+        }
       case System.Type parquetThriftMetadataType when IsParquetThriftMetaDataType(parquetThriftMetadataType):
         return MapDict(parquetThriftMetadataType, (System.Collections.Generic.Dictionary<int, object?>)value!, mappingRules);
       default:
