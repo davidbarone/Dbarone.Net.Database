@@ -128,8 +128,8 @@ public class ParquetSerializerTests
 
     // Read the parquet ms using both Parquet.NET and Dbarone.Net.Database
     var readParquetNet = ReadParquetNet(bytes);
+    var readParquetDbarone = new ParquetSerializer().Read(bytes);
   }
-
 
   /*   [Fact]
     public async Task SerializeTableNoSchemaTest()

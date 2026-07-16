@@ -22,6 +22,26 @@ public class ThriftMetaDataSerializer
 {
   private ThriftCompactProtocolCodec serializer = new ThriftCompactProtocolCodec();
 
+  #region Public Methods
+
+  public FileMetaData GetMetaData(IBuffer buffer)
+  {
+    // Deserialise to dict
+    var dict = serializer.Decode(buffer);
+
+    // Get mapping rules
+    var mappingRules = GetMappingRules();
+
+    // Map dict to Thrift object
+    var metadata = MapDict<FileMetaData>(dict, mappingRules);
+
+    return metadata;
+  }
+
+  #endregion
+
+  #region Private Methods
+
   private bool IsParquetThriftMetaDataType(System.Type type)
   {
     if (type.GetCustomAttribute<ParquetThriftMetaDataAttribute>(inherit: false) != null)
@@ -34,7 +54,7 @@ public class ThriftMetaDataSerializer
     }
   }
 
-  static bool IsGenericListType(System.Type type)
+  private bool IsGenericListType(System.Type type)
   {
     if (type == null)
       return false;
@@ -239,17 +259,5 @@ public class ThriftMetaDataSerializer
     return obj;
   }
 
-  public FileMetaData GetMetaData(IBuffer buffer)
-  {
-    // Deserialise to dict
-    var dict = serializer.Decode(buffer);
-
-    // Get mapping rules
-    var mappingRules = GetMappingRules();
-
-    // Map dict to Thrift object
-    var metadata = MapDict<FileMetaData>(dict, mappingRules);
-
-    return metadata;
-  }
+  #endregion
 }

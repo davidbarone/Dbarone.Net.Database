@@ -17,12 +17,19 @@ using Dbarone.Net.Database.Parquet;
 /// </summary>
 public class ParquetSerializer
 {
-  private FileMetaData GetFileMetaData(IBuffer buffer, TextEncoding textEncoding = TextEncoding.UTF8)
+  public FileMetaData GetFileMetaData(IBuffer buffer, TextEncoding textEncoding = TextEncoding.UTF8)
   {
     ThriftCompactProtocolCodec codec = new ThriftCompactProtocolCodec();
     var fileMetaData = codec.Decode(buffer);
     return null;
   }
+
+  public ParquetModel Read(byte[] bytes, TextEncoding textEncoding = TextEncoding.UTF8)
+  {
+    IBuffer buffer = new GenericBuffer(bytes);
+    return Read(buffer, textEncoding);
+  }
+
 
   /// <summary>
   /// Deserializes a buffer contains parquet-formatted data, into a table.
@@ -30,8 +37,11 @@ public class ParquetSerializer
   /// <param name="buffer"></param>
   /// <param name="textEncoding"></param>
   /// <returns></returns>
-  public Table Deserialize(IBuffer buffer, TextEncoding textEncoding = TextEncoding.UTF8)
+  public ParquetModel Read(IBuffer buffer, TextEncoding textEncoding = TextEncoding.UTF8)
   {
+    // Create return object
+    ParquetModel model = new ParquetModel();
+
     // Magic header
     buffer.Position = 0;
     var magicHeader = buffer.ReadString(4);
@@ -59,46 +69,9 @@ public class ParquetSerializer
     buffer.Position = buffer.Length - 4 - 4 - fileMetadataLength;
     var fileMetadataBytes = buffer.ReadBytes(fileMetadataLength);
     GenericBuffer metadataBuffer = new GenericBuffer(fileMetadataBytes);
+    var mdSer = new ThriftMetaDataSerializer();
+    model.MetaData = mdSer.GetMetaData(metadataBuffer);
 
-    var field_id = 0;
-
-    // Field #1: version
-    // structure: field header
-    // - high 4 bits: delta field id
-    // - low 4 bits: type 
-    // - typically Type: I32, Delta fieldid: 1
-    var versionByte = (int)metadataBuffer.ReadBytes(1)[0];
-    var versionLow = versionByte & 0xF;
-    var versionHigh = (versionByte & ~0xF) >> 4;
-    field_id += versionHigh;
-
-    // Next byte[s] are version in ZigZag encoding
-    var versionVarInt = new VarInt(metadataBuffer.Slice(metadataBuffer.Position, metadataBuffer.Length - metadataBuffer.Position));
-    var versionZz = new ZigZag(versionVarInt);
-    var version = versionZz.Decoded;
-    metadataBuffer.Position = metadataBuffer.Position + versionVarInt.Size;
-
-    // Field #2: List<SchemaElement>
-    var schemaListByte = (int)metadataBuffer.ReadBytes(1)[0];
-    var schemaListLow = schemaListByte & 0xF;
-    var schemaListHigh = (schemaListByte & ~0xF) >> 4;
-    field_id += schemaListHigh;
-
-    // Within a LIST, read the list header
-    // - high 4 bits: element type
-    // - low 4 bits: size (if < 15), otherwise, 0xF, then read varint for size
-    var listHeaderByte = (int)metadataBuffer.ReadBytes(1)[0];
-    var listHeaderLow = listHeaderByte & 0xF;
-    var listHeaderHigh = (listHeaderByte & ~0xF) >> 4;
-
-    if (listHeaderLow == 0xF)
-    {
-      // read varint to get size
-      var viSize = new VarInt(metadataBuffer.Slice(metadataBuffer.Position, metadataBuffer.Length - metadataBuffer.Position));
-      var zz = new ZigZag(viSize);
-    }
-
-
-    return new Table();
+    return model;
   }
 }
