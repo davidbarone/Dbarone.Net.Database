@@ -129,6 +129,13 @@ public class ParquetSerializerTests
     // Read the parquet ms using both Parquet.NET and Dbarone.Net.Database
     var readParquetNet = ReadParquetNet(bytes);
     var readParquetDbarone = new ParquetSerializer().Read(bytes);
+
+    // Assertions / tests
+    Assert.Equal(readParquetNet.Result.Metadata.CreatedBy, readParquetDbarone.MetaData.CreatedBy);
+    Assert.Equal(readParquetNet.Result.Metadata.NumRows, readParquetDbarone.MetaData.NumRows);
+    Assert.Equal(readParquetNet.Result.Metadata.RowGroups[0].TotalByteSize, readParquetDbarone.MetaData.RowGroups[0].TotalByteSize);
+
+
   }
 
   /*   [Fact]
