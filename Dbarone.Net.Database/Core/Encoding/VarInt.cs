@@ -30,7 +30,7 @@ public struct VarInt
         Size = Bytes.Length;
     }
 
-    public VarInt(byte[] bytes)
+    public VarInt(byte[] bytes, Endianness? endianness = Endianness.BIG_ENDIAN)
     {
         Bytes = bytes;
         int index = 0;
@@ -38,7 +38,14 @@ public struct VarInt
         byte b;
         do
         {
-            value = (value << 7) | (ulong)((b = bytes[index]) & (ulong)0x7F);
+            if (endianness == Endianness.BIG_ENDIAN)
+            {
+                value = (value << 7) | (ulong)((b = bytes[index]) & (ulong)0x7F);
+            }
+            else
+            {
+                value = (value) | (ulong)(((b = bytes[index]) & (ulong)0x7F) << (7 * index));
+            }
             index++;
         } while ((b & 0x80) != 0);
 

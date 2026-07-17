@@ -75,13 +75,16 @@ public class ThriftCompactProtocolCodec
       case ThriftCompactProtocolType.CT_BOOLEAN_FALSE:
         return false;
       case ThriftCompactProtocolType.CT_I16:
-        var zz = ReadZigZag(buffer);
+        // Integer encoing uses https://en.wikipedia.org/wiki/LEB128
+        var zz = ReadZigZag(buffer, Endianness.LITTLE_ENDIAN);
         return zz.Decoded;
       case ThriftCompactProtocolType.CT_I32:
-        zz = ReadZigZag(buffer);
+        // Integer encoing uses https://en.wikipedia.org/wiki/LEB128
+        zz = ReadZigZag(buffer, Endianness.LITTLE_ENDIAN);
         return zz.Decoded;
       case ThriftCompactProtocolType.CT_I64:
-        zz = ReadZigZag(buffer);
+        // Integer encoing uses https://en.wikipedia.org/wiki/LEB128
+        zz = ReadZigZag(buffer, Endianness.LITTLE_ENDIAN);
         return zz.Decoded;
       case ThriftCompactProtocolType.CT_LIST:
         var list = ReadList(buffer);
@@ -120,18 +123,18 @@ public class ThriftCompactProtocolCodec
   /// </summary>
   /// <param name="buffer">The input buffer.</param>
   /// <returns>Returns a VarInt.</returns>
-  private VarInt ReadVarInt(IBuffer buffer)
+  private VarInt ReadVarInt(IBuffer buffer, Endianness? endianness = Endianness.BIG_ENDIAN)
   {
     // create copy of buffer starting at varint.
     var slice = buffer.Slice(buffer.Position, buffer.Length - buffer.Position);
-    var vi = new VarInt(slice);
+    var vi = new VarInt(slice, endianness);
     buffer.Position += vi.Size;
     return vi;
   }
 
-  private ZigZag ReadZigZag(IBuffer buffer)
+  private ZigZag ReadZigZag(IBuffer buffer, Endianness? endianness = Endianness.BIG_ENDIAN)
   {
-    var vi = ReadVarInt(buffer);
+    var vi = ReadVarInt(buffer, endianness);
     return new ZigZag(vi);
   }
 
