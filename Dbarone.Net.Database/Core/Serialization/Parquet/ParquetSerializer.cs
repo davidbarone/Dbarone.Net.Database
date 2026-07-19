@@ -72,6 +72,34 @@ public class ParquetSerializer
     var mdSer = new ThriftMetaDataSerializer();
     model.MetaData = mdSer.GetMetaData(metadataBuffer);
 
+    // Having got the metadata, we can now read the actual data
+    // Order is: RowGroup -> ColumnChunk -> PageHeader -> DataPage
+    // 1 parquet file can only have 1 column schema - all rows must have same colums + types
+
+    // To store the results
+    List<Dictionary<string, object?>> results = new List<Dictionary<string, object?>>();
+
+    // Get the schema
+    var schema = model.MetaData.Schema;
+
+    // Loop through each row group
+    foreach (var rowGroup in model.MetaData.RowGroups)
+    {
+      // each column chunk has same number of rows - the rows in the row group
+      var numRows = rowGroup.NumRows;
+
+      for (int i = 0; i < schema.Count; i++)
+      {
+        var chunk = rowGroup.Columns[i];
+      }
+      // for each row group, loop through columns
+      foreach (var columnChunk in rowGroup.Columns)
+      {
+        var numRows = columnChunk.
+      }
+    }
+
+
     return model;
   }
 }
