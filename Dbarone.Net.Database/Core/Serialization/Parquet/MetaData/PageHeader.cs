@@ -46,30 +46,31 @@ public sealed class PageHeader
   /// Headers for page specific data.  One only will be set.
   /// </summary>
   [FieldId(5)]
-  DataPageHeader? DataPageHeader { get; set; }
+  public DataPageHeader? DataPageHeader { get; set; }
 
   /// <summary>
   /// Headers for page specific data.  One only will be set.
   /// </summary>
   [FieldId(6)]
-  IndexPageHeader? IndexPageHeader { get; set; }
+  public IndexPageHeader? IndexPageHeader { get; set; }
 
   /// <summary>
   /// Headers for page specific data.  One only will be set.
   /// </summary>
   [FieldId(7)]
-  DictionaryPageHeader? DictionaryPageHeader { get; set; }
+  public DictionaryPageHeader? DictionaryPageHeader { get; set; }
 
   /// <summary>
   /// Headers for page specific data.  One only will be set.
   /// </summary>
   [FieldId(8)]
-  DataPageHeaderV2? DataPageHeaderV2 { get; set; }
+  public DataPageHeaderV2? DataPageHeaderV2 { get; set; }
 }
 
 /// <summary>
 /// Data page header.
 /// </summary>
+[ParquetThriftMetaData()]
 public sealed class DataPageHeader
 {
   /// <summary>
@@ -110,6 +111,7 @@ public sealed class DataPageHeader
 /// <summary>
 /// To do.
 /// </summary>
+[ParquetThriftMetaData()]
 public sealed class IndexPageHeader
 {
 
@@ -120,6 +122,7 @@ public sealed class IndexPageHeader
 /// if it is partly or completely dictionary encoded.At most one dictionary page
 /// can be placed in a column chunk.
 /// </summary>
+[ParquetThriftMetaData()]
 public sealed class DictionaryPageHeader
 {
   /// <summary>
@@ -151,6 +154,7 @@ public sealed class DictionaryPageHeader
 /// in some scenarios). Page indexes require pages to start and end at row boundaries,
 /// regardless of which page header is used.
 /// </summary>
+[ParquetThriftMetaData()]
 public sealed class DataPageHeaderV2
 {
   /// <summary>

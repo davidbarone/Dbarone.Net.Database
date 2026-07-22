@@ -26,6 +26,16 @@ public class ThriftMetaDataSerializer
 
   public FileMetaData GetMetaData(IBuffer buffer)
   {
+    return Get<FileMetaData>(buffer);
+  }
+
+  public PageHeader GetPageHeader(IBuffer buffer)
+  {
+    return Get<PageHeader>(buffer);
+  }
+
+  public T Get<T>(IBuffer buffer)
+  {
     // Deserialise to dict
     var dict = serializer.Decode(buffer);
 
@@ -33,9 +43,9 @@ public class ThriftMetaDataSerializer
     var mappingRules = GetMappingRules();
 
     // Map dict to Thrift object
-    var metadata = MapDict<FileMetaData>(dict, mappingRules);
+    var obj = MapDict<T>(dict, mappingRules);
 
-    return metadata;
+    return (T)obj;
   }
 
   #endregion

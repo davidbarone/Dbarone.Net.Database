@@ -1,5 +1,6 @@
 using Dbarone.Net.Database;
 using Dbarone.Net.Database.Parquet;
+using Dbarone.Net.Extensions;
 
 
 /// <summary>
@@ -80,25 +81,30 @@ public class ParquetSerializer
     List<Dictionary<string, object?>> results = new List<Dictionary<string, object?>>();
 
     // Get the schema
+    // Note that schema[0] is 'root'.
     var schema = model.MetaData.Schema;
 
     // Loop through each row group
+    // row groups are unioned at the end
     foreach (var rowGroup in model.MetaData.RowGroups)
     {
+      // loop through each column chunk in the columns.
       // each column chunk has same number of rows - the rows in the row group
       var numRows = rowGroup.NumRows;
-
-      for (int i = 0; i < schema.Count; i++)
+      for (int i = 1; i < schema.Count; i++)  // ignore the 'root' schema element.
       {
-        var chunk = rowGroup.Columns[i];
-      }
-      // for each row group, loop through columns
-      foreach (var columnChunk in rowGroup.Columns)
-      {
-        var numRows = columnChunk.
+        var chunk = rowGroup.Columns[i - 1];
+        // each column chunk in a row group is divided into pages.
+        // get start and length of 1st page header for chunk
+        var start = chunk.FileOffset;
+        int size = (int)rowGroup.TotalByteSize;
+        buffer.Position = start;
+        var pageHeaderBytes = buffer.ReadBytes(size);
+        GenericBuffer pageHeaderBuffer = new GenericBuffer(pageHeaderBytes);
+        var ph = mdSer.GetPageHeader(pageHeaderBuffer);
+        var a = 1;
       }
     }
-
 
     return model;
   }
