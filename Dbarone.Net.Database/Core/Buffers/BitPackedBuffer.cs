@@ -23,13 +23,13 @@ public class BitPackedBuffer : IDisposable
   /// <summary>
   /// Reads an unsigned integer value from the stream using the specified number of bits.
   /// </summary>
-  public uint Read(int bitCount)
+  public uint Read(int bitWidth)
   {
-    if (bitCount <= 0 || bitCount > 32)
-      throw new ArgumentOutOfRangeException(nameof(bitCount), "Bit count must be between 1 and 32.");
+    if (bitWidth <= 0 || bitWidth > 32)
+      throw new ArgumentOutOfRangeException(nameof(bitWidth), "Bit width must be between 1 and 32.");
 
     uint result = 0;
-    int bitsNeeded = bitCount;
+    int bitsNeeded = bitWidth;
 
     while (bitsNeeded > 0)
     {

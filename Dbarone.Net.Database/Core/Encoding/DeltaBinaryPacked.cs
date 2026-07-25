@@ -37,48 +37,74 @@ public class DeltaBinaryPacked
   public IEnumerable<long> Decode(IBuffer buffer)
   {
     // Block size (ULEB128)
-    var blockSize = buffer.ReadVarInt(Endianness.LITTLE_ENDIAN);
+    var blockSize = buffer.ReadVarInt(Endianness.LITTLE_ENDIAN).Value;
     // Number of mini blocks (ULEB128)
-    var miniblockCount = buffer.ReadVarInt(Endianness.LITTLE_ENDIAN);
+    var miniblockCount = buffer.ReadVarInt(Endianness.LITTLE_ENDIAN).Value;
     // Total values (ULEB128)
-    var totalValues = buffer.ReadVarInt(Endianness.LITTLE_ENDIAN);
+    var totalValues = buffer.ReadVarInt(Endianness.LITTLE_ENDIAN).Value;
     // First value (zigzag ULEB128)
-    var firstValue = new ZigZag(buffer.ReadVarInt(Endianness.LITTLE_ENDIAN));
+    var firstValue = new ZigZag(buffer.ReadVarInt(Endianness.LITTLE_ENDIAN)).Decoded;
     // valuesInMiniBlock (calculated: must be multiple of 32)
     var valuesInMiniBlock = blockSize / miniblockCount;
 
-    var processed = 0;
+    ulong processed = 0;
+    var prevValue = firstValue;
+
+    if (totalValues > 0)
+    {
+      // yield first value
+      processed++;
+      yield return prevValue;
+    }
+
     var blockCount = totalValues / blockSize + 1;
-    for (int i = 0; i < blockCount; i++)
+    for (ulong i = 0; i < blockCount; i++)
     {
       // calculate how many miniblocks in this block:
       var miniBlocksInBlock = (totalValues - (i * blockSize)) / valuesInMiniBlock + 1;
       if (miniBlocksInBlock <= 0 || miniBlocksInBlock > miniblockCount)
       {
-        throw new Exception('Invalid miniBlocksInBlock!');
+        throw new Exception("Invalid miniBlocksInBlock!");
       }
 
       // process each block
       // Min Delta (zigzag ULEB128)
-      var minDelta = new ZigZag(buffer.ReadVarInt(Endianness.LITTLE_ENDIAN));
+      var minDelta = new ZigZag(buffer.ReadVarInt(Endianness.LITTLE_ENDIAN)).Decoded;
+
       // Read in the bit-width (byte) for EACH mini block in block
       List<byte> bitWidths = new List<byte>();
-      for (int j = 0; j < miniBlocksInBlock; j++)
+      for (ulong j = 0; j < miniBlocksInBlock; j++)
       {
         bitWidths.Add(buffer.ReadBytes(1)[0]);
       }
+
       // read each miniblock
+      // data from this point is bit-packed
+      BitPackedBuffer bpb = new BitPackedBuffer(buffer);
 
-
-
-
-
+      for (int j = 0; j < (int)miniBlocksInBlock && processed < totalValues; j++)
+      {
+        var bitWidth = bitWidths[j];
+        for (int k = 0; k < (int)valuesInMiniBlock && processed < totalValues; k++)
+        {
+          if (bitWidth == 0)
+          {
+            // no need to read data for bit width = 0
+            prevValue = prevValue + (0 + minDelta);
+            processed++;
+            yield return prevValue;
+          }
+          else
+          {
+            // read next bit-packed value
+            var value = bpb.Read(bitWidth);
+            // calculate actual value
+            prevValue = prevValue + (value + minDelta);
+            processed++;
+            yield return prevValue;
+          }
+        }
+      }
     }
-    while (i < blockSize)
-    {
-      // read next miniblock
-
-    }
-
   }
 }
