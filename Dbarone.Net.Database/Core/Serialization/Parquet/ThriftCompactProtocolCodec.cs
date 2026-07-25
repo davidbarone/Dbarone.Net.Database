@@ -125,11 +125,7 @@ public class ThriftCompactProtocolCodec
   /// <returns>Returns a VarInt.</returns>
   private VarInt ReadVarInt(IBuffer buffer, Endianness? endianness = Endianness.BIG_ENDIAN)
   {
-    // create copy of buffer starting at varint.
-    var slice = buffer.Slice(buffer.Position, buffer.Length - buffer.Position);
-    var vi = new VarInt(slice, endianness);
-    buffer.Position += vi.Size;
-    return vi;
+    return buffer.ReadVarInt(endianness);
   }
 
   private ZigZag ReadZigZag(IBuffer buffer, Endianness? endianness = Endianness.BIG_ENDIAN)

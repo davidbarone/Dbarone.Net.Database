@@ -35,6 +35,11 @@ public interface IBuffer
     public byte[] Slice(long index, long length);
 
     /// <summary>
+    /// Gets the memory stream used by the buffer.
+    /// </summary>
+    public MemoryStream Stream { get; }
+
+    /// <summary>
     /// Gets the size of the buffer.
     /// </summary>
     public long Length { get; }
@@ -53,6 +58,7 @@ public interface IBuffer
     public byte[] ReadBytes(int length);
     public string ReadString(int length, TextEncoding textEncoding = TextEncoding.UTF8);
     public object Read(DocumentType dataType, int? length = null, TextEncoding textEncoding = TextEncoding.UTF8);
+    public VarInt ReadVarInt(Endianness? endianness = Endianness.BIG_ENDIAN);
 
     #endregion
 

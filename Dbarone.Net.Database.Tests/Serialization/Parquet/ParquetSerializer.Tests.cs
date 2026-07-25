@@ -86,6 +86,7 @@ public class ParquetSerializerTests
     MemoryStream ms = new MemoryStream();
     using (var parquetWriter = await ParquetWriter.CreateAsync(schema, ms))
     {
+      parquetWriter.CompressionMethod = CompressionMethod.None; // default is snappy
       using (ParquetRowGroupWriter groupWriter = parquetWriter.CreateRowGroup())
       {
         foreach (var field in schema.Fields)

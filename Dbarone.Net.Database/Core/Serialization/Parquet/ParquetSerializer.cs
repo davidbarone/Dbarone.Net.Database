@@ -93,6 +93,7 @@ public class ParquetSerializer
       var numRows = rowGroup.NumRows;
       for (int i = 1; i < schema.Count; i++)  // ignore the 'root' schema element.
       {
+        var columnName = schema[i].Name;  // column name
         var chunk = rowGroup.Columns[i - 1];
         // each column chunk in a row group is divided into pages.
         // get start and length of 1st page header for chunk
@@ -102,10 +103,27 @@ public class ParquetSerializer
         var pageHeaderBytes = buffer.ReadBytes(size);
         GenericBuffer pageHeaderBuffer = new GenericBuffer(pageHeaderBytes);
         var ph = mdSer.GetPageHeader(pageHeaderBuffer);
-        var a = 1;
+
+
+        if (ph.DataPageHeader is not null)
+        {
+          var table = new Table();
+          List<TableRow> rows = new List<TableRow>();
+          var raw = GetDataPage(ph.DataPageHeader, buffer);
+          foreach (var item in raw)
+          {
+            TableRow tr = new TableRow(columnName, item);
+            rows.Add(tr);
+          }
+          model.Data = table;
+        }
       }
     }
-
     return model;
+  }
+
+  private IEnumerable<object> GetDataPage(DataPageHeader dataPageHeader, IBuffer buffer)
+  {
+    throw new NotSupportedException();
   }
 }

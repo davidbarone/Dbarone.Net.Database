@@ -16,9 +16,27 @@ public class TableRow : IDictionary<string, TableCell>, IComparable<TableRow>, I
     public IDictionary<string, TableCell> RawValue = new Dictionary<string, TableCell>(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
-    /// Creates an empty document.
+    /// Creates an empty table row.
     /// </summary>
     public TableRow() { }
+
+    /// <summary>
+    /// Creates a table row with a single column cell.
+    /// </summary>
+    /// <param name="columnName"></param>
+    /// <param name="cell"></param>
+    public TableRow(string columnName, TableCell cell)
+    {
+        this.Add(columnName, cell);
+    }
+
+    /// <summary>
+    /// Creates a table row with a single column value.
+    /// </summary>
+    /// <param name="columnName"></param>
+    /// <param name="value"></param>
+    public TableRow(string columnName, object value) : this(columnName, new TableCell(value))
+    { }
 
     /// <summary>
     /// Creates a new document using a dictionary of values.

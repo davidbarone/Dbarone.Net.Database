@@ -9,7 +9,7 @@ public class GenericBuffer : IBuffer
 {
     private byte[] buffer;
 
-    protected MemoryStream Stream;
+    public MemoryStream Stream { get; private set; }
 
     /// <summary>
     /// Returns true if the current buffer can grow.
@@ -166,6 +166,16 @@ public class GenericBuffer : IBuffer
             return result;
         }
         throw new Exception("Unable to read string encoding.");
+    }
+
+    public VarInt ReadVarInt(Endianness? endianness = Endianness.BIG_ENDIAN)
+    {
+        // create copy of buffer starting at varint to read the varint value
+        var slice = this.Slice(this.Position, this.Length - this.Position);
+        var vi = new VarInt(slice, endianness);
+        // set the original buffer position to end of read varint
+        this.Position += vi.Size;
+        return vi;
     }
 
     public object Read(DocumentType dataType, int? length = null, TextEncoding textEncoding = TextEncoding.UTF8)
