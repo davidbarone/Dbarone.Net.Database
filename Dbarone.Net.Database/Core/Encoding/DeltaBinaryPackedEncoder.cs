@@ -27,7 +27,7 @@ using Dbarone.Net.Database;
 /// the bitwidth of each miniblock is stored as a byte
 /// each miniblock is a list of bit-packed ints according to the bit width stored at the beginning of the block
 /// </summary>
-public class DeltaBinaryPacked
+public class DeltaBinaryPackedEncoder
 {
   /// <summary>
   /// Decodes to an sequence of long integers.
