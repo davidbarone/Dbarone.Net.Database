@@ -114,6 +114,28 @@ public class Table : IList<TableRow>
     }
 
     /// <summary>
+    /// Converts the table object to a Enumerable sequence of dictionary objects.
+    /// </summary>
+    /// <returns></returns>
+    public IEnumerable<Dictionary<string, object?>> ToDictionaryEnumerable()
+    {
+        if (this is null)
+        {
+            throw new Exception("whoops");
+        }
+
+        foreach (var row in this)
+        {
+            Dictionary<string, object?> dict = new Dictionary<string, object?>();
+            foreach (var kvp in row)
+            {
+                dict[kvp.Key] = kvp.Value.RawValue;
+            }
+            yield return dict;
+        }
+    }
+
+    /// <summary>
     /// Validates the table if a schema is set.
     /// </summary>
     /// <returns>Returns true if the data conforms to the schema. Otherwise, throws an exception.</returns>

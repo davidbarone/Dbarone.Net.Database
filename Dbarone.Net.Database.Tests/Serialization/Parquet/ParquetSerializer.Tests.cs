@@ -10,6 +10,7 @@ using Dbarone.Net.Database;
 using Dbarone.Net.Csv;
 using System.Linq;
 using Dbarone.Net.Database.Tests;
+using Dbarone.Net.Extensions;
 
 /// <summary>
 /// To test Parquet serialization module, we use the Parquet.NET
@@ -31,6 +32,43 @@ public class ParquetSerializerTests
 5";
 
   #endregion
+
+
+  private async Task<List<Dictionary<string, object>>> ParquetNetToDictionaryList(ParquetReader reader)
+  {
+    var result = new List<Dictionary<string, object>>();
+
+    for (int g = 0; g < reader.RowGroupCount; g++)
+    {
+      using (ParquetRowGroupReader groupReader = reader.OpenRowGroupReader(g))
+      {
+        var fields = reader.Schema.GetDataFields();
+        var columns = new List<Parquet.Data.DataColumn>();
+        var dataAsList = new List<IList<object>>();
+
+        foreach (var field in fields)
+        {
+          var col = await groupReader.ReadColumnAsync(field);
+          columns.Add(col);
+          var list = col.Data.Cast<object>().ToList();
+          dataAsList.Add(list);
+        }
+
+        int rowCount = columns[0].Data.Length;
+
+        for (int row = 0; row < rowCount; row++)
+        {
+          var dict = new Dictionary<string, object>();
+          for (int col = 0; col < fields.Length; col++)
+          {
+            dict[fields[col].Name] = dataAsList[col][row] ?? DBNull.Value;
+          }
+          result.Add(dict);
+        }
+      }
+    }
+    return result;
+  }
 
   private List<Dictionary<string, object?>> GetDataset(string csvData)
   {
@@ -106,6 +144,11 @@ public class ParquetSerializerTests
     return MemoryStreamToByteArray(ms);
   }
 
+  private void AssertTablesEquivalent(IList<Dictionary<string, object>> table1, IList<Dictionary<string, object>> table2)
+  {
+    // Check rows match
+    Assert.Equal(table1, table2, new DictionaryComparer());
+  }
 
   private async Task<ParquetReader> ReadParquetNet(byte[] bytes)
   {
@@ -122,21 +165,31 @@ public class ParquetSerializerTests
   public async Task ParquetReadTest()
   {
     var csv = dataset1;
-    var data = GetDataset(csv);
+    List<Dictionary<string, object?>> data = GetDataset(csv);
 
     // Write to in-memory Parquet using Parquet.NET
     var bytes = await WriteParquetNet(data);
 
     // Read the parquet ms using both Parquet.NET and Dbarone.Net.Database
-    var readParquetNet = ReadParquetNet(bytes);
+    var readParquetNet = await ReadParquetNet(bytes);
     var readParquetDbarone = new ParquetSerializer().Read(bytes);
 
-    // Assertions / tests
-    Assert.Equal(readParquetNet.Result.Metadata.CreatedBy, readParquetDbarone.MetaData.CreatedBy);
-    Assert.Equal(readParquetNet.Result.Metadata.NumRows, readParquetDbarone.MetaData.NumRows);
-    Assert.Equal(readParquetNet.Result.Metadata.RowGroups[0].TotalByteSize, readParquetDbarone.MetaData.RowGroups[0].TotalByteSize);
+    if (readParquetNet is null)
+    {
+      Assert.Fail("readParquetNet should not be null!");
+    }
+    else
+    {
+      // Assertions / tests
+      Assert.Equal(readParquetNet.Metadata.CreatedBy, readParquetDbarone.MetaData.CreatedBy);
+      Assert.Equal(readParquetNet.Metadata.NumRows, readParquetDbarone.MetaData.NumRows);
+      Assert.Equal(readParquetNet.Metadata.RowGroups[0].TotalByteSize, readParquetDbarone.MetaData.RowGroups[0].TotalByteSize);
+      Assert.Equal(readParquetNet.Metadata.Schema.Count, readParquetDbarone.MetaData.Schema.Count);
+      Assert.Equivalent(readParquetNet.Metadata.Schema.Select(s => s.Name), readParquetDbarone.MetaData.Schema.Select(s => s.Name));
 
-
+      // Test that the original dataset, and the dataset read by Dbarone.Net.Database are the same:
+      Assert.Equal(data, readParquetDbarone.Data.ToDictionaryEnumerable(), new DictionaryComparer());
+    }
   }
 
   /*   [Fact]
