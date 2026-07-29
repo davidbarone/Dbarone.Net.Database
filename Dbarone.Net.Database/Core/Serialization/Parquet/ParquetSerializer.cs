@@ -107,7 +107,7 @@ public class ParquetSerializer
         if (ph.DataPageHeader is not null)
         {
           List<TableRow> rows = new List<TableRow>();
-          var raw = GetDataPage(ph.DataPageHeader, pageHeaderBuffer);
+          var raw = GetDataPage(chunk.Metadata.Type, ph.DataPageHeader, pageHeaderBuffer);
           foreach (var item in raw)
           {
             TableRow tr = new TableRow(columnName, item);
@@ -120,7 +120,7 @@ public class ParquetSerializer
     return model;
   }
 
-  private IEnumerable<object> GetDataPage(DataPageHeader dataPageHeader, IBuffer buffer)
+  private IEnumerable<object> GetDataPage(Dbarone.Net.Database.Parquet.Type type, DataPageHeader dataPageHeader, IBuffer buffer)
   {
     // Get the encoding in the page:
     switch (dataPageHeader.Encoding)
@@ -131,7 +131,18 @@ public class ParquetSerializer
         var result = encoder.Decode(buffer);
         foreach (var item in result)
         {
-          yield return item;
+          if (type == Dbarone.Net.Database.Parquet.Type.INT32)
+          {
+            yield return (int)item;
+          }
+          else if (type == Dbarone.Net.Database.Parquet.Type.INT64)
+          {
+            yield return item;
+          }
+          else
+          {
+            throw new Exception($"Invalid type: {type}");
+          }
         }
         break;
       default:
