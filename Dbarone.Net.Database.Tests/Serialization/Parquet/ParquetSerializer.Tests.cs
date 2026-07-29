@@ -19,22 +19,80 @@ using Dbarone.Net.Extensions;
 /// </summary>
 public class ParquetSerializerTests
 {
-  #region Datasets
+  [Theory]
+  [MemberData(nameof(GetTestDatasets))]
+  public async Task ParquetReadTest(string name, List<Dictionary<string, object?>> data)
+  {
+    Assert.NotNull(name);
+
+    // Write test data to in-memory Parquet using Parquet.NET
+    var bytes = await WriteParquetNet(data);
+
+    // Read the parquet ms using both Parquet.NET and Dbarone.Net.Database
+    var readParquetNet = await ReadParquetNet(bytes);
+    var readParquetDbarone = new ParquetSerializer().Read(bytes);
+
+    if (readParquetNet is null)
+    {
+      Assert.Fail("readParquetNet should not be null!");
+    }
+    else
+    {
+      var md = readParquetNet.Metadata!;
+      // Assertions / tests
+      Assert.Equal(md.CreatedBy, readParquetDbarone.MetaData.CreatedBy);
+      Assert.Equal(md.NumRows, readParquetDbarone.MetaData.NumRows);
+      Assert.Equal(md.RowGroups.Count, readParquetDbarone.MetaData.RowGroups.Count);
+      Assert.Equal(md.RowGroups[0].TotalByteSize, readParquetDbarone.MetaData.RowGroups[0].TotalByteSize);
+      Assert.Equal(md.Schema.Count, readParquetDbarone.MetaData.Schema.Count);
+      Assert.Equivalent(md.Schema.Select(s => s.Name), readParquetDbarone.MetaData.Schema.Select(s => s.Name));
+
+      // Test that the original dataset, and the dataset read by Dbarone.Net.Database are the same:
+      Assert.Equal(data, readParquetDbarone.Data.ToDictionaryEnumerable(), new DictionaryComparer());
+    }
+  }
 
   /// <summary>
-  /// Single foo column (integer), and 5 rows
+  /// Generates the test datasets. Note that this method can be modified to return
+  /// only a single dataset by entering the name of the dataset in the parameter.
   /// </summary>
-  private string dataset1 => @"foo:int
-1
-2
-3
-4
-5";
+  /// <param name="selectedDataset"></param>
+  /// <returns></returns>
+  public static IEnumerable<object[]> GetTestDatasets(string? selectedDataset = null)
+  {
+    // Get test datasets
+    var results = new Dictionary<string, List<Dictionary<string, object?>>>();
 
-  #endregion
+    // Add test datasets
+    results["Int32 1-5"] = GenerateSingleColumnDataset("foo", () => Enumerable.Range(0, 5));
 
+    // Reformat results into IEnumerable<object[]>
+    foreach (var key in results.Keys)
+    {
+      yield return new object[] { key, results[key] };
+    }
+  }
 
-  private async Task<List<Dictionary<string, object>>> ParquetNetToDictionaryList(ParquetReader reader)
+  #region Private helper methods
+
+  private static List<Dictionary<string, object?>> GenerateSingleColumnDataset<T>(string columnName, Func<IEnumerable<T>> generator)
+  {
+    var results = new List<Dictionary<string, object?>>();
+    var data = generator();
+    foreach (var row in data)
+    {
+      var dict = new Dictionary<string, object?>();
+      dict[columnName] = (object?)row;
+    }
+    return results;
+  }
+
+  /// <summary>
+  /// Reads data in Parquet.NET object and returns to dictionary list.
+  /// </summary>
+  /// <param name="reader"></param>
+  /// <returns></returns>
+  private static async Task<List<Dictionary<string, object>>> ParquetNetToDictionaryList(ParquetReader reader)
   {
     var result = new List<Dictionary<string, object>>();
 
@@ -70,7 +128,13 @@ public class ParquetSerializerTests
     return result;
   }
 
-  private List<Dictionary<string, object?>> GetDataset(string csvData)
+  /// <summary>
+  /// Reads a CSV string, where the data type information is included in the header and
+  /// returns a dictionary list.
+  /// </summary>
+  /// <param name="csvData"></param>
+  /// <returns></returns>
+  private static List<Dictionary<string, object?>> GetDataset(string csvData)
   {
     var encoding = System.Text.Encoding.UTF8;
     byte[] byteArray = encoding.GetBytes(csvData ?? string.Empty);
@@ -102,7 +166,7 @@ public class ParquetSerializerTests
     return results;
   }
 
-  public byte[] MemoryStreamToByteArray(MemoryStream ms)
+  private static byte[] MemoryStreamToByteArray(MemoryStream ms)
   {
     if (ms == null)
       throw new Exception("MemoryStream cannot be null.");
@@ -114,7 +178,13 @@ public class ParquetSerializerTests
     return ms.ToArray(); // Creates a copy of the data    
   }
 
-  private async Task<byte[]> WriteParquetNet(List<Dictionary<string, object?>> rows)
+  /// <summary>
+  /// Takes a dataset (dictionary list) and generates a Parquet.NET file.
+  /// This is used as baseline in tests.
+  /// </summary>
+  /// <param name="rows"></param>
+  /// <returns></returns>
+  private static async Task<byte[]> WriteParquetNet(List<Dictionary<string, object?>> rows)
   {
     // create schema
     var schema = new ParquetSchema(
@@ -144,13 +214,7 @@ public class ParquetSerializerTests
     return MemoryStreamToByteArray(ms);
   }
 
-  private void AssertTablesEquivalent(IList<Dictionary<string, object>> table1, IList<Dictionary<string, object>> table2)
-  {
-    // Check rows match
-    Assert.Equal(table1, table2, new DictionaryComparer());
-  }
-
-  private async Task<ParquetReader> ReadParquetNet(byte[] bytes)
+  private static async Task<ParquetReader> ReadParquetNet(byte[] bytes)
   {
     using (var ms = new MemoryStream(bytes))
     {
@@ -161,45 +225,6 @@ public class ParquetSerializerTests
     }
   }
 
-  [Fact]
-  public async Task ParquetReadTest()
-  {
-    var csv = dataset1;
-    List<Dictionary<string, object?>> data = GetDataset(csv);
+  #endregion
 
-    // Write to in-memory Parquet using Parquet.NET
-    var bytes = await WriteParquetNet(data);
-
-    // Read the parquet ms using both Parquet.NET and Dbarone.Net.Database
-    var readParquetNet = await ReadParquetNet(bytes);
-    var readParquetDbarone = new ParquetSerializer().Read(bytes);
-
-    if (readParquetNet is null)
-    {
-      Assert.Fail("readParquetNet should not be null!");
-    }
-    else
-    {
-      // Assertions / tests
-      Assert.Equal(readParquetNet.Metadata.CreatedBy, readParquetDbarone.MetaData.CreatedBy);
-      Assert.Equal(readParquetNet.Metadata.NumRows, readParquetDbarone.MetaData.NumRows);
-      Assert.Equal(readParquetNet.Metadata.RowGroups[0].TotalByteSize, readParquetDbarone.MetaData.RowGroups[0].TotalByteSize);
-      Assert.Equal(readParquetNet.Metadata.Schema.Count, readParquetDbarone.MetaData.Schema.Count);
-      Assert.Equivalent(readParquetNet.Metadata.Schema.Select(s => s.Name), readParquetDbarone.MetaData.Schema.Select(s => s.Name));
-
-      // Test that the original dataset, and the dataset read by Dbarone.Net.Database are the same:
-      Assert.Equal(data, readParquetDbarone.Data.ToDictionaryEnumerable(), new DictionaryComparer());
-    }
-  }
-
-  /*   [Fact]
-    public async Task SerializeTableNoSchemaTest()
-    {
-      var bytes = await Dataset1();
-      GenericBuffer buf = new GenericBuffer(bytes);
-      ParquetSerializer ser = new ParquetSerializer();
-      ser.Deserialize(buf);
-
-    }
-   */
 }
