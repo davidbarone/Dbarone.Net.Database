@@ -19,8 +19,14 @@ using Dbarone.Net.Extensions;
 /// </summary>
 public class ParquetSerializerTests
 {
+  /// <summary>
+  /// Tests reading of parquet files.
+  /// </summary>
+  /// <param name="name">The name of the method that generates test</param>
+  /// <param name="data"></param>
+  /// <returns></returns>
   [Theory]
-  [MemberData(nameof(GetTestDatasets))]
+  [MemberData(nameof(GetTestDatasets), null)]
   public async Task ParquetReadTest(string name, List<Dictionary<string, object?>> data)
   {
     Assert.NotNull(name);
@@ -58,7 +64,7 @@ public class ParquetSerializerTests
   /// </summary>
   /// <param name="selectedDataset"></param>
   /// <returns></returns>
-  public static IEnumerable<object[]> GetTestDatasets(string? selectedDataset = null)
+  public static IEnumerable<object[]> GetTestDatasets(string? selected = null)
   {
     // Get test datasets
     var results = new Dictionary<string, List<Dictionary<string, object?>>>();
@@ -67,7 +73,7 @@ public class ParquetSerializerTests
     results["Int32 1-5"] = GenerateSingleColumnDataset("foo", () => Enumerable.Range(0, 5));
 
     // Reformat results into IEnumerable<object[]>
-    foreach (var key in results.Keys)
+    foreach (var key in results.Keys.Where(k => k.Equals(selected) || selected is null || selected.IsNullOrEmpty()))
     {
       yield return new object[] { key, results[key] };
     }

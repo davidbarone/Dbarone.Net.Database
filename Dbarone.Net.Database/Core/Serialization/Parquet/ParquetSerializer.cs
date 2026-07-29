@@ -124,6 +124,21 @@ public class ParquetSerializer
 
   private IEnumerable<object> GetDataPage(DataPageHeader dataPageHeader, IBuffer buffer)
   {
+    // Get the encoding in the page:
+    switch (dataPageHeader.Encoding)
+    {
+      case Encoding.DELTA_BINARY_PACKED:
+        // for int32 and int64
+        DeltaBinaryPackedEncoder encoder = new DeltaBinaryPackedEncoder();
+        var result = encoder.Decode(buffer);
+        foreach (var item in result)
+        {
+          yield return item;
+        }
+        break;
+      default:
+        throw new Exception($"Encoding {dataPageHeader.Encoding} not supported.");
+    }
     throw new NotSupportedException();
   }
 }
