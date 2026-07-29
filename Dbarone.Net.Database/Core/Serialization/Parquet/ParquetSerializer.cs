@@ -104,18 +104,16 @@ public class ParquetSerializer
         GenericBuffer pageHeaderBuffer = new GenericBuffer(pageHeaderBytes);
         var ph = mdSer.GetPageHeader(pageHeaderBuffer);
 
-
         if (ph.DataPageHeader is not null)
         {
-          var table = new Table();
           List<TableRow> rows = new List<TableRow>();
-          var raw = GetDataPage(ph.DataPageHeader, buffer);
+          var raw = GetDataPage(ph.DataPageHeader, pageHeaderBuffer);
           foreach (var item in raw)
           {
             TableRow tr = new TableRow(columnName, item);
             rows.Add(tr);
           }
-          model.Data = table;
+          model.Data = new Table(rows);
         }
       }
     }
@@ -139,6 +137,5 @@ public class ParquetSerializer
       default:
         throw new Exception($"Encoding {dataPageHeader.Encoding} not supported.");
     }
-    throw new NotSupportedException();
   }
 }

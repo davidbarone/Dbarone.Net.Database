@@ -89,6 +89,7 @@ public class ParquetSerializerTests
     {
       var dict = new Dictionary<string, object?>();
       dict[columnName] = (object?)row;
+      results.Add(dict);
     }
     return results;
   }
