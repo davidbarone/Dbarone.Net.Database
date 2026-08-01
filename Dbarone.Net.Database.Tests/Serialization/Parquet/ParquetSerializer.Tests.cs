@@ -24,7 +24,7 @@ public class ParquetSerializerTests
   /// Gets the data for tests. Used to drive a theory-based test pack.
   /// </summary>
   /// <returns></returns>
-  public static IEnumerable<object[]> GetData(string? selected = null)
+  public static async Task<IEnumerable<object[]>> GetData(string? selected = null)
   {
     TestPack testPack = new TestPack().Generate(selected);
 

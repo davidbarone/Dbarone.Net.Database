@@ -53,13 +53,27 @@ public class ParquetNETHelper
       {
         foreach (var field in schema.Fields)
         {
-          var columnData = new List<int>();
-          foreach (var row in rows)
+          var dataField = field as DataField;
+          if (dataField is not null)
           {
-            columnData.Add(Convert.ToInt32(row[field.Name]));
+            switch (dataField.ClrType)
+            {
+              case Type _ when dataField.ClrType == typeof(Int32):
+                await groupWriter
+                  .WriteColumnAsync(
+                    new Parquet.Data.DataColumn((DataField)field,
+                    rows.Select(r => Convert.ToInt32(r[field.Name])).ToArray()));
+                break;
+              case Type _ when dataField.ClrType == typeof(Int64):
+                await groupWriter
+                  .WriteColumnAsync(
+                    new Parquet.Data.DataColumn((DataField)field,
+                    rows.Select(r => Convert.ToInt64(r[field.Name])).ToArray()));
+                break;
+              default:
+                throw new Exception($"Cannot write {dataField.ClrType} type.");
+            }
           }
-
-          await groupWriter.WriteColumnAsync(new Parquet.Data.DataColumn((DataField)field, columnData.ToArray()));
         }
       }
     }
