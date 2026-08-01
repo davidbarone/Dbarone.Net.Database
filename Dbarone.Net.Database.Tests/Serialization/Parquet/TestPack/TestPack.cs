@@ -1,0 +1,46 @@
+using System.Collections.Generic;
+using System.Data;
+using System.IO;
+using System.Threading.Tasks;
+using Parquet;
+using Parquet.Schema;
+using Xunit;
+using System;
+using Dbarone.Net.Database;
+using Dbarone.Net.Csv;
+using System.Linq;
+using Dbarone.Net.Database.Tests;
+using Dbarone.Net.Extensions;
+
+public class TestPack : Dictionary<string, TestPackTable>
+{
+  /// <summary>
+  /// Generates the test pack. Note that this method can be modified to return
+  /// only a single dataset by entering the name of the dataset in the parameter.
+  /// </summary>
+  /// <param name="selectedDataset">Set this to the key of an individual test pack item to run only 1 test.</param>
+  /// <returns>Returns a test pack of datasets.</returns>
+  public TestPack Generate(string? selected = null)
+  {
+    // Get test pack
+    var results = new TestPack
+    {
+      {
+        "Int32 1-5",
+        new TestPackTable {{"foo", new TestPackColumn(typeof(Int32), () => Enumerable.Range(1, 5).Select(n=>(object)n))}}
+      },
+      {
+        "Int64 1-5",
+        new TestPackTable {{"foo", new TestPackColumn(typeof(Int64), () => Enumerable.Range(1, 5).Select(n=>(object)n))} }
+      }
+    };
+
+    var filtered = results.Where(kvp => (selected is null || selected == "") || kvp.Key.Equals(selected)).ToDictionary();
+
+    TestPack tp = new TestPack();
+    foreach (var item in filtered)
+      tp.Add(item.Key, item.Value);
+
+    return tp;
+  }
+}
