@@ -24,21 +24,16 @@ public class ParquetSerializerTests
   /// Gets the data for tests. Used to drive a theory-based test pack.
   /// </summary>
   /// <returns></returns>
-  public static async Task<IEnumerable<object[]>> GetData(string? selected = null)
+  public static IEnumerable<object[]> GetData(string? selected = null)
   {
     TestPack testPack = new TestPack().Generate(selected);
-
     List<object[]> results = new List<object[]>();
-
-    // for each table in the test pack, we first create an in memory parquet file
-    // using Parquet.NET.
     foreach (var kvp in testPack)
     {
-      var bytes = ParquetNETHelper.CreateFromTestPackTable(kvp.Value);
       results.Add(new object[]
       {
-        kvp.Key,    // name of test
-        bytes       // in-memory parquet.net
+        kvp.Key,
+        kvp.Value
       });
     }
     return results;
@@ -52,9 +47,14 @@ public class ParquetSerializerTests
   /// <returns></returns>
   [Theory]
   [MemberData(nameof(GetData), "Int64 1-5")]
-  public async Task ParquetReadTest(string name, byte[] parquetBytes)
+  public async Task ParquetReadTest(string name, TestPackTable table)
   {
     Assert.NotNull(name);
+
+    // Create an in-memory parquet file from the teset pack item:
+    // for each table in the test pack, we first create an in memory parquet file
+    // using Parquet.NET.
+    var parquetBytes = await ParquetNETHelper.CreateFromTestPackTable(table);
 
     // Read the parquet ms using both Parquet.NET and Dbarone.Net.Database
     var parquetNet = await ParquetNETHelper.Read(parquetBytes);
