@@ -84,13 +84,9 @@ public class ParquetNETHelper
 
   public static async Task<ParquetReader> Read(byte[] bytes)
   {
-    using (var ms = new MemoryStream(bytes))
-    {
-      using (ParquetReader reader = await ParquetReader.CreateAsync(ms))
-      {
-        return reader;
-      }
-    }
+    var ms = new MemoryStream(bytes);
+    ParquetReader reader = await ParquetReader.CreateAsync(ms);
+    return reader;
   }
 
   /// <summary>
