@@ -32,7 +32,12 @@ public class TestPack : Dictionary<string, TestPackTable>
       {
         "Int64 1-5",
         new TestPackTable {{"foo", new TestPackColumn(typeof(Int64), () => Enumerable.Range(1, 5).Select(n=>(object)n))} }
+      },
+      {
+        "Int64 Long.Max",
+        new TestPackTable {{"foo", new TestPackColumn(typeof(Int64), () => new object[] { long.MaxValue })} }
       }
+
     };
 
     var filtered = results.Where(kvp => (selected is null || selected == "") || kvp.Key.Equals(selected)).ToDictionary();

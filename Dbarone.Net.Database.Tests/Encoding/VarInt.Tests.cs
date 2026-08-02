@@ -18,6 +18,7 @@ public class VarIntTests
     [InlineData(134217728, 4, new byte[] { 0xC0, 0x80, 0x80, 0x00 })]
     [InlineData(268435455, 4, new byte[] { 0xFF, 0xFF, 0xFF, 0x7F })]
     [InlineData(long.MaxValue, 9, new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F })]
+    [InlineData(ulong.MaxValue, 10, new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01 })]
     public void TestVarInt_WithLongConstructor(ulong value, int expectedLength, byte[] expectedBytes)
     {
         VarInt varInt = value;
@@ -39,6 +40,7 @@ public class VarIntTests
     [InlineData(new byte[] { 0xC0, 0x80, 0x80, 0x00 }, 134217728, 4)]
     [InlineData(new byte[] { 0xFF, 0xFF, 0xFF, 0x7F }, 268435455, 4)]
     [InlineData(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F }, long.MaxValue, 9)]
+    [InlineData(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01 }, ulong.MaxValue, 10)]
     public void TestVarInt_WithByteArrayConstructor(byte[] bytes, ulong expectedValue, int expectedLength)
     {
         var varInt = new VarInt(bytes);

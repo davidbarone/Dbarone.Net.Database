@@ -37,6 +37,8 @@ public class ZigZagTests
     [InlineData(8, 16)]
     [InlineData(9, 18)]
     [InlineData(10, 20)]
+    [InlineData(long.MaxValue, ulong.MaxValue - 1)]
+    [InlineData(long.MinValue, ulong.MaxValue)]
     public void TestZigZagEncoding(long actualInput, ulong expectedOutput)
     {
         // all positive integers should become even integers twice as big
@@ -67,6 +69,8 @@ public class ZigZagTests
     [InlineData(16, 8)]
     [InlineData(18, 9)]
     [InlineData(20, 10)]
+    [InlineData(ulong.MaxValue - 1, long.MaxValue)]
+    [InlineData(ulong.MaxValue, long.MinValue)]
     public void TestZigZagDecoding(ulong encoded, long expectedDecode)
     {
         ZigZag zz = new ZigZag(new VarInt(encoded));

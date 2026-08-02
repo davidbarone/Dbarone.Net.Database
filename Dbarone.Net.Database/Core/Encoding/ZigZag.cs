@@ -29,7 +29,7 @@ public class ZigZag
     {
         this.VarInt = varInt;
         Encoded = this.VarInt.Value;
-        Decoded = ((long)Encoded >> 1) ^ -((long)Encoded & 1);
+        Decoded = (long)((Encoded >> 1) ^ (ulong)-(long)(Encoded & 1));
     }
 
     public ulong Encoded { get; set; }

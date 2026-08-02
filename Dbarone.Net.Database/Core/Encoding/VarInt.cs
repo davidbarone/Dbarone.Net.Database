@@ -185,7 +185,7 @@ public struct VarInt
 
     private byte[] ULongToByteArray(ulong value)
     {
-        byte[] bytes = new byte[9]; // max length for Int64 -> VarInt is 9 bytes
+        byte[] bytes = new byte[10]; // max length for Int64 -> VarInt is 10 bytes
         int index = 0;
 
         byte buffer = (byte)(value & 0x7F);
