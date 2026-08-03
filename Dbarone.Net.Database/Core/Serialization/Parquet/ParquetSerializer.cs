@@ -104,7 +104,12 @@ public class ParquetSerializer
         GenericBuffer pageHeaderBuffer = new GenericBuffer(pageHeaderBytes);
         var ph = mdSer.GetPageHeader(pageHeaderBuffer);
 
-        if (ph.DataPageHeader is not null)
+        // Check the type of page
+        if (ph.PageType == Dbarone.Net.Database.Parquet.PageType.DICTIONARY_PAGE)
+        {
+          var dict = GetDictionary(ph.DictionaryPageHeader!, chunk.Metadata!.Type, pageHeaderBuffer);
+        }
+        else if (ph.PageType == Dbarone.Net.Database.Parquet.PageType.DATA_PAGE)
         {
           List<TableRow> rows = new List<TableRow>();
           var raw = GetDataPage(chunk.Metadata.Type, ph.DataPageHeader, pageHeaderBuffer);
@@ -118,6 +123,68 @@ public class ParquetSerializer
       }
     }
     return model;
+  }
+
+  private PageHeader GetPageHeader(IBuffer buffer)
+  {
+    // Get the current
+
+  }
+
+  /// <summary>
+  /// Gets a dictionary page.
+  /// </summary>
+  /// <param name="buffer">The parquet buffer.</param>
+  /// <returns>Returns a dictionary page.</returns>
+  private IList<object> GetDictionary(DictionaryPageHeader header, Dbarone.Net.Database.Parquet.Type type, IBuffer buffer)
+  {
+    if (header is null)
+    {
+      throw new Exception("Dictionary page header is null!");
+    }
+
+    // get the encoding
+    var enc = header.Encoding;
+
+    if (enc == Encoding.PLAIN_DICTIONARY)
+    {
+      List<object> dictionary = new List<object>();
+      for (int i = 0; i < header.NumValues; i++)
+      {
+        // Get the type of dictionary entry:
+        switch (type)
+        {
+          case Dbarone.Net.Database.Parquet.Type.INT32:
+            // INT32 always stored in little-endian
+            var bytesInt32 = buffer.ReadBytes(4);
+            if (!BitConverter.IsLittleEndian)
+            {
+              // reverse bytes on big-endian systems (most x86 systems are little-endian)
+              Array.Reverse(bytesInt32);
+            }
+            dictionary.Add(BitConverter.ToInt32(bytesInt32, 0));
+            break;
+          case Dbarone.Net.Database.Parquet.Type.INT64:
+            // INT64 always stored in little-endian
+            var bytesInt64 = buffer.ReadBytes(8);
+            if (!BitConverter.IsLittleEndian)
+            {
+              // reverse bytes on big-endian systems (most x86 systems are little-endian)
+              Array.Reverse(bytesInt64);
+            }
+            dictionary.Add(BitConverter.ToInt64(bytesInt64, 0));
+            break;
+          default:
+            throw new Exception($"Unsupported dictionary type: {type}");
+        }
+      }
+      return dictionary;
+    }
+    else
+    {
+      // only PLAIN encoding currently supported for dictionaries
+      throw new Exception("Only PLAIN encoding currently supported for dictionaries.");
+    }
   }
 
   private IEnumerable<object> GetDataPage(Dbarone.Net.Database.Parquet.Type type, DataPageHeader dataPageHeader, IBuffer buffer)

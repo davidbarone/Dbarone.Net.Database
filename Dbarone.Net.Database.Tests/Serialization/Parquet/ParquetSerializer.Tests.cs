@@ -46,7 +46,7 @@ public class ParquetSerializerTests
   /// <param name="data"></param>
   /// <returns></returns>
   [Theory]
-  [MemberData(nameof(GetData), "Int64 Long.Max")]
+  [MemberData(nameof(GetData), "Int64 Repeat Long.MaxValue * 1000000")]
   public async Task ParquetReadTest(string name, TestPackTable table)
   {
     Assert.NotNull(name);

@@ -36,8 +36,15 @@ public class TestPack : Dictionary<string, TestPackTable>
       {
         "Int64 Long.Max",
         new TestPackTable {{"foo", new TestPackColumn(typeof(Int64), () => new object[] { long.MaxValue })} }
+      },
+      {
+        "Int64 Long.Min",
+        new TestPackTable {{"foo", new TestPackColumn(typeof(Int64), () => new object[] { long.MinValue })} }
+      },
+      {
+        "Int64 Repeat Long.MaxValue * 1000000",
+        new TestPackTable {{"foo", new TestPackColumn(typeof(Int64), () => Enumerable.Repeat(long.MaxValue,1000000).Select(n => (object)n)) } }
       }
-
     };
 
     var filtered = results.Where(kvp => (selected is null || selected == "") || kvp.Key.Equals(selected)).ToDictionary();
