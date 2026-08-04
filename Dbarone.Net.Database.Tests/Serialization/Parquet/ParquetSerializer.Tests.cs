@@ -46,7 +46,7 @@ public class ParquetSerializerTests
   /// <param name="data"></param>
   /// <returns></returns>
   [Theory]
-  [MemberData(nameof(GetData), "Simple Dictionary/RLE Int32")]
+  [MemberData(nameof(GetData), "Dictionary/RLE - Long.MaxValue * 1,000,000")]
   public async Task ParquetReadTest(string name, TestPackTable table)
   {
     Assert.NotNull(name);
