@@ -30,6 +30,6 @@ public class ThriftCompactProtocolCodecTests
   {
     var buf = Base64ToIBuffer(input);
     ThriftMetaDataSerializer ser = new ThriftMetaDataSerializer();
-    var results = ser.GetMetaData(buf);
+    var results = ser.GetFileMetaData(buf);
   }
 }

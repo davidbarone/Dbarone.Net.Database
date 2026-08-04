@@ -24,7 +24,7 @@ public class ThriftMetaDataSerializer
 
   #region Public Methods
 
-  public FileMetaData GetMetaData(IBuffer buffer)
+  public FileMetaData GetFileMetaData(IBuffer buffer)
   {
     return Get<FileMetaData>(buffer);
   }

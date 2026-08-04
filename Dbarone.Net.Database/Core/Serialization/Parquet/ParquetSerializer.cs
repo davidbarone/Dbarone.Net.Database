@@ -18,12 +18,10 @@ using Dbarone.Net.Extensions;
 /// </summary>
 public class ParquetSerializer
 {
-  public FileMetaData GetFileMetaData(IBuffer buffer, TextEncoding textEncoding = TextEncoding.UTF8)
-  {
-    ThriftCompactProtocolCodec codec = new ThriftCompactProtocolCodec();
-    var fileMetaData = codec.Decode(buffer);
-    return null;
-  }
+  /// <summary>
+  /// To read/write metadata.
+  /// </summary>
+  public ThriftMetaDataSerializer ThriftMetaDataSerialiser { get; set; } = new ThriftMetaDataSerializer();
 
   public ParquetModel Read(byte[] bytes, TextEncoding textEncoding = TextEncoding.UTF8)
   {
@@ -60,18 +58,7 @@ public class ParquetSerializer
     }
 
     // Get file metadata length - 4 bytes immediately prior to magic footer - 4 bytes in little-endian format
-    buffer.Position = buffer.Length - 4 - 4;
-    var fileMetadataLengthBytes = buffer.ReadBytes(4);
-    int fileMetadataLength = BitConverter.ToInt32(fileMetadataLengthBytes, 0);
-
-    // Get metadata
-    // Encoded in Apache Thrift compact/binary protocol (FileMetaData struct)
-    // https://thrift.apache.org/
-    buffer.Position = buffer.Length - 4 - 4 - fileMetadataLength;
-    var fileMetadataBytes = buffer.ReadBytes(fileMetadataLength);
-    GenericBuffer metadataBuffer = new GenericBuffer(fileMetadataBytes);
-    var mdSer = new ThriftMetaDataSerializer();
-    model.MetaData = mdSer.GetMetaData(metadataBuffer);
+    model.MetaData = GetFileMetaData(buffer);
 
     // Having got the metadata, we can now read the actual data
     // Order is: RowGroup -> ColumnChunk -> PageHeader -> DataPage
@@ -95,24 +82,36 @@ public class ParquetSerializer
       {
         var columnName = schema[i].Name;  // column name
         var chunk = rowGroup.Columns[i - 1];
+
         // each column chunk in a row group is divided into pages.
         // get start and length of 1st page header for chunk
         var start = chunk.FileOffset;
-        int size = (int)rowGroup.TotalByteSize;
         buffer.Position = start;
-        var pageHeaderBytes = buffer.ReadBytes(size);
-        GenericBuffer pageHeaderBuffer = new GenericBuffer(pageHeaderBytes);
-        var ph = mdSer.GetPageHeader(pageHeaderBuffer);
+        var ph = GetPageHeader(buffer);
 
         // Check the type of page
         if (ph.PageType == Dbarone.Net.Database.Parquet.PageType.DICTIONARY_PAGE)
         {
-          var dict = GetDictionary(ph.DictionaryPageHeader!, chunk.Metadata!.Type, pageHeaderBuffer);
+          var dict = GetDictionary(ph.DictionaryPageHeader!, chunk.Metadata!.Type, buffer);
+          // Now we get the data for the dictionary
+          var dataPageHeader = GetPageHeader(buffer);
+          if (dataPageHeader.PageType != Dbarone.Net.Database.Parquet.PageType.DATA_PAGE)
+          {
+            throw new Exception("whoops!");
+          }
+
+          List<TableRow> rows = new List<TableRow>();
+          foreach (var item in new RLEEncoder().Decode(buffer, chunk.Metadata.NumValues, dict))
+          {
+            TableRow tr = new TableRow(columnName, item);
+            rows.Add(tr);
+          }
+          model.Data = new Table(rows);
         }
         else if (ph.PageType == Dbarone.Net.Database.Parquet.PageType.DATA_PAGE)
         {
           List<TableRow> rows = new List<TableRow>();
-          var raw = GetDataPage(chunk.Metadata.Type, ph.DataPageHeader, pageHeaderBuffer);
+          var raw = GetDataPage(chunk.Metadata.Type, ph.DataPageHeader, buffer);
           foreach (var item in raw)
           {
             TableRow tr = new TableRow(columnName, item);
@@ -125,10 +124,44 @@ public class ParquetSerializer
     return model;
   }
 
+  private FileMetaData GetFileMetaData(IBuffer buffer)
+  {
+    // Get file metadata length - 4 bytes immediately prior to magic footer - 4 bytes in little-endian format
+    buffer.Position = buffer.Length - 4 - 4;
+    var bytes = buffer.ReadBytes(4);
+    // reverse byte order for big-endian systems:
+    if (!BitConverter.IsLittleEndian)
+    {
+      Array.Reverse(bytes);
+    }
+    int length = BitConverter.ToInt32(bytes, 0);
+
+    // Get metadata
+    // Encoded in Apache Thrift compact/binary protocol (FileMetaData struct)
+    // https://thrift.apache.org/
+    buffer.Position = buffer.Length - 4 - 4 - length;
+    var metadataBytes = buffer.ReadBytes(length);
+    GenericBuffer metadataBuffer = new GenericBuffer(metadataBytes);
+    return ThriftMetaDataSerialiser.GetFileMetaData(metadataBuffer);
+  }
+
   private PageHeader GetPageHeader(IBuffer buffer)
   {
-    // Get the current
+    // Get the current position of the buffer
+    var start = buffer.Position;
+    var size = buffer.Length;
 
+    // When reading header, read in 4K limited by size remaining
+    var lengthToRead = (int)long.Min(4000, size - start);
+
+    var bytes = buffer.ReadBytes(lengthToRead);
+    GenericBuffer pageHeaderBuffer = new GenericBuffer(bytes);
+    var ph = ThriftMetaDataSerialiser.GetPageHeader(pageHeaderBuffer);
+
+    // Set the original buffer's position to the same point reached
+    buffer.Position = start + pageHeaderBuffer.Position;
+
+    return ph;
   }
 
   /// <summary>

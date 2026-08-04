@@ -42,6 +42,10 @@ public class TestPack : Dictionary<string, TestPackTable>
         new TestPackTable {{"foo", new TestPackColumn(typeof(Int64), () => new object[] { long.MinValue })} }
       },
       {
+        "Simple Dictionary/RLE Int32",
+        new TestPackTable {{"foo", new TestPackColumn(typeof(Int32), () => new object[] { 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3 }) } }
+      },
+      {
         "Int64 Repeat Long.MaxValue * 1000000",
         new TestPackTable {{"foo", new TestPackColumn(typeof(Int64), () => Enumerable.Repeat(long.MaxValue,1000000).Select(n => (object)n)) } }
       }
