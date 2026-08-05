@@ -225,6 +225,13 @@ public class ParquetSerializer
     // Get the encoding in the page:
     switch (dataPageHeader.Encoding)
     {
+      case Encoding.PLAIN:
+        PlainEncoder encoder2 = new PlainEncoder();
+        foreach (var item in encoder2.Decode(buffer, dataPageHeader.NumValues, type))
+        {
+          yield return item;
+        }
+        break;
       case Encoding.DELTA_BINARY_PACKED:
         // for int32 and int64
         DeltaBinaryPackedEncoder encoder = new DeltaBinaryPackedEncoder();

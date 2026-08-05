@@ -33,13 +33,17 @@ public class ParquetNETHelper
     {
       var name = item;
       var dataType = table[item].DataType;
+      var nullable = table[item].Nullable;
       switch (dataType)
       {
         case Type _ when dataType == typeof(Int32):
-          fields.Add(new DataField<int>(name));
+          fields.Add(new DataField<int>(name, nullable));
           break;
         case Type _ when dataType == typeof(Int64):
-          fields.Add(new DataField<long>(name));
+          fields.Add(new DataField<long>(name, nullable));
+          break;
+        case Type _ when dataType == typeof(string):
+          fields.Add(new DataField<string>(name, nullable));
           break;
       }
     }
@@ -69,6 +73,12 @@ public class ParquetNETHelper
                   .WriteColumnAsync(
                     new Parquet.Data.DataColumn((DataField)field,
                     rows.Select(r => Convert.ToInt64(r[field.Name])).ToArray()));
+                break;
+              case Type _ when dataField.ClrType == typeof(string):
+                await groupWriter
+                  .WriteColumnAsync(
+                    new Parquet.Data.DataColumn((DataField)field,
+                    rows.Select(r => Convert.ToString(r[field.Name])).ToArray()));
                 break;
               default:
                 throw new Exception($"Cannot write {dataField.ClrType} type.");

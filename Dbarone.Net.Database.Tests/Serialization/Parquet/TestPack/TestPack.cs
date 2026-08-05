@@ -26,28 +26,32 @@ public class TestPack : Dictionary<string, TestPackTable>
     var results = new TestPack
     {
       {
-        "Int32 1-5",
-        new TestPackTable {{"foo", new TestPackColumn(typeof(Int32), () => Enumerable.Range(1, 5).Select(n=>(object)n))}}
+        "Delta Binary Packed - Int32 1-5",
+        new TestPackTable {{"foo", new TestPackColumn(typeof(Int32), false, () => Enumerable.Range(1, 5).Select(n=>(object)n))}}
       },
       {
-        "Int64 1-5",
-        new TestPackTable {{"foo", new TestPackColumn(typeof(Int64), () => Enumerable.Range(1, 5).Select(n=>(object)n))} }
+        "Delta Binary Packed - Int64 1-5",
+        new TestPackTable {{"foo", new TestPackColumn(typeof(Int64), false, () => Enumerable.Range(1, 5).Select(n=>(object)n))} }
       },
       {
-        "Int64 Long.Max",
-        new TestPackTable {{"foo", new TestPackColumn(typeof(Int64), () => new object[] { long.MaxValue })} }
+        "Delta Binary Packed - Int64 Long.Max",
+        new TestPackTable {{"foo", new TestPackColumn(typeof(Int64), false, () => new object[] { long.MaxValue })} }
       },
       {
-        "Int64 Long.Min",
-        new TestPackTable {{"foo", new TestPackColumn(typeof(Int64), () => new object[] { long.MinValue })} }
+        "Delta Binary Packed - Int64 Long.Min",
+        new TestPackTable {{"foo", new TestPackColumn(typeof(Int64), false, () => new object[] { long.MinValue })} }
       },
       {
         "Dictionary/RLE - Simple Int32",
-        new TestPackTable {{"foo", new TestPackColumn(typeof(Int32), () => new object[] { 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3 }) } }
+        new TestPackTable {{"foo", new TestPackColumn(typeof(Int32), false, () => new object[] { 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3 }) } }
       },
       {
         "Dictionary/RLE - Long.MaxValue * 1,000,000",
-        new TestPackTable {{"foo", new TestPackColumn(typeof(Int64), () => Enumerable.Repeat(long.MaxValue,1000000).Select(n => (object)n)) } }
+        new TestPackTable {{"foo", new TestPackColumn(typeof(Int64), false, () => Enumerable.Repeat(long.MaxValue,1000000).Select(n => (object)n)) } }
+      },
+      {
+        "x",
+        new TestPackTable {{"foo", new TestPackColumn(typeof(string), false, () => new object[] { "A", "B", "C", "D", "E", "F", "G" }) } }
       }
     };
 

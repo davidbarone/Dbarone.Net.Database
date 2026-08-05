@@ -17,12 +17,14 @@ using Dbarone.Net.Extensions;
 /// </summary>
 public class TestPackColumn
 {
-  public TestPackColumn(Type dataType, Func<IEnumerable<object>> generator)
+  public TestPackColumn(Type dataType, bool? nullable = null, Func<IEnumerable<object>> generator)
   {
     this.DataType = dataType;
     this.Generator = generator;
+    this.Nullable = nullable;
   }
 
   public Type DataType { get; set; } = default!;
+  public bool? Nullable { get; set; } = null;
   public Func<IEnumerable<object>> Generator { get; set; } = default!;
 }
