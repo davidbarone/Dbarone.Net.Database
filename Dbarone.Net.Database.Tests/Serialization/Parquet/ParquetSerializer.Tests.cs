@@ -46,7 +46,7 @@ public class ParquetSerializerTests
   /// <param name="data"></param>
   /// <returns></returns>
   [Theory]
-  [MemberData(nameof(GetData), "x")]
+  [MemberData(nameof(GetData), "")]
   public async Task ParquetReadTest(string name, TestPackTable table)
   {
     Assert.NotNull(name);

@@ -25,13 +25,33 @@ using Dbarone.Net.Database;
 /// </summary>
 public class PlainEncoder
 {
-  public IEnumerable<object> Decode(IBuffer buffer, long numValues, Dbarone.Net.Database.Parquet.Type dataType)
+  public IEnumerable<object> Decode(IBuffer buffer, long numValues, Dbarone.Net.Database.Parquet.Type type)
   {
     while (numValues > 0)
     {
       numValues = numValues - 1;
-      switch (dataType)
+      switch (type)
       {
+        case Dbarone.Net.Database.Parquet.Type.INT32:
+          // INT32 always stored in little-endian
+          var bytesInt32 = buffer.ReadBytes(4);
+          if (!BitConverter.IsLittleEndian)
+          {
+            // reverse bytes on big-endian systems (most x86 systems are little-endian)
+            Array.Reverse(bytesInt32);
+          }
+          yield return BitConverter.ToInt32(bytesInt32, 0);
+          break;
+        case Dbarone.Net.Database.Parquet.Type.INT64:
+          // INT64 always stored in little-endian
+          var bytesInt64 = buffer.ReadBytes(8);
+          if (!BitConverter.IsLittleEndian)
+          {
+            // reverse bytes on big-endian systems (most x86 systems are little-endian)
+            Array.Reverse(bytesInt64);
+          }
+          yield return BitConverter.ToInt64(bytesInt64, 0);
+          break;
         case Dbarone.Net.Database.Parquet.Type.BYTE_ARRAY:
           // read length (4 bytes little-endian)
           var bytes = buffer.ReadBytes(4);
@@ -44,7 +64,7 @@ public class PlainEncoder
           yield return System.Text.Encoding.UTF8.GetString(strBytes);
           break;
         default:
-          throw new Exception($"Type: {dataType} not supported for PLAIN encoding");
+          throw new Exception($"Type: {type} not currently supported for PLAIN encoding");
       }
     }
   }

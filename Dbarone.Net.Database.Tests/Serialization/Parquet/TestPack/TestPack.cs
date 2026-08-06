@@ -50,8 +50,12 @@ public class TestPack : Dictionary<string, TestPackTable>
         new TestPackTable {{"foo", new TestPackColumn(typeof(Int64), () => Enumerable.Repeat(long.MaxValue,1000000).Select(n => (object)n)) } }
       },
       {
-        "x",
-        new TestPackTable {{"foo", new TestPackColumn(typeof(string), () => new object[] { "A", "B", "C", "D", "E", "F", "G" }) } }
+        "Plain Encoding - String #1 No Definition/Repetition Levels",
+        new TestPackTable {{"foo", new TestPackColumn(typeof(string), () => new object[] { "A", "B", "C", "D", "E", "F", "G" }, false) } }
+      },
+      {
+        "Plain Encoding - String #2 No Definition/Repetition Levels",
+        new TestPackTable {{"foo", new TestPackColumn(typeof(string), () => new object[] { "A", "B", "C", "A", "B", "C", "A", "B", "C" }, false) } }
       }
     };
 

@@ -181,37 +181,8 @@ public class ParquetSerializer
 
     if (enc == Encoding.PLAIN_DICTIONARY)
     {
-      List<object> dictionary = new List<object>();
-      for (int i = 0; i < header.NumValues; i++)
-      {
-        // Get the type of dictionary entry:
-        switch (type)
-        {
-          case Dbarone.Net.Database.Parquet.Type.INT32:
-            // INT32 always stored in little-endian
-            var bytesInt32 = buffer.ReadBytes(4);
-            if (!BitConverter.IsLittleEndian)
-            {
-              // reverse bytes on big-endian systems (most x86 systems are little-endian)
-              Array.Reverse(bytesInt32);
-            }
-            dictionary.Add(BitConverter.ToInt32(bytesInt32, 0));
-            break;
-          case Dbarone.Net.Database.Parquet.Type.INT64:
-            // INT64 always stored in little-endian
-            var bytesInt64 = buffer.ReadBytes(8);
-            if (!BitConverter.IsLittleEndian)
-            {
-              // reverse bytes on big-endian systems (most x86 systems are little-endian)
-              Array.Reverse(bytesInt64);
-            }
-            dictionary.Add(BitConverter.ToInt64(bytesInt64, 0));
-            break;
-          default:
-            throw new Exception($"Unsupported dictionary type: {type}");
-        }
-      }
-      return dictionary;
+      var dict = new PlainEncoder().Decode(buffer, header.NumValues, type).ToList();
+      return dict;
     }
     else
     {
