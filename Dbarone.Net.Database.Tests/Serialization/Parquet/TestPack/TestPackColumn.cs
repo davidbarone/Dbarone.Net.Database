@@ -17,7 +17,7 @@ using Dbarone.Net.Extensions;
 /// </summary>
 public class TestPackColumn
 {
-  public TestPackColumn(Type dataType, bool? nullable = null, Func<IEnumerable<object>> generator)
+  public TestPackColumn(Type dataType, Func<IEnumerable<object>> generator, bool? nullable = null)
   {
     this.DataType = dataType;
     this.Generator = generator;
